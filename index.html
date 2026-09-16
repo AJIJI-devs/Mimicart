@@ -346,9 +346,9 @@
   .divider-row::before, .divider-row::after { content: ""; flex: 1; height: 1px; background: hsl(var(--border)); }
   .login-field { width: 100%; height: 44px; padding: 0 12px; border: 1px solid hsl(var(--border)); border-radius: 10px; outline: 0; background: hsl(var(--background)); color: hsl(var(--foreground)); font-size: 13px; margin-bottom: 13px; }
   .login-field:focus { border-color: hsl(var(--primary)); box-shadow: 0 0 0 3px hsl(var(--primary) / .1); }
-  .login-error { margin: 12px 0 0; padding: 10px 12px; border-left: 3px solid hsl(var(--primary)); background: hsl(var(--primary) / .08); color: hsl(var(--foreground)); font-size: 11px; line-height: 1.45; }
-  .login-notice { margin: 12px 0 0; padding: 10px 12px; border-left: 3px solid hsl(var(--secondary)); background: hsl(var(--secondary) / .08); color: hsl(var(--foreground)); font-size: 11px; line-height: 1.45; }
-  .login-switch-note { margin: 15px 0 0; color: hsl(var(--muted-foreground)); font-size: 11px; text-align: center; }
+  .login-error { margin: 12px 0 0; padding: 11px 13px; border: 1px solid hsl(var(--primary) / .28); border-left: 4px solid hsl(var(--primary)); border-radius: 0 10px 10px 0; background: hsl(var(--primary) / .11); color: hsl(348 30% 14%); font-size: 11px; font-weight: 600; line-height: 1.5; }
+  .login-notice { margin: 12px 0 0; padding: 11px 13px; border: 1px solid hsl(var(--secondary) / .28); border-left: 4px solid hsl(var(--secondary)); border-radius: 0 10px 10px 0; background: hsl(var(--secondary) / .11); color: hsl(158 35% 16%); font-size: 11px; font-weight: 600; line-height: 1.5; }
+  .login-switch-note { margin: 15px 0 0; color: hsl(var(--foreground)); font-size: 11px; font-weight: 600; text-align: center; }
   .login-switch-note button { border: 0; background: transparent; padding: 0; color: hsl(var(--primary)); font-size: 11px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
   .account-chip { display: flex; align-items: center; gap: 12px; margin: 4px 0 20px; padding: 12px 14px; border: 1px solid hsl(var(--border)); border-radius: 14px; background: hsl(var(--muted)); }
   .account-chip svg { color: hsl(var(--primary)); flex: 0 0 auto; }
@@ -385,13 +385,30 @@
   .idle-dialog { text-align: center; padding: 32px 30px; }
   .idle-dialog h2 { margin: 0 0 10px; font-size: 26px; }
 
-  .mimicart-toast { position: fixed; top: 22px; left: 50%; transform: translateX(-50%); z-index: 90; display: flex; align-items: center; gap: 10px; max-width: min(90vw, 400px); padding: 14px 18px; border-radius: 14px; background: hsl(var(--foreground)); color: hsl(var(--card)); font-size: 12px; font-weight: 600; line-height: 1.4; box-shadow: 0 16px 40px hsl(348 25% 18% / .3); animation: float-in .3s cubic-bezier(.22,1,.36,1) both; }
+  .mimicart-toast { position: fixed; right: 20px; bottom: 20px; left: auto; transform: none; z-index: 90; display: flex; align-items: center; gap: 10px; max-width: min(90vw, 400px); padding: 14px 18px; border-radius: 14px; background: hsl(var(--foreground)); color: hsl(var(--card)); font-size: 12px; font-weight: 600; line-height: 1.4; box-shadow: 0 16px 40px hsl(348 25% 18% / .3); animation: float-in .3s cubic-bezier(.22,1,.36,1) both; }
   .mimicart-toast svg { flex: 0 0 auto; color: hsl(var(--accent)); }
-  .mimicart-toast.welcome-toast { background: hsl(var(--card)); color: hsl(var(--foreground)); border: 1px solid hsl(var(--border)); box-shadow: var(--shadow-card); }
+  .mimicart-toast.welcome-toast {
+    right: 20px;
+    bottom: 20px;
+    top: auto;
+    left: auto;
+    transform: none;
+  }
   .welcome-toast-mark { flex: 0 0 auto; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 10px 10px 10px 3px; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); font: 800 17px/1 var(--app-font-serif); transform: rotate(-6deg); }
   .welcome-toast-copy strong { display: block; font-size: 13px; }
   .welcome-toast-copy span { display: block; color: hsl(var(--muted-foreground)); font-size: 11px; margin-top: 1px; }
-  @media (max-width: 480px) { .mimicart-toast { top: 12px; width: calc(100% - 24px); } }
+  @media (max-width: 480px) {
+    .mimicart-toast { right: 12px; bottom: 12px; left: 50%; transform: translateX(-50%); width: calc(100% - 24px); text-align: center; }
+    .mimicart-toast.welcome-toast {
+      right: 12px;
+      bottom: 12px;
+      top: auto;
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 24px);
+      text-align: center;
+    }
+  }
   /* ---- tiktok-style shipment stage tracker (customer order tracking) ---- */
   .orders-dialog { width: min(560px, 100%); max-height: 86vh; overflow-y: auto; padding: 30px 26px; border-radius: 24px; background: hsl(var(--card)); border: 1px solid hsl(var(--border)); box-shadow: var(--shadow-card); position: relative; }
   .orders-list { display: flex; flex-direction: column; gap: 16px; margin-top: 18px; }
@@ -459,6 +476,15 @@
     .mobile-menu-button { display: grid; }
     .header-cart span { display: none; }
     .header-cart { padding-left: 10px; }
+    /* The row of header icon buttons can be wider than the screen on small
+       phones. Let it scroll horizontally instead of clipping/squishing the
+       buttons so every button stays reachable. */
+    .header-inner { flex-wrap: nowrap; }
+    .brand-button { flex: 0 0 auto; min-width: 0; }
+    .header-actions { flex: 1 1 auto; min-width: 0; max-width: 100%; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding: 4px 2px; margin: -4px -2px; justify-content: flex-start; }
+    .header-actions::-webkit-scrollbar { display: none; }
+    .header-actions > * { flex: 0 0 auto; }
+    .header-inner { gap: 10px; }
     .hero-section { display: block; min-height: 760px; padding: 67px 0 95px; }
     .hero-title { font-size: clamp(59px, 15vw, 85px); }
     .hero-description { font-size: 13px; }
@@ -525,6 +551,19 @@
     .favorite-button { width: 25px; height: 25px; }
     .add-button { padding: 0 7px; }
   }
+
+  /* ---- appearance themes ---- */
+  :root[data-theme="dark"] { --background:225 18% 11%; --foreground:40 25% 94%; --border:225 14% 25%; --card:225 17% 16%; --primary:358 78% 58%; --primary-foreground:225 18% 10%; --secondary:158 38% 55%; --muted:225 15% 21%; --muted-foreground:225 10% 70%; --accent:43 92% 62%; }
+  :root[data-theme="summer"] { --background:42 80% 94%; --foreground:25 35% 17%; --border:39 45% 82%; --card:45 100% 98%; --primary:15 82% 52%; --primary-foreground:45 100% 98%; --secondary:166 45% 30%; --muted:39 50% 88%; --muted-foreground:25 18% 42%; --accent:48 95% 58%; }
+  :root[data-theme="winter"] { --background:210 35% 95%; --foreground:220 30% 17%; --border:210 28% 82%; --card:210 40% 99%; --primary:208 72% 43%; --primary-foreground:210 40% 99%; --secondary:190 45% 30%; --muted:210 25% 89%; --muted-foreground:215 16% 42%; --accent:193 78% 68%; }
+  :root[data-theme="comet-night"] { --background:250 31% 10%; --foreground:220 35% 94%; --border:250 20% 25%; --card:250 27% 15%; --primary:284 78% 68%; --primary-foreground:250 31% 9%; --secondary:205 72% 64%; --muted:250 20% 21%; --muted-foreground:225 18% 73%; --accent:327 92% 72%; }
+  .theme-switcher { position:relative; display:inline-flex; }
+  .theme-toggle { width:38px; height:38px; display:grid; place-items:center; border:1px solid hsl(var(--border)); border-radius:50%; background:hsl(var(--card)); color:hsl(var(--foreground)); }
+  .theme-menu { position:absolute; top:calc(100% + 8px); right:0; z-index:70; display:none; width:155px; padding:7px; border:1px solid hsl(var(--border)); border-radius:14px; background:hsl(var(--card)); box-shadow:var(--shadow-soft); }
+  .theme-menu.open { display:grid; gap:4px; }
+  .theme-choice { border:0; border-radius:9px; background:transparent; padding:9px 10px; text-align:left; color:hsl(var(--foreground)); font-size:11px; font-weight:700; }
+  .theme-choice:hover, .theme-choice.active { background:hsl(var(--muted)); color:hsl(var(--primary)); }
+
   [hidden] { display: none !important; }
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
@@ -551,6 +590,16 @@
         <button type="button" class="nav-link" data-nav="story">Our corner</button>
        </nav>
       <div class="header-actions">
+         <div class="theme-switcher">
+           <button class="theme-toggle focus-ring" type="button" id="theme-toggle" aria-label="Change appearance" aria-expanded="false">✦</button>
+           <div class="theme-menu" id="theme-menu" role="menu" aria-label="Appearance themes">
+             <button type="button" class="theme-choice" data-theme-choice="light">Light</button>
+             <button type="button" class="theme-choice" data-theme-choice="dark">Dark</button>
+             <button type="button" class="theme-choice" data-theme-choice="summer">Summer</button>
+             <button type="button" class="theme-choice" data-theme-choice="winter">Winter</button>
+             <button type="button" class="theme-choice" data-theme-choice="comet-night">Comet Night</button>
+           </div>
+         </div>
         <button class="header-icon-button focus-ring" type="button" data-nav="catalogue" aria-label="Search the catalogue">
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
         </button>
@@ -698,6 +747,44 @@
   messagingSenderId: "903185481659",
   appId: "1:903185481659:web:f678e3723ca80b70428e9e"
   };
+
+  // ---- appearance themes ----
+  (function () {
+    var key = 'mimicart:theme', allowed = ['light','dark','summer','winter','comet-night'];
+    var toggle = document.getElementById('theme-toggle'), menu = document.getElementById('theme-menu');
+    function applyTheme(theme) {
+      if (allowed.indexOf(theme) === -1) theme = 'light';
+      if (theme === 'light') document.documentElement.removeAttribute('data-theme');
+      else document.documentElement.setAttribute('data-theme', theme);
+      try { localStorage.setItem(key, theme); } catch (e) {}
+      document.querySelectorAll('[data-theme-choice]').forEach(function (b) {
+        b.classList.toggle('active', b.getAttribute('data-theme-choice') === theme);
+      });
+    }
+    var saved = 'light';
+    try { saved = localStorage.getItem(key) || 'light'; } catch (e) {}
+    applyTheme(saved);
+    if (toggle && menu) {
+      toggle.addEventListener('click', function () {
+        var open = menu.classList.toggle('open');
+        toggle.setAttribute('aria-expanded', String(open));
+      });
+      document.addEventListener('click', function (e) {
+        if (!e.target.closest('.theme-switcher')) {
+          menu.classList.remove('open');
+          toggle.setAttribute('aria-expanded', 'false');
+        }
+      });
+    }
+    document.querySelectorAll('[data-theme-choice]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        applyTheme(b.getAttribute('data-theme-choice'));
+        if (menu) menu.classList.remove('open');
+        if (toggle) toggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }());
+
   var firebaseAuth = null;
   var firebaseDb = null;
   var firebaseConfigured = FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey.indexOf('YOUR_') !== 0;
@@ -1176,7 +1263,7 @@ next.push({
             '</button>' +
           '</div>' +
           '<div class="product-card-bottom">' +
-            '<strong>$' + product.price.toFixed(2) + '</strong>' +
+            '<strong>₱' + product.price.toFixed(2) + '</strong>' +
             '<button type="button" class="add-button focus-ring" data-add="' + product.id + '" ' + (!product.stock ? 'disabled' : '') + '>' +
               (product.stock ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add to cart' : 'Sold out') +
             '</button>' +
@@ -1235,6 +1322,41 @@ next.push({
   }
 
   // ---- cart ----
+  // The reservation cart is saved to this browser's localStorage so it
+  // survives a page refresh or a customer signing out. It intentionally
+  // is NOT wiped on logout — only when an order is actually placed.
+  var CART_STORAGE_KEY = 'mimicart:cart:v2';
+  var LEGACY_CART_STORAGE_KEY = 'mimicart:cart';
+
+  function normalizeStoredCart(parsed) {
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(function (l) {
+      return l && typeof l.productId !== 'undefined' && Number(l.quantity) > 0;
+    }).map(function (l) {
+      return { productId: l.productId, quantity: Number(l.quantity) };
+    });
+  }
+
+  function saveCartToStorage() {
+    try {
+      var serialized = JSON.stringify(normalizeStoredCart(state.cart));
+      localStorage.setItem(CART_STORAGE_KEY, serialized);
+      localStorage.setItem(LEGACY_CART_STORAGE_KEY, serialized);
+    } catch (e) {
+      console.warn('MimiCart: could not save reservation cart locally.', e);
+    }
+  }
+
+  function loadCartFromStorage() {
+    try {
+      var raw = localStorage.getItem(CART_STORAGE_KEY) || localStorage.getItem(LEGACY_CART_STORAGE_KEY);
+      state.cart = normalizeStoredCart(raw ? JSON.parse(raw) : []);
+      if (state.cart.length) saveCartToStorage();
+    } catch (e) {
+      state.cart = [];
+      console.warn('MimiCart: could not restore reservation cart locally.', e);
+    }
+  }
   function cartCount() { return state.cart.reduce(function (sum, l) { return sum + l.quantity; }, 0); }
   function cartSubtotal() {
     return state.cart.reduce(function (sum, l) {
@@ -1257,6 +1379,7 @@ next.push({
     } else {
       state.cart.push({ productId: id, quantity: Math.min(product.stock, qty) });
     }
+    saveCartToStorage();
     updateCartBadge();
     openCartDrawer();
   }
@@ -1270,12 +1393,14 @@ next.push({
       acc.push({ productId: id, quantity: Math.min(product.stock, next) });
       return acc;
     }, []);
+    saveCartToStorage();
     updateCartBadge();
     renderCartDrawer();
   }
 
   function removeFromCart(id) {
     state.cart = state.cart.filter(function (l) { return l.productId !== id; });
+    saveCartToStorage();
     updateCartBadge();
     renderCartDrawer();
   }
@@ -1303,7 +1428,7 @@ next.push({
         productArtHTML(product, true) +
         '<div class="cart-line-info">' +
           '<strong>' + product.name + '</strong><span>' + product.korean + '</span>' +
-          '<b>$' + (product.price * line.quantity).toFixed(2) + '</b>' +
+          '<b>₱' + (product.price * line.quantity).toFixed(2) + '</b>' +
           '<div class="cart-quantity">' +
             '<button type="button" data-qty-dec="' + product.id + '" aria-label="Decrease ' + product.name + '"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>' +
             '<span>' + line.quantity + '</span>' +
@@ -1358,7 +1483,7 @@ next.push({
             : '<div class="empty-cart"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg><h3>Your cart is taking a nap.</h3><p>Add a few shelf finds and they&apos;ll wait here for you.</p><button type="button" class="secondary-button" id="empty-cart-close">Keep browsing</button></div>') +
         '</div>' +
         (state.cart.length
-          ? '<div class="drawer-footer"><div class="drawer-total"><span>estimated total</span><strong>$' + total.toFixed(2) + '</strong></div><button type="button" class="primary-button full-width focus-ring" id="continue-pickup">Choose delivery or pickup <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button><p class="drawer-footnote">Choose pickup or delivery. Payment can be arranged when the order is confirmed.</p></div>'
+          ? '<div class="drawer-footer"><div class="drawer-total"><span>estimated total</span><strong>₱' + total.toFixed(2) + '</strong></div><button type="button" class="primary-button full-width focus-ring" id="continue-pickup">Choose delivery or pickup <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button><p class="drawer-footnote">Choose pickup or delivery. Payment can be arranged when the order is confirmed.</p></div>'
           : '')
       );
     } else if (state.cartStep === 'done') {
@@ -1430,8 +1555,8 @@ next.push({
               '<label for="pickup-time">Pickup window</label><select id="pickup-time"><option value="">Choose a time</option>' +
                 ['12:00–14:00', '14:00–16:00', '16:00–18:00', '18:00–20:00'].map(function (t) { return '<option value="' + t + '"' + (state.pickupTime === t ? ' selected' : '') + '>' + t + '</option>'; }).join('') +
               '</select>') +
-          '<div class="pickup-summary"><span>' + itemCount + ' items</span><strong>$' + total.toFixed(2) + '</strong></div>' +
-          (isDelivery ? '<div class="delivery-fee-row"><span>Delivery fee</span><span>$5.00</span></div>' : '') +
+          '<div class="pickup-summary"><span>' + itemCount + ' items</span><strong>₱' + total.toFixed(2) + '</strong></div>' +
+          (isDelivery ? '<div class="delivery-fee-row"><span>Delivery fee</span><span>₱5.00</span></div>' : '') +
           (state.reservationError ? '<p class="login-error">' + state.reservationError + '</p>' : '') +
           '<button type="button" class="primary-button full-width focus-ring" id="submit-reservation" ' + (!canSubmit ? 'disabled' : '') + '>' + (state.reservationSubmitting ? 'Sending…' : (isDelivery ? 'Reserve & arrange delivery' : 'Request reservation')) + ' <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>' +
           '<p class="disabled-action-note">' + (isDelivery ? 'Delivery fee is included in the total above. MimiCart will contact you to confirm delivery details and payment.' : 'No payment today — pay at pickup. We’ll keep your items aside for the window above.') + '</p>' +
@@ -1517,6 +1642,7 @@ next.push({
         state.addressBarangay = '';
         state.addressStreet = '';
         state.deliveryNotes = '';
+        saveCartToStorage();
         updateCartBadge();
         closeCartDrawer();
       });
@@ -1544,14 +1670,9 @@ next.push({
     return slug || 'guest';
   }
   function generateOrderNumber(customerName) {
-    // A slug alone isn't unique — two customers named "John Smith" (or
-    // anyone intentionally reusing someone else's name) would collide on
-    // the same document ID, and since this is written with .set() the
-    // second order fully overwrites the first: order hijacking, not just
-    // a display glitch. The random suffix keeps the ID human-readable
-    // while making collisions astronomically unlikely.
-    var suffix = Math.random().toString(36).slice(2, 7) + Date.now().toString(36).slice(-4);
-    return slugifyName(customerName) + '-' + suffix;
+    // Use only the name entered in the cart as the Firestore document ID.
+    // Example: "sample" -> document ID "sample".
+    return slugifyName(customerName);
   }
 
   function submitReservation() {
@@ -1567,7 +1688,7 @@ next.push({
     var order = {
       items: lineItems,
       total: cartTotal(),
-      customerName: state.pickupName.trim(),
+      customerName: ((state.pickupName || '').trim() || 'Guest'),
       customerContact: contactValue(),
       contactMethod: state.contactMethod,
       customerEmail: state.user ? state.user.email : null,
@@ -1654,7 +1775,7 @@ next.push({
             '<h2 id="product-dialog-title" class="font-display">' + product.name + '</h2>' +
             '<p>' + product.description + '</p>' +
             '<div class="dialog-details"><span><strong>Flavor</strong>' + product.flavor + '</span><span><strong>In stock</strong>' + (product.stock ? product.stock + ' pieces' : 'sold out') + '</span></div>' +
-            '<div class="dialog-buy-row"><strong>$' + product.price.toFixed(2) + '</strong><div class="quantity-control"><button type="button" id="dialog-qty-dec" aria-label="Decrease quantity"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button><span id="dialog-qty">1</span><button type="button" id="dialog-qty-inc" ' + (!product.stock ? 'disabled' : '') + ' aria-label="Increase quantity"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div></div>' +
+            '<div class="dialog-buy-row"><strong>₱' + product.price.toFixed(2) + '</strong><div class="quantity-control"><button type="button" id="dialog-qty-dec" aria-label="Decrease quantity"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button><span id="dialog-qty">1</span><button type="button" id="dialog-qty-inc" ' + (!product.stock ? 'disabled' : '') + ' aria-label="Increase quantity"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div></div>' +
             '<button type="button" class="primary-button full-width focus-ring" id="dialog-add" ' + (!product.stock ? 'disabled' : '') + '>' + (product.stock ? 'Add to reservation cart' : 'Currently sold out') + '</button>' +
             '<small class="dialog-notice">We&apos;ll hold it for 24 hours. Payment happens in-store at pickup.</small>' +
           '</div>' +
@@ -1851,7 +1972,7 @@ next.push({
       '<div class="order-track-card">' +
         '<div class="order-track-head">' +
           '<div><strong>' + (order.fulfillment === 'delivery' ? 'Delivery order' : 'Pickup order') + '</strong>' +
-          '<span>#' + (order.orderNumber || order.id) + ' \u2022 ' + (placed ? placed.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' \u2022 ' : '') + '$' + Number(order.total || 0).toFixed(2) + '</span></div>' +
+          '<span>#' + (order.orderNumber || order.id) + ' \u2022 ' + (placed ? placed.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' \u2022 ' : '') + '₱' + Number(order.total || 0).toFixed(2) + '</span></div>' +
           '<span class="order-track-badge ' + badgeClass + '">' + stageInfo(order.status, order).label + '</span>' +
         '</div>' +
         '<p class="order-track-items">' + itemsSummary + '</p>' +
@@ -2223,7 +2344,7 @@ next.push({
     if (mimicartToastTimer) clearTimeout(mimicartToastTimer);
     if (welcomeToastTimer) clearTimeout(welcomeToastTimer);
 
-    var name = (user.email || '').split('@')[0];
+    var name = user.name || (user.email || '').split('@')[0];
     var toast = document.createElement('div');
     toast.className = 'mimicart-toast welcome-toast';
     toast.id = 'mimicart-toast';
@@ -2463,8 +2584,13 @@ next.push({
 
   function userFromFirebaseUser(fbUser) {
     var isGoogle = (fbUser.providerData || []).some(function (p) { return p.providerId === 'google.com'; });
+    // Google sign-in gives us a real display name (e.g. "Axel Reyes"); keep
+    // just the first name so greetings read "Welcome back, Axel" instead of
+    // a full name or an email-derived string.
+    var firstName = (fbUser.displayName || '').trim().split(/\s+/)[0] || null;
     return {
       email: fbUser.email,
+      name: firstName,
       verified: isGoogle ? true : !!fbUser.emailVerified,
       provider: isGoogle ? 'google' : 'password'
     };
@@ -2921,6 +3047,7 @@ next.push({
   mobileToggle.addEventListener('click', function () { setMobileNav(!desktopNav.classList.contains('mobile-nav-open')); });
 
   // ---- initial render ----
+  loadCartFromStorage();
   renderCategoryRail();
   renderCatalogue();
   updateCartBadge();
