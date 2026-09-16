@@ -393,6 +393,19 @@ var REQUIRE_OTP = false;
 (function () {
   "use strict";
 
+  // Every field below (customer name, contact, delivery address/notes) is
+  // typed by an anonymous shopper on the public storefront and lands here
+  // unmodified. Without escaping, a name like <img src=x onerror=...> would
+  // execute as real HTML/JS inside a signed-in staff member's browser the
+  // moment they open the Orders tab — a stored XSS that runs with THEIR
+  // session, not the attacker's. Every place customer data is dropped into
+  // innerHTML below goes through this first.
+  function escapeHtml(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, function (ch) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+    });
+  }
+
   if (!firebaseConfigured) {
     document.getElementById('config-warning').classList.remove('hidden');
     document.getElementById('login-submit').disabled = true;
@@ -490,6 +503,14 @@ var REQUIRE_OTP = false;
   // ================================================================
   function csvEscape(value) {
     var s = value === null || value === undefined ? '' : String(value);
+    // Formula-injection guard: a customer can type anything into "name" or
+    // "delivery notes" on the public storefront. If that value starts with
+    // =, +, -, @, or a tab/CR, Excel/Sheets treats the whole cell as a
+    // formula the moment staff opens the exported file — e.g. a "name" of
+    // =HYPERLINK("http://evil","click") becomes a live clickable link, or
+    // worse with older Excel versions. Prefixing with a plain quote forces
+    // it to be read as inert text instead.
+    if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
     if (/[",\n]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
     return s;
   }
@@ -1155,7 +1176,7 @@ var REQUIRE_OTP = false;
 
     body.innerHTML = rows.map(function (o) {
       var placed = orderDateObj(o, false);
-      var itemsSummary = (o.items || []).map(function (it) { return it.quantity + '\u00d7 ' + it.name; }).join(', ');
+      var itemsSummary = (o.items || []).map(function (it) { return escapeHtml(it.quantity) + '\u00d7 ' + escapeHtml(it.name); }).join(', ');
       var next = nextStageKey(o);
       var actions = '';
       if (o.status !== 'completed' && o.status !== 'cancelled') {
@@ -1165,12 +1186,12 @@ var REQUIRE_OTP = false;
       }
       return (
         '<tr>' +
-          '<td><strong>' + (o.customerName || 'Guest') + '</strong><div class="order-items">#' + (o.orderNumber || o.id) + ' \u2022 ' + (o.customerContact || '') + '</div></td>' +
+          '<td><strong>' + escapeHtml(o.customerName || 'Guest') + '</strong><div class="order-items">#' + escapeHtml(o.orderNumber || o.id) + ' \u2022 ' + escapeHtml(o.customerContact || '') + '</div></td>' +
           '<td><div class="order-items">' + itemsSummary + '</div></td>' +
           '<td>$' + Number(o.total || 0).toFixed(2) + '</td>' +
           '<td>' + (o.fulfillment === 'delivery'
-            ? '<strong>Delivery</strong><br /><span class="prod-sub">' + (o.deliveryAddress || '\u2014') + (o.deliveryNotes ? '<br />' + o.deliveryNotes : '') + '</span>'
-            : '<strong>Pickup</strong><br /><span class="prod-sub">' + (o.pickupDate || '\u2014') + ' ' + (o.pickupTime || '') + '</span>') + '</td>' +
+            ? '<strong>Delivery</strong><br /><span class="prod-sub">' + escapeHtml(o.deliveryAddress || '\u2014') + (o.deliveryNotes ? '<br />' + escapeHtml(o.deliveryNotes) : '') + '</span>'
+            : '<strong>Pickup</strong><br /><span class="prod-sub">' + escapeHtml(o.pickupDate || '\u2014') + ' ' + escapeHtml(o.pickupTime || '') + '</span>') + '</td>' +
           '<td>' + stageTrackHTML(o) + '</td>' +
           '<td>' + (placed ? placed.toLocaleDateString() : '\u2014') + '</td>' +
           '<td>' + actions + '</td>' +
@@ -1280,8 +1301,8 @@ var REQUIRE_OTP = false;
       recentEl.innerHTML = '<table class="data-table"><thead><tr><th>Customer</th><th>Items</th><th>Total</th><th>Completed</th></tr></thead><tbody>' +
         recent.map(function (o) {
           var d = orderDateObj(o, true);
-          var itemsSummary = (o.items || []).map(function (it) { return it.quantity + '\u00d7 ' + it.name; }).join(', ');
-          return '<tr><td>' + (o.customerName || 'Guest') + '</td><td><div class="order-items">' + itemsSummary + '</div></td><td>$' + Number(o.total || 0).toFixed(2) + '</td><td>' + (d ? d.toLocaleDateString() : '\u2014') + '</td></tr>';
+          var itemsSummary = (o.items || []).map(function (it) { return escapeHtml(it.quantity) + '\u00d7 ' + escapeHtml(it.name); }).join(', ');
+          return '<tr><td>' + escapeHtml(o.customerName || 'Guest') + '</td><td><div class="order-items">' + itemsSummary + '</div></td><td>$' + Number(o.total || 0).toFixed(2) + '</td><td>' + (d ? d.toLocaleDateString() : '\u2014') + '</td></tr>';
         }).join('') + '</tbody></table>';
     }
   }
