@@ -427,6 +427,10 @@
   .mimi-intro.is-flooding .mimi-intro-water { height: 100%; }
   .mimi-intro.is-flooded .mimi-intro-wave { opacity: 0; transition: opacity .25s ease; }
   @keyframes mimi-wave-sweep { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  .mimi-theme-wave-transition { position: fixed; z-index: 199; right: 0; bottom: 0; left: 0; height: 0; background: hsl(var(--primary)); overflow: visible; pointer-events: none; transition: height 1.45s cubic-bezier(.22,1,.36,1), opacity .4s ease; }
+  .mimi-theme-wave-transition.is-active { height: 100%; }
+  .mimi-theme-wave-transition.is-done { opacity: 0; }
+  .mimi-theme-wave { position: absolute; right: 0; bottom: calc(100% - 1px); left: 0; width: 200%; height: 54px; overflow: visible; fill: hsl(var(--primary)); animation: mimi-wave-sweep 2.2s linear infinite; }
   .mimi-intro-brand { position: relative; display: grid; justify-items: center; text-align: center; }
   .mimi-intro-mark { width: 88px; height: 88px; display: grid; place-items: center; border-radius: 30px 30px 30px 10px; background: hsl(var(--primary-foreground)); color: hsl(var(--primary)); font: 800 62px/1 var(--app-font-serif); opacity: 0; transform: rotate(-24deg) scale(.3); }
   .mimi-intro-word { margin-top: 18px; font: 800 38px/1 var(--app-font-serif); letter-spacing: -.04em; color: hsl(var(--primary-foreground)); opacity: 0; }
@@ -549,6 +553,9 @@
     .header-actions button {
       flex-shrink: 0;
     }
+    /* Keep the theme button touch-friendly; the menu itself is positioned
+       from the button coordinates for every screen size. */
+    .theme-toggle { touch-action: manipulation; }
     .header-inner { gap: 10px; }
     .hero-section { display: block; min-height: 760px; padding: 67px 0 95px; }
     .hero-title { font-size: clamp(59px, 15vw, 85px); }
@@ -624,7 +631,7 @@
   :root[data-theme="comet-night"] { --background:250 31% 10%; --foreground:220 35% 94%; --border:250 20% 25%; --card:250 27% 15%; --primary:284 78% 68%; --primary-foreground:250 31% 9%; --secondary:205 72% 64%; --muted:250 20% 21%; --muted-foreground:225 18% 73%; --accent:327 92% 72%; }
   .theme-switcher { position:relative; display:inline-flex; }
   .theme-toggle { width:38px; height:38px; display:grid; place-items:center; border:1px solid hsl(var(--border)); border-radius:50%; background:hsl(var(--card)); color:hsl(var(--foreground)); }
-  .theme-menu { position:absolute; top:calc(100% + 8px); right:0; z-index:70; display:none; width:155px; padding:7px; border:1px solid hsl(var(--border)); border-radius:14px; background:hsl(var(--card)); box-shadow:var(--shadow-soft); }
+  .theme-menu { position:fixed; top:0; left:0; z-index:100; display:none; width:155px; padding:7px; border:1px solid hsl(var(--border)); border-radius:14px; background:hsl(var(--card)); box-shadow:var(--shadow-soft); box-sizing:border-box; }
   .theme-menu.open { display:grid; gap:4px; }
   .theme-choice { border:0; border-radius:9px; background:transparent; padding:9px 10px; text-align:left; color:hsl(var(--foreground)); font-size:11px; font-weight:700; }
   .theme-choice:hover, .theme-choice.active { background:hsl(var(--muted)); color:hsl(var(--primary)); }
@@ -886,6 +893,28 @@
   (function () {
     var key = 'mimicart:theme', allowed = ['light','dark','summer','winter','comet-night'];
     var toggle = document.getElementById('theme-toggle'), menu = document.getElementById('theme-menu');
+    function playThemeWave() {
+      var previous = document.querySelector('.mimi-theme-wave-transition');
+      if (previous) previous.remove();
+
+      var transition = document.createElement('div');
+      transition.className = 'mimi-theme-wave-transition';
+      transition.innerHTML =
+        '<svg class="mimi-theme-wave" viewBox="0 0 1600 90" preserveAspectRatio="none" aria-hidden="true">' +
+          '<path d="M0 45 C100 0 100 0 200 45 C300 90 300 90 400 45 C500 0 500 0 600 45 C700 90 700 90 800 45 C900 0 900 0 1000 45 C1100 90 1100 90 1200 45 C1300 0 1300 0 1400 45 C1500 90 1500 90 1600 45 V90 H0 Z"></path>' +
+        '</svg>';
+      document.body.appendChild(transition);
+
+      requestAnimationFrame(function () {
+        transition.classList.add('is-active');
+      });
+      setTimeout(function () {
+        transition.classList.add('is-done');
+        setTimeout(function () {
+          if (transition.parentNode) transition.parentNode.removeChild(transition);
+        }, 450);
+      }, 1500);
+    }
     function applyTheme(theme) {
       if (allowed.indexOf(theme) === -1) theme = 'light';
       if (theme === 'light') document.documentElement.removeAttribute('data-theme');
@@ -895,6 +924,22 @@
         b.classList.toggle('active', b.getAttribute('data-theme-choice') === theme);
       });
     }
+    function positionThemeMenu() {
+      if (!toggle || !menu) return;
+      var rect = toggle.getBoundingClientRect();
+      var margin = 12;
+      var width = Math.min(155, Math.max(120, window.innerWidth - margin * 2));
+      var left = Math.min(
+        Math.max(margin, rect.right - width),
+        window.innerWidth - width - margin
+      );
+      var top = rect.bottom + 8;
+
+      menu.style.width = width + 'px';
+      menu.style.left = Math.round(left) + 'px';
+      menu.style.top = Math.round(top) + 'px';
+      menu.style.right = 'auto';
+    }
     var saved = 'light';
     try { saved = localStorage.getItem(key) || 'light'; } catch (e) {}
     applyTheme(saved);
@@ -902,6 +947,13 @@
       toggle.addEventListener('click', function () {
         var open = menu.classList.toggle('open');
         toggle.setAttribute('aria-expanded', String(open));
+        if (open) {
+          positionThemeMenu();
+          requestAnimationFrame(positionThemeMenu);
+        }
+      });
+      window.addEventListener('resize', function () {
+        if (menu.classList.contains('open')) positionThemeMenu();
       });
       document.addEventListener('click', function (e) {
         if (!e.target.closest('.theme-switcher')) {
@@ -915,6 +967,7 @@
         applyTheme(b.getAttribute('data-theme-choice'));
         if (menu) menu.classList.remove('open');
         if (toggle) toggle.setAttribute('aria-expanded', 'false');
+        playThemeWave();
       });
     });
   }());
