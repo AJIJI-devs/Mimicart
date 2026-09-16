@@ -249,12 +249,12 @@
   .footer-small { grid-column: 1 / -1; color: hsl(var(--muted-foreground)); font: 9px var(--app-font-mono); text-transform: uppercase; letter-spacing: .05em; }
 
   .overlay, .drawer-shell { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 20px; background: hsl(348 25% 18% / .66); backdrop-filter: blur(5px); animation: float-in .2s ease both; }
-  .product-dialog, .staff-dialog { position: relative; width: min(800px, 100%); display: grid; grid-template-columns: .9fr 1.1fr; overflow: hidden; border-radius: 22px; background: hsl(var(--card)); box-shadow: 0 30px 80px hsl(348 25% 18% / .3); }
+  .product-dialog { position: relative; width: min(800px, 100%); display: grid; grid-template-columns: .9fr 1.1fr; overflow: hidden; border-radius: 22px; background: hsl(var(--card)); box-shadow: 0 30px 80px hsl(348 25% 18% / .3); }
   .dialog-close { position: absolute; z-index: 3; top: 15px; right: 15px; width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid hsl(var(--border)); border-radius: 50%; background: hsl(var(--card) / .9); color: hsl(var(--foreground)); }
   .dialog-art { padding: 28px; background: hsl(var(--muted)); }
   .dialog-art .product-art { height: 100%; min-height: 370px; }
   .dialog-content { display: flex; flex-direction: column; justify-content: center; padding: 42px 42px 37px; }
-  .dialog-content h2, .staff-dialog h2 { margin: 11px 0 9px; color: hsl(var(--foreground)); font-size: 45px; line-height: .92; letter-spacing: -.04em; }
+  .dialog-content h2 { margin: 11px 0 9px; color: hsl(var(--foreground)); font-size: 45px; line-height: .92; letter-spacing: -.04em; }
   .dialog-content > p, .staff-copy { color: hsl(var(--muted-foreground)); font-size: 13px; line-height: 1.7; }
   .dialog-details { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 21px 0; padding: 14px 0; border-top: 1px solid hsl(var(--border)); border-bottom: 1px solid hsl(var(--border)); }
   .dialog-details strong, .dialog-details span { display: block; }
@@ -268,7 +268,7 @@
   .quantity-control button:hover:not(:disabled), .cart-quantity button:hover:not(:disabled) { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
   .quantity-control button:disabled, .cart-quantity button:disabled { opacity: .35; }
   .quantity-control span { width: 14px; text-align: center; font: 11px var(--app-font-mono); }
-  .dialog-notice, .staff-footnote { display: block; margin-top: 13px; color: hsl(var(--muted-foreground)); font-size: 10px; line-height: 1.5; text-align: center; }
+  .dialog-notice { display: block; margin-top: 13px; color: hsl(var(--muted-foreground)); font-size: 10px; line-height: 1.5; text-align: center; }
 
   .fulfillment-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin: 0 0 18px; padding: 5px; border: 1px solid hsl(var(--border)); border-radius: 12px; background: hsl(var(--muted)); }
   .fulfillment-option { min-height: 38px; border: 0; border-radius: 9px; background: transparent; font-size: 11px; font-weight: 700; }
@@ -329,11 +329,6 @@
   .reservation-done p { margin: 0; color: hsl(var(--muted-foreground)); font-size: 13px; line-height: 1.6; }
   .pickup-summary span { color: hsl(var(--muted-foreground)); font-size: 12px; }
   .disabled-action-note { margin: 12px 0; color: hsl(var(--muted-foreground)); font-size: 10px; line-height: 1.5; text-align: center; }
-  .staff-dialog { width: min(420px, 100%); display: block; padding: 38px 37px 31px; }
-  .staff-mark { width: 46px; height: 46px; display: grid; place-items: center; margin-bottom: 22px; border-radius: 15px 15px 15px 5px; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); transform: rotate(-6deg); }
-  .staff-dialog h2 { font-size: 41px; }
-  .staff-copy { margin: 0 0 25px; }
-  .staff-status { margin: 13px 0; padding: 10px 12px; border-left: 3px solid hsl(var(--primary)); background: hsl(var(--primary) / .07); color: hsl(var(--foreground)); font-size: 11px; line-height: 1.45; }
 
   .login-dialog { width: min(420px, 100%); max-height: calc(100dvh - 40px); overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; display: block; padding: 38px 37px 31px; }
   .login-dialog::-webkit-scrollbar { width: 0; height: 0; display: none; }
@@ -514,7 +509,6 @@
     .dialog-art .product-art { min-height: 245px; height: 245px; }
     .dialog-content { padding: 28px 22px 25px; }
     .dialog-content h2 { font-size: 39px; }
-    .staff-dialog { padding: 33px 25px 27px; }
   }
   @media (max-width: 420px) {
     .hero-title { font-size: 59px; }
@@ -555,8 +549,7 @@
         <button type="button" class="nav-link active" data-nav="top">Home</button>
         <button type="button" class="nav-link" data-nav="categories">Shop shelves</button>
         <button type="button" class="nav-link" data-nav="story">Our corner</button>
-        <button type="button" class="nav-link" id="nav-staff">Staff access</button>
-      </nav>
+       </nav>
       <div class="header-actions">
         <button class="header-icon-button focus-ring" type="button" data-nav="catalogue" aria-label="Search the catalogue">
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
@@ -674,11 +667,10 @@
   <footer class="site-footer">
     <div class="brand brand-compact"><span class="brand-mark">m</span><span class="brand-word">Mimi<span>Cart</span></span></div>
     <p>tiny treats from a very good corner shop.</p>
-    <button type="button" id="footer-staff" class="footer-link focus-ring">Staff sign-in <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
     <span class="footer-small">© 2024 MimiCart · made for snack people</span>
   </footer>
 
-  <!-- Product dialog, cart drawer and staff dialog are injected here at runtime -->
+  <!-- Product dialog, cart drawer and customer login dialogs are injected here at runtime -->
   <div id="overlay-root"></div>
 </div>
 
@@ -975,7 +967,6 @@ var REQUIRE_OTP = false;
     activeProductId: null,
     cartOpen: false,
     cartStep: 'bag',
-    staffOpen: false,
     isLoading: true,
     pickupDate: '',
     pickupTime: '',
@@ -1299,7 +1290,7 @@ next.push({
   }
   function closeCartDrawer() {
     state.cartOpen = false;
-    overlayRoot.innerHTML = renderStaffDialogIfNeeded() + renderProductDialogIfNeeded() + renderLoginDialogIfNeeded() + renderOrdersDialogIfNeeded() + renderConfirmIdentityIfNeeded();
+    overlayRoot.innerHTML = renderProductDialogIfNeeded() + renderLoginDialogIfNeeded() + renderOrdersDialogIfNeeded() + renderConfirmIdentityIfNeeded();
     bindLoginDialogEvents();
     bindOrdersDialogEvents();
     bindConfirmIdentityEvents();
@@ -1456,7 +1447,7 @@ next.push({
         '</aside>' +
       '</div>'
     );
-    overlayRoot.innerHTML = html + renderStaffDialogIfNeeded() + renderProductDialogIfNeeded() + renderLoginDialogIfNeeded();
+    overlayRoot.innerHTML = html + renderProductDialogIfNeeded() + renderLoginDialogIfNeeded();
     bindLoginDialogEvents();
 
     var shellEl = document.getElementById('drawer-shell-el');
@@ -1553,7 +1544,14 @@ next.push({
     return slug || 'guest';
   }
   function generateOrderNumber(customerName) {
-    return slugifyName(customerName);
+    // A slug alone isn't unique — two customers named "John Smith" (or
+    // anyone intentionally reusing someone else's name) would collide on
+    // the same document ID, and since this is written with .set() the
+    // second order fully overwrites the first: order hijacking, not just
+    // a display glitch. The random suffix keeps the ID human-readable
+    // while making collisions astronomically unlikely.
+    var suffix = Math.random().toString(36).slice(2, 7) + Date.now().toString(36).slice(-4);
+    return slugifyName(customerName) + '-' + suffix;
   }
 
   function submitReservation() {
@@ -1991,39 +1989,6 @@ next.push({
   if (notifButtonEl) notifButtonEl.addEventListener('click', function () {
     if (state.notifPanelOpen) closeNotifPanel(); else openNotifPanel();
   });
-
-  // ---- staff dialog (static preview — no live auth in this exported build) ----
-  function renderStaffDialogIfNeeded() {
-    if (!state.staffOpen) return '';
-    return (
-      '<div class="overlay" role="presentation" id="staff-overlay">' +
-        '<div class="staff-dialog" role="dialog" aria-modal="true" aria-labelledby="staff-dialog-title">' +
-          '<button type="button" class="dialog-close focus-ring" id="close-staff-dialog" aria-label="Close staff sign-in"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>' +
-          '<div class="staff-mark"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18l-1 11H4L3 9Z"/><path d="M3 9V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3"/></svg></div>' +
-          '<span class="dialog-eyebrow">mimi&apos;s back room</span>' +
-          '<h2 id="staff-dialog-title" class="font-display">Staff sign-in</h2>' +
-          '<p class="staff-copy">For the people behind the shelf. Customers can reserve without an account.</p>' +
-          '<button type="button" class="primary-button full-width focus-ring" disabled>Continue with account provider <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>' +
-          '<p class="staff-footnote">Sign-in isn&apos;t wired up in this static export — connect your auth provider to enable it.</p>' +
-        '</div>' +
-      '</div>'
-    );
-  }
-
-  function bindStaffDialogEvents() {
-    var overlay = document.getElementById('staff-overlay');
-    if (!overlay) return;
-    overlay.addEventListener('mousedown', function (e) { if (e.target === overlay) closeStaffDialog(); });
-    document.getElementById('close-staff-dialog').addEventListener('click', closeStaffDialog);
-  }
-
-  function openStaffDialog() { state.staffOpen = true; renderOverlays(); }
-  function closeStaffDialog() { state.staffOpen = false; renderOverlays(); }
-
-  // Staff sign-in now lives on its own page (mimicart-admin.html), kept
-  // separate from the customer-facing storefront but linked from here.
-  document.getElementById('nav-staff').addEventListener('click', function () { setMobileNav(false); window.open('mimicart-admin.html', '_blank'); });
-  document.getElementById('footer-staff').addEventListener('click', function () { window.open('mimicart-admin.html', '_blank'); });
 
   // ================================================================
   // BASIC SECURITY HELPERS
@@ -2916,9 +2881,8 @@ next.push({
 
   function renderOverlays() {
     if (state.cartOpen) { renderCartDrawer(); return; }
-    overlayRoot.innerHTML = renderProductDialogIfNeeded() + renderStaffDialogIfNeeded() + renderLoginDialogIfNeeded() + renderOrdersDialogIfNeeded() + renderConfirmIdentityIfNeeded();
+    overlayRoot.innerHTML = renderProductDialogIfNeeded() + renderLoginDialogIfNeeded() + renderOrdersDialogIfNeeded() + renderConfirmIdentityIfNeeded();
     bindProductDialogEvents();
-    bindStaffDialogEvents();
     bindLoginDialogEvents();
     bindOrdersDialogEvents();
     bindConfirmIdentityEvents();
@@ -2931,7 +2895,6 @@ next.push({
     else if (state.activeProductId) closeProductDialog();
     else if (state.ordersOpen) closeOrdersDialog();
     else if (state.loginOpen) closeLoginDialog();
-    else if (state.staffOpen) closeStaffDialog();
     else if (state.cartOpen) closeCartDrawer();
     // note: the "is this you?" identity check has no Escape shortcut —
     // it requires an explicit Yes/No so a shared device can't be skipped past.
