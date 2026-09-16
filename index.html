@@ -481,9 +481,36 @@
        buttons so every button stays reachable. */
     .header-inner { flex-wrap: nowrap; }
     .brand-button { flex: 0 0 auto; min-width: 0; }
-    .header-actions { flex: 1 1 auto; min-width: 0; max-width: 100%; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding: 4px 2px; margin: -4px -2px; justify-content: flex-start; }
+    /* Mobile header: keep every action at its natural width and make the
+       action row genuinely swipe-scrollable on touch screens. */
+    .header-actions {
+      flex: 1 1 0;
+      width: 0;
+      min-width: 0;
+      max-width: none;
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 10px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      white-space: nowrap;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-x;
+      overscroll-behavior-x: contain;
+      scrollbar-width: none;
+      padding: 6px 3px;
+      margin: -6px -3px;
+    }
     .header-actions::-webkit-scrollbar { display: none; }
-    .header-actions > * { flex: 0 0 auto; }
+    .header-actions > * {
+      flex: 0 0 auto;
+      flex-shrink: 0;
+    }
+    .header-actions button {
+      flex-shrink: 0;
+    }
     .header-inner { gap: 10px; }
     .hero-section { display: block; min-height: 760px; padding: 67px 0 95px; }
     .hero-title { font-size: clamp(59px, 15vw, 85px); }
