@@ -733,9 +733,7 @@ var EMAILJS_CONFIG = {
 // trial. Set back to true whenever you want the extra verification step
 // again. Keep this the same as the admin dashboard's REQUIRE_OTP if you
 // want both to behave the same way.
-var REQUIRE_OTP = true;
-  // Backward-compatible name for the restored OTP gate.
-  var REQUEST_OTP = REQUIRE_OTP;
+var REQUIRE_OTP = false;
 
   // ---- contact country codes (phone contact method) ----
   var COUNTRY_CODES = [
@@ -2801,7 +2799,7 @@ next.push({
       }
 
       var isGoogle = (fbUser.providerData || []).some(function (p) { return p.providerId === 'google.com'; });
-      if (isGoogle || otpVerifiedThisSession || !REQUIRE_OTP) {
+      if (isGoogle || otpVerifiedThisSession || !REQUIRE_OTP || !explicitLoginInProgress) {
         if (!explicitLoginInProgress && !state.user) {
           // This tab didn't just perform a login action — Firebase is
           // restoring a session that was already active on this device
