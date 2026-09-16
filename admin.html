@@ -63,11 +63,11 @@
   .login-card { width: min(400px, 100%); padding: 34px 30px; border-radius: 22px; background: hsl(var(--card)); box-shadow: var(--shadow-card); border: 1px solid hsl(var(--border)); }
   .login-card h1 { margin: 18px 0 6px; font-size: 28px; }
   .login-card p.lede { margin: 0 0 22px; color: hsl(var(--muted-foreground)); font-size: 13px; line-height: 1.6; }
-  .field-label { display: block; margin: 14px 0 6px; font: 700 10px var(--app-font-mono); text-transform: uppercase; letter-spacing: .05em; }
+  .field-label { display: block; margin: 14px 0 6px; color: hsl(var(--foreground)); font: 700 10px var(--app-font-mono); text-transform: uppercase; letter-spacing: .05em; }
   .field-input { width: 100%; height: 44px; padding: 0 13px; border: 1px solid hsl(var(--border)); border-radius: 10px; outline: 0; background: hsl(var(--background)); color: hsl(var(--foreground)); font-size: 13px; }
   .field-input:focus { border-color: hsl(var(--primary)); box-shadow: 0 0 0 3px hsl(var(--primary) / .1); }
   .full-width { width: 100%; }
-  .notice-box { margin-top: 14px; padding: 11px 13px; border-left: 3px solid hsl(var(--primary)); background: hsl(var(--primary) / .08); font-size: 12px; line-height: 1.5; border-radius: 0 8px 8px 0; }
+  .notice-box { margin-top: 14px; padding: 11px 13px; border: 1px solid hsl(var(--primary) / .30); border-left: 4px solid hsl(var(--primary)); background: hsl(var(--primary) / .12); color: hsl(348 30% 14%); font-size: 12px; font-weight: 600; line-height: 1.5; border-radius: 0 10px 10px 0; }
   .notice-box.setup { border-color: hsl(var(--secondary)); background: hsl(var(--secondary) / .08); }
   .back-to-shop { display: inline-flex; align-items: center; gap: 6px; margin-top: 20px; color: hsl(var(--muted-foreground)); font-size: 12px; text-decoration: none; }
   .back-to-shop:hover { color: hsl(var(--foreground)); }
@@ -161,12 +161,29 @@
   .idle-dialog p { margin: 0 0 18px; color: hsl(var(--muted-foreground)); font-size: 13px; line-height: 1.6; }
   .seed-banner { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 20px; border-radius: 16px; background: hsl(var(--secondary) / .1); border: 1px solid hsl(var(--secondary) / .3); margin-bottom: 20px; flex-wrap: wrap; }
   .seed-banner p { margin: 0; font-size: 12px; line-height: 1.5; max-width: 560px; }
-  .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 90; padding: 12px 18px; border-radius: 12px; background: hsl(var(--foreground)); color: hsl(var(--card)); font-size: 12px; font-weight: 600; box-shadow: 0 14px 34px rgba(0,0,0,.25); }
+  .toast { position: fixed; right: 20px; bottom: 20px; left: auto; transform: none; z-index: 90; padding: 12px 18px; border-radius: 12px; background: hsl(var(--foreground)); color: hsl(var(--card)); font-size: 12px; font-weight: 600; box-shadow: 0 14px 34px rgba(0,0,0,.25); }
+
+  /* ---- appearance themes ---- */
+  :root[data-theme="dark"] { --background:225 18% 11%; --foreground:40 25% 94%; --border:225 14% 25%; --card:225 17% 16%; --primary:358 78% 58%; --primary-foreground:225 18% 10%; --secondary:158 38% 55%; --muted:225 15% 21%; --muted-foreground:225 10% 70%; --accent:43 92% 62%; }
+  :root[data-theme="summer"] { --background:42 80% 94%; --foreground:25 35% 17%; --border:39 45% 82%; --card:45 100% 98%; --primary:15 82% 52%; --primary-foreground:45 100% 98%; --secondary:166 45% 30%; --muted:39 50% 88%; --muted-foreground:25 18% 42%; --accent:48 95% 58%; }
+  :root[data-theme="winter"] { --background:210 35% 95%; --foreground:220 30% 17%; --border:210 28% 82%; --card:210 40% 99%; --primary:208 72% 43%; --primary-foreground:210 40% 99%; --secondary:190 45% 30%; --muted:210 25% 89%; --muted-foreground:215 16% 42%; --accent:193 78% 68%; }
+  :root[data-theme="comet-night"] { --background:250 31% 10%; --foreground:220 35% 94%; --border:250 20% 25%; --card:250 27% 15%; --primary:284 78% 68%; --primary-foreground:250 31% 9%; --secondary:205 72% 64%; --muted:250 20% 21%; --muted-foreground:225 18% 73%; --accent:327 92% 72%; }
+  .theme-switcher { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .theme-button { min-height:30px; padding:0 10px; border:1px solid hsl(var(--border)); border-radius:999px; background:hsl(var(--card)); color:hsl(var(--foreground)); font-size:10px; font-weight:700; }
+  .theme-button.active { border-color:hsl(var(--primary)); color:hsl(var(--primary)); box-shadow:0 0 0 2px hsl(var(--primary) / .10); }
+
   .hidden { display: none !important; }
 
+  @media (max-width: 480px) {
+    .toast { right: 12px; left: 50%; bottom: 12px; transform: translateX(-50%); width: calc(100% - 24px); max-width: 420px; text-align: center; }
+  }
   @media (max-width: 860px) {
     .stat-grid { grid-template-columns: repeat(2, 1fr); }
     .data-table { display: block; overflow-x: auto; white-space: nowrap; }
+    .dash-header { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .dash-header::-webkit-scrollbar { display: none; }
+    .dash-user { flex: 0 0 auto; }
+    .theme-switcher { flex-wrap: nowrap; }
   }
 </style>
 </head>
@@ -236,6 +253,13 @@
     </div>
     <div class="dash-user">
       <span class="dash-user-email" id="dash-user-email"></span>
+      <div class="theme-switcher" aria-label="Appearance">
+        <button type="button" class="theme-button" data-theme-choice="light">Light</button>
+        <button type="button" class="theme-button" data-theme-choice="dark">Dark</button>
+        <button type="button" class="theme-button" data-theme-choice="summer">Summer</button>
+        <button type="button" class="theme-button" data-theme-choice="winter">Winter</button>
+        <button type="button" class="theme-button" data-theme-choice="comet-night">Comet Night</button>
+      </div>
       <a class="ghost-button focus-ring" href="mimicart-storefront2.html" target="_blank">View storefront</a>
       <button class="secondary-button focus-ring" id="sign-out-button">Sign out</button>
     </div>
@@ -299,6 +323,12 @@
         <option value="out_for_delivery">Out for delivery</option>
         <option value="completed">Completed</option>
         <option value="cancelled">Cancelled</option>
+        <optgroup label="By fulfillment">
+          <option value="picked_up">Picked up orders</option>
+          <option value="delivered">Delivered orders</option>
+          <option value="to_be_picked_up">To be picked up</option>
+          <option value="to_be_delivered">To be delivered</option>
+        </optgroup>
       </select>
       <button type="button" class="secondary-button focus-ring" id="orders-export-csv">⬇️ Export CSV</button>
     </div>
@@ -348,6 +378,27 @@
     messagingSenderId: "903185481659",
     appId: "1:903185481659:web:f678e3723ca80b70428e9e"
   };
+
+  // ---- appearance themes ----
+  (function () {
+    var key = 'mimicart:theme', allowed = ['light','dark','summer','winter','comet-night'];
+    function applyTheme(theme) {
+      if (allowed.indexOf(theme) === -1) theme = 'light';
+      if (theme === 'light') document.documentElement.removeAttribute('data-theme');
+      else document.documentElement.setAttribute('data-theme', theme);
+      try { localStorage.setItem(key, theme); } catch (e) {}
+      document.querySelectorAll('[data-theme-choice]').forEach(function (b) {
+        b.classList.toggle('active', b.getAttribute('data-theme-choice') === theme);
+      });
+    }
+    var saved = 'light';
+    try { saved = localStorage.getItem(key) || 'light'; } catch (e) {}
+    applyTheme(saved);
+    document.querySelectorAll('[data-theme-choice]').forEach(function (b) {
+      b.addEventListener('click', function () { applyTheme(b.getAttribute('data-theme-choice')); });
+    });
+  }());
+
   var firebaseAuth = null;
   var firebaseDb = null;
   var firebaseConfigured = FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey.indexOf('YOUR_') !== 0;
@@ -960,8 +1011,15 @@ var REQUIRE_OTP = false;
       renderInventory();
     }, function (err) { console.error('MimiCart admin: products listener failed', err); });
 
-    unsubscribeOrders = firebaseDb.collection('orders').orderBy('createdAt', 'asc').limit(500).onSnapshot(function (snap) {
+    // Newest orders first, so staff see the latest activity at the top
+    // instead of having to scroll past old ones.
+    unsubscribeOrders = firebaseDb.collection('orders').orderBy('createdAt', 'desc').limit(500).onSnapshot(function (snap) {
       state.orders = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
+      state.orders.sort(function (a, b) {
+        var ad = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate().getTime() : Number(a.createdAt || 0);
+        var bd = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate().getTime() : Number(b.createdAt || 0);
+        return bd - ad;
+      });
       renderRevenue();
       renderOrders();
     }, function (err) { console.error('MimiCart admin: orders listener failed', err); });
@@ -1051,7 +1109,7 @@ var REQUIRE_OTP = false;
         '<tr data-row="' + p.id + '">' +
           '<td>' + (p.image ? '<img src="' + p.image + '" alt="" style="width:38px;height:38px;object-fit:cover;border-radius:8px;vertical-align:middle;margin-right:8px;" onerror="this.style.display=\'none\'" />' : '') + '<span class="prod-name">' + p.name + '</span><span class="prod-sub">' + (p.korean || '') + '</span>' + (p.image ? '<span class="prod-sub font-mono">' + p.image + '</span>' : '') + '</td>' +
           '<td>' + p.category + '</td>' +
-          '<td>$' + Number(p.price).toFixed(2) + '</td>' +
+          '<td>₱' + Number(p.price).toFixed(2) + '</td>' +
           '<td>' + stockPill(p.stock) +
             '<div class="stock-editor" style="margin-top:6px;">' +
               '<button type="button" data-stock-dec="' + p.id + '" aria-label="Decrease stock">\u2212</button>' +
@@ -1167,11 +1225,22 @@ var REQUIRE_OTP = false;
     return '<span class="status-badge status-' + order.status + '">' + stageLabel(order.status, order) + '</span><div class="stage-track">' + dots + '</div>';
   }
 
+  function orderMatchesFilter(o, filter) {
+    switch (filter) {
+      case 'all': return true;
+      // "Picked up" / "Delivered" = already completed, split by fulfillment.
+      case 'picked_up': return o.fulfillment !== 'delivery' && o.status === 'completed';
+      case 'delivered': return o.fulfillment === 'delivery' && o.status === 'completed';
+      // "To be picked up" / "To be delivered" = still in progress, split by fulfillment.
+      case 'to_be_picked_up': return o.fulfillment !== 'delivery' && o.status !== 'completed' && o.status !== 'cancelled';
+      case 'to_be_delivered': return o.fulfillment === 'delivery' && o.status !== 'completed' && o.status !== 'cancelled';
+      default: return o.status === filter;
+    }
+  }
+
   function renderOrders() {
     var body = document.getElementById('orders-body');
-    var rows = state.orders.filter(function (o) {
-      return state.ordersStatusFilter === 'all' || o.status === state.ordersStatusFilter;
-    });
+    var rows = state.orders.filter(function (o) { return orderMatchesFilter(o, state.ordersStatusFilter); });
     document.getElementById('orders-empty').classList.toggle('hidden', rows.length > 0);
 
     body.innerHTML = rows.map(function (o) {
@@ -1188,7 +1257,7 @@ var REQUIRE_OTP = false;
         '<tr>' +
           '<td><strong>' + escapeHtml(o.customerName || 'Guest') + '</strong><div class="order-items">#' + escapeHtml(o.orderNumber || o.id) + ' \u2022 ' + escapeHtml(o.customerContact || '') + '</div></td>' +
           '<td><div class="order-items">' + itemsSummary + '</div></td>' +
-          '<td>$' + Number(o.total || 0).toFixed(2) + '</td>' +
+          '<td>₱' + Number(o.total || 0).toFixed(2) + '</td>' +
           '<td>' + (o.fulfillment === 'delivery'
             ? '<strong>Delivery</strong><br /><span class="prod-sub">' + escapeHtml(o.deliveryAddress || '\u2014') + (o.deliveryNotes ? '<br />' + escapeHtml(o.deliveryNotes) : '') + '</span>'
             : '<strong>Pickup</strong><br /><span class="prod-sub">' + escapeHtml(o.pickupDate || '\u2014') + ' ' + escapeHtml(o.pickupTime || '') + '</span>') + '</td>' +
@@ -1267,7 +1336,7 @@ var REQUIRE_OTP = false;
       { label: 'This year', value: year }
     ];
     document.getElementById('revenue-stats').innerHTML = stats.map(function (s) {
-      return '<div class="stat-card"><span>' + s.label + '</span><strong>$' + s.value.toFixed(2) + '</strong>' + (s.note ? '<small>' + s.note + '</small>' : '') + '</div>';
+      return '<div class="stat-card"><span>' + s.label + '</span><strong>₱' + s.value.toFixed(2) + '</strong>' + (s.note ? '<small>' + s.note + '</small>' : '') + '</div>';
     }).join('');
 
     // last 14 days bar chart
@@ -1285,7 +1354,7 @@ var REQUIRE_OTP = false;
     document.getElementById('revenue-chart').innerHTML = days.map(function (d) {
       var pct = Math.round((d.total / max) * 100);
       return (
-        '<div class="bar-col" title="' + d.date.toLocaleDateString() + ': $' + d.total.toFixed(2) + '">' +
+        '<div class="bar-col" title="' + d.date.toLocaleDateString() + ': ₱' + d.total.toFixed(2) + '">' +
           '<div class="bar-fill" style="height:' + Math.max(pct, d.total > 0 ? 4 : 0) + '%"></div>' +
           '<span class="bar-label">' + d.date.getDate() + '</span>' +
         '</div>'
@@ -1302,7 +1371,7 @@ var REQUIRE_OTP = false;
         recent.map(function (o) {
           var d = orderDateObj(o, true);
           var itemsSummary = (o.items || []).map(function (it) { return escapeHtml(it.quantity) + '\u00d7 ' + escapeHtml(it.name); }).join(', ');
-          return '<tr><td>' + escapeHtml(o.customerName || 'Guest') + '</td><td><div class="order-items">' + itemsSummary + '</div></td><td>$' + Number(o.total || 0).toFixed(2) + '</td><td>' + (d ? d.toLocaleDateString() : '\u2014') + '</td></tr>';
+          return '<tr><td>' + escapeHtml(o.customerName || 'Guest') + '</td><td><div class="order-items">' + itemsSummary + '</div></td><td>₱' + Number(o.total || 0).toFixed(2) + '</td><td>' + (d ? d.toLocaleDateString() : '\u2014') + '</td></tr>';
         }).join('') + '</tbody></table>';
     }
   }
