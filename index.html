@@ -398,16 +398,24 @@
   .welcome-toast-copy strong { display: block; font-size: 13px; }
   .welcome-toast-copy span { display: block; color: hsl(var(--muted-foreground)); font-size: 11px; margin-top: 1px; }
   @media (max-width: 480px) {
-    .mimicart-toast { right: 12px; bottom: 12px; left: 50%; transform: translateX(-50%); width: calc(100% - 24px); text-align: center; }
+    /* Anchor with left + right instead of translateX(-50%): the shared
+       `float-in` animation runs with fill-mode `both`, so its final keyframe
+       (transform: translateY(0)) permanently overwrites any transform declared
+       here — which was pushing the toast half off the right edge. */
+    .mimicart-toast,
     .mimicart-toast.welcome-toast {
+      left: 12px;
       right: 12px;
-      bottom: 12px;
       top: auto;
-      left: 50%;
-      transform: translateX(-50%);
-      width: calc(100% - 24px);
+      bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+      width: auto;
+      max-width: none;
+      transform: none;
       text-align: center;
     }
+    .mimicart-toast.welcome-toast { text-align: left; padding: 12px 14px; }
+    .welcome-toast-copy { min-width: 0; }
+    .welcome-toast-copy strong { overflow-wrap: anywhere; }
   }
   /* ---- tiktok-style shipment stage tracker (customer order tracking) ---- */
   .orders-dialog { width: min(560px, 100%); max-height: 86vh; overflow-y: auto; padding: 30px 26px; border-radius: 24px; background: hsl(var(--card)); border: 1px solid hsl(var(--border)); box-shadow: var(--shadow-card); position: relative; }
