@@ -191,17 +191,6 @@
      crops anything else to fit without stretching it. */
   .product-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
   .product-photo-fallback img { display: none; } /* broken link? quietly fall back to the tone color */
-  /* "Add Photo" uploader: hidden by default, revealed only when the real
-     photo fails to load (product-photo-fallback), so a missing/misnamed
-     image file can be fixed right on the page instead of guessing filenames. */
-  .product-photo-upload { display: none; position: absolute; inset: 0; z-index: 3; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
-  .product-photo-fallback .product-photo-upload { display: flex; }
-  .product-photo-upload-label { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: 999px; background: hsl(var(--foreground)); color: hsl(40 67% 98%); font: 700 11px var(--app-font-mono); text-transform: uppercase; letter-spacing: .04em; cursor: pointer; box-shadow: 0 4px 0 hsl(var(--foreground) / .25); }
-  .product-photo-upload-label:hover { filter: brightness(1.08); }
-  .product-photo-upload-hint { font: 700 9px var(--app-font-mono); text-transform: uppercase; letter-spacing: .04em; color: hsl(var(--foreground) / .6); }
-  .product-photo-upload input[type="file"] { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
-  .product-art-small .product-photo-upload-label { padding: 5px 10px; font-size: 8px; gap: 4px; }
-  .product-art-small .product-photo-upload-hint { display: none; }
   .view-detail { position: absolute; right: 18px; bottom: 17px; display: flex; align-items: center; gap: 3px; color: hsl(40 67% 98%); font-size: 10px; font-weight: 700; opacity: 0; transform: translateY(4px); transition: opacity .2s ease, transform .2s ease; }
   .product-card:hover .view-detail, .product-visual-button:focus-visible .view-detail { opacity: 1; transform: translateY(0); }
   .product-card-info { padding: 0 15px 15px; }
@@ -848,6 +837,7 @@ var REQUIRE_OTP = false;
     ['cheese', 'Cheese', 'sliceable + meltable', 'Frozen', 4.95, 15, null, 'Sliceable, meltable cheese for stews, toast, and midnight snacks.', 'rich + melty'],
     // Korean Noodles
     ['buldak-rose', 'Buldak Rose', '불닭로제', 'Korean Noodles', 3.25, 16, null, 'Creamy tomato heat — the ros\u00e9 twist on the fire noodle.', 'spicy + creamy'],
+    ['buldak-original', 'Buldak Original', '불닭볶음면', 'Korean Noodles', 3.1, 15, null, 'The one that started it all: fiery, chewy, and endlessly craveable.', 'original spicy'],
     ['buldak-swicy', 'Buldak Swicy', 'sweet + spicy', 'Korean Noodles', 3.25, 14, null, 'Sweet meets spicy in this milder fire noodle remix.', 'sweet + spicy'],
     ['cheese-ramen-stir-fry', 'Cheese Ramen Stir Fry', 'cheesy stir-fry', 'Korean Noodles', 3.5, 10, null, 'Stir-fried noodles finished with a blanket of melted cheese.', 'cheesy + savory'],
     ['shin-ramyun', 'Shin Ramyun', '신라면', 'Korean Noodles', 2.25, 24, 'Mimi pick', 'The classic red bowl: spicy, beefy, and endlessly comforting.', 'spicy + beefy'],
@@ -890,71 +880,80 @@ var REQUIRE_OTP = false;
   // containing your PNGs with these exact names.
   var PRODUCT_IMAGES = {
     // Drinks
-    soju: 'images/SOJU.png',
-    pororo: 'images/PORORO.png',
-    'sparkling-lemonade': 'images/SPARKLING LEMONADE JUICE.png',
-    'pink-peachade': 'images/PINK PEACHADE.png',
-    'banana-milk': 'images/BANANA MILK.png',
-    'yakult-big': 'images/YAKULT BIG.png',
-    'strawberry-milk': 'images/STRAWBERRY MILK.png',
-    oatside: 'images/OATSIDE.png',
-    welchs: 'images/WELCHS.png',
-    caffebene: 'images/CAFFEBENE.png',
+    soju: 'Images/SOJU.png',
+    pororo: 'Images/PORORO.png',
+    'sparkling-lemonade': 'Images/SPARKLING LEMONADE JUICE.png',
+    'pink-peachade': 'Images/PINK PEACHADE.png',
+    'banana-milk': 'Images/BANANA MILK.png',
+    'yakult-big': 'Images/YAKULT BIG.png',
+    'strawberry-milk': 'Images/STRAWBERRY MILK.png',
+    oatside: 'Images/OATSIDE.png',
+    welchs: 'Images/WELCHS.png',
+    caffebene: 'Images/CAFFEBENE.png',
     // Frozen
-    sausage: 'images/SAUSAGE.png',
-    'sausage-korea-pork': 'images/SAUSAGE(KOREA PORK).png',
-    samanco: 'images/SAMANCO.png',
-    melona: 'images/MELONA.png',
-    'crab-stick': 'images/CRAB STICK.png',
-    hotpot: 'images/HOTPOT.png',
-    'la-beaute': 'images/LA BEAUTE.png',
-    'enoki-meat-roll': 'images/ENOKI MEAT ROLL.png',
-    'ice-cream': 'images/ICE CREAM.png',
-    cheese: 'images/CHEESE.png',
+    sausage: 'Images/SAUSAGE.png',
+    'sausage-korea-pork': 'Images/SAUSAGE(KOREA PORK).png',
+    samanco: 'Images/SAMANCO.png',
+    melona: 'Images/MELONA.png',
+    'crab-stick': 'Images/CRAB STICK.png',
+    hotpot: 'Images/HOTPOT.png',
+    'la-beaute': 'Images/LA BEAUTE.png',
+    'enoki-meat-roll': 'Images/ENOKI MEAT ROLL.png',
+    'ice-cream': 'Images/ICE CREAM.png',
+    cheese: 'Images/CHEESE.png',
     // Korean Noodles
-    'buldak-rose': 'images/BULDAK ROSE.png',
-    'buldak-swicy': 'images/BULDAK SWICY.png',
-    'cheese-ramen-stir-fry': 'images/CHEESE RAMEN STIR FRY.png',
-    'shin-ramyun': 'images/SHIN RAMYUN.png',
-    'buldak-carbonara': 'images/BULDAK CARBONARA.png',
-    'quattro-cheese': 'images/QUATTRO CHEESE.png',
-    'buldak-cream-carbonara': 'images/BULDAK CREAM CARBONARA.png',
-    jin: 'images/JIN.png',
-    'buldak-spicy-2x': 'images/SPICYBULDAK69.png',
+    'buldak-rose': 'Images/BULDAK ROSE.png',
+    'buldak-original': 'Images/BULDAK.png',
+    'buldak-swicy': 'Images/BULDAK SWICY.png',
+    'cheese-ramen-stir-fry': 'Images/CHEESE RAMEN STIR FRY.png',
+    'shin-ramyun': 'Images/SHIN RAMYUN.png',
+    'buldak-carbonara': 'Images/BULDAK CARBONARA.png',
+    'quattro-cheese': 'Images/QUATTRO CHEESE.png',
+    'buldak-cream-carbonara': 'Images/BULDAK CREAM CARBONARA.png',
+    jin: 'Images/JIN.png',
+    'buldak-spicy-2x': 'Images/BELDAK.png',
     // Sweets
-    nerds: 'images/NERDS.png',
-    mnms: 'images/MMS.png',
-    maltesers: 'images/MALTESERS.png',
-    hershey: 'images/HERSHEY.png',
-    pistachio: 'images/PISTACHIO.png',
-    macadamia: 'images/MACADAMIA.png',
-    kisses: 'images/KISSES.png',
-    bounty: 'images/BOUNTY.png',
-    nutella: 'images/NUTELLA.png',
-    'coco-manisa': 'images/COCO MANISA.png',
+    nerds: 'Images/NERDS.png',
+    mnms: "Images/MAS.png",
+    maltesers: 'Images/MALTESERS.png',
+    hershey: 'Images/HERSHEY.png',
+    pistachio: 'Images/PISTACHIO.png',
+    macadamia: 'Images/MACADAMIA.png',
+    kisses: 'Images/KISSES.png',
+    bounty: 'Images/BOUNTY.png',
+    nutella: 'Images/NUTELLA.png',
+    'coco-manisa': 'Images/COCO MANISA.png',
     // Snacks
-    pepero: 'images/PEPERO.png',
-    'energy-bar': 'images/ENERGYBAR.png',
-    'sunflower-seed': 'images/SUNFLOWER SEED.png',
-    'favo-rocco': 'images/FAVO ROCCO.png',
-    'lays-stax': 'images/LAYS STAX.png',
-    pringles: 'images/PRINGLES.png',
-    'mini-krunch': 'images/MINI KRUNCH.png',
-    'caramel-popcorn': 'images/CARAMEL POPCORN.png',
-    nachos: 'images/NACHOS.png',
-    chicharon: 'images/CHICHARON.png'
+    pepero: 'Images/PEPERO.png',
+    'energy-bar': 'Images/ENERGYBAR.png',
+    'sunflower-seed': 'Images/SUNFLOWER SEED.png',
+    'favo-rocco': 'Images/FAVO ROCCO.png',
+    'lays-stax': 'Images/LAYS STAX.png',
+    pringles: 'Images/PRINGLES.png',
+    'mini-krunch': 'Images/MINI KRUNCH.png',
+    'caramel-popcorn': 'Images/CARAMEL POPCORN.png',
+    nachos: 'Images/NACHOS.png',
+    chicharon: 'Images/CHICHARON.png'
   };
+
+  // Extra filename guesses tried automatically (in order) if the primary
+  // path above 404s. Left empty for now since mnms/buldak-spicy-2x were
+  // renamed to plain ASCII filenames (MAS.png / BELDAK.png) that don't
+  // have the apostrophe/× quirks that caused trouble before.
+  var IMAGE_FALLBACKS = {};
 
   // This is the fallback/seed catalog. Once the admin page seeds the
   // "products" collection in Firestore, the storefront below switches to
   // reading live product + stock data from Firestore instead of this list.
   var PRODUCTS = RAW_PRODUCTS.map(function (row, index) {
     var colors = PALETTE[index % PALETTE.length];
+    var primaryImage = PRODUCT_IMAGES[row[0]] || undefined;
+    var candidates = primaryImage ? [primaryImage].concat(IMAGE_FALLBACKS[row[0]] || []) : [];
     return {
       id: row[0], name: row[1], korean: row[2], category: row[3], price: row[4], stock: row[5],
       badge: row[6] || undefined, description: row[7], flavor: row[8],
       tone: colors[0], accent: colors[1], pattern: PATTERNS[index % PATTERNS.length],
-      image: PRODUCT_IMAGES[row[0]] || undefined
+      image: primaryImage, imageCandidates: candidates
     };
   });
   var usingLiveCatalog = false; // becomes true once Firestore returns real product docs
@@ -1046,12 +1045,21 @@ var REQUIRE_OTP = false;
       var next = [];
       snapshot.forEach(function (doc) {
         var d = doc.data();
-        next.push({
-          id: doc.id, name: d.name, korean: d.korean, category: d.category,
-          price: d.price, stock: d.stock, badge: d.badge || undefined,
-          description: d.description, flavor: d.flavor, tone: d.tone,
-          accent: d.accent, pattern: d.pattern, image: d.image || undefined
-        });
+next.push({
+    id: doc.id,
+    name: d.name,
+    korean: d.korean,
+    category: d.category,
+    price: d.price,
+    stock: d.stock,
+    badge: d.badge || undefined,
+    description: d.description,
+    flavor: d.flavor,
+    tone: d.tone,
+    accent: d.accent,
+    pattern: d.pattern,
+    image: PRODUCT_IMAGES[doc.id] || d.image || undefined
+});
       });
       PRODUCTS = next;
       usingLiveCatalog = true;
@@ -1064,61 +1072,30 @@ var REQUIRE_OTP = false;
 
   function productById(id) { return PRODUCTS.filter(function (p) { return p.id === id; })[0]; }
 
-  // ---- local "Add Photo" overrides ----
-  // When a product's real photo file is missing or misnamed, the <img>
-  // fires onerror and the card falls back to a plain color tile. Instead of
-  // hunting down the exact filename, the shopper (or admin) can just pick a
-  // photo right on the card; it's stored as a data URL in localStorage and
-  // used instead of the broken file path from then on.
-  function photoOverrideKey(id) { return 'mimicart:photo-override:' + id; }
-  function getPhotoOverride(id) {
-    try { return localStorage.getItem(photoOverrideKey(id)); } catch (e) { return null; }
-  }
-  function setPhotoOverride(id, dataUrl) {
-    try { localStorage.setItem(photoOverrideKey(id), dataUrl); } catch (e) { /* storage blocked or full — override just won't persist */ }
-  }
-  function photoUploadHTML(id) {
-    return (
-      '<div class="product-photo-upload">' +
-        '<label class="product-photo-upload-label">' +
-          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>' +
-          'Add Photo' +
-          '<input type="file" accept="image/*" data-photo-upload="' + id + '" />' +
-        '</label>' +
-        '<span class="product-photo-upload-hint">photo not found</span>' +
-      '</div>'
-    );
-  }
-  document.addEventListener('change', function (event) {
-    var input = event.target.closest('[data-photo-upload]');
-    if (!input || !input.files || !input.files[0]) return;
-    var id = input.getAttribute('data-photo-upload');
-    var reader = new FileReader();
-    reader.onload = function () {
-      var dataUrl = reader.result;
-      setPhotoOverride(id, dataUrl);
-      // Update every instance of this product's art already on the page
-      // (grid card, hero tiles, detail dialog) without a full re-render.
-      document.querySelectorAll('.product-photo[data-product-id="' + id + '"]').forEach(function (el) {
-        var img = el.querySelector('img');
-        if (img) img.src = dataUrl;
-        el.classList.remove('product-photo-fallback'); // reveals the img, hides the Add Photo button
-      });
-    };
-    reader.readAsDataURL(input.files[0]);
-  });
+  // If a product photo 404s, try the next filename guess in its
+  // imageCandidates list before finally giving up and showing the plain
+  // color tile. Attached to window so the inline onerror can reach it.
+  window.__mimiImageRetry = function (imgEl, id) {
+    var product = productById(id);
+    var candidates = (product && product.imageCandidates) || [];
+    var next = (parseInt(imgEl.getAttribute('data-try') || '0', 10)) + 1;
+    if (candidates[next]) {
+      imgEl.setAttribute('data-try', next);
+      imgEl.src = candidates[next];
+    } else {
+      imgEl.parentElement.classList.add('product-photo-fallback');
+    }
+  };
 
   function productArtHTML(product, small) {
-    var overrideSrc = getPhotoOverride(product.id);
-    var imageSrc = overrideSrc || product.image;
+    var imageSrc = product.image;
     if (imageSrc) {
       // Real product photo path: fill the tile with the photo and keep the
       // MIMI corner sticker for brand consistency with the illustrated cards.
       return (
         '<div class="product-art product-photo' + (small ? ' product-art-small' : '') + '" data-product-id="' + product.id + '" style="--tone:' + product.tone + '" aria-label="' + product.name + ' product photo">' +
-          '<img src="' + imageSrc + '" alt="' + product.name + '" loading="lazy" onerror="this.parentElement.classList.add(\'product-photo-fallback\')" />' +
+          '<img src="' + imageSrc + '" data-try="0" alt="' + product.name + '" loading="lazy" onerror="window.__mimiImageRetry(this, \'' + product.id + '\')" />' +
           '<div class="product-art-sticker">MIMI</div>' +
-          photoUploadHTML(product.id) +
         '</div>'
       );
     }
@@ -1210,7 +1187,7 @@ var REQUIRE_OTP = false;
           '<div class="product-card-bottom">' +
             '<strong>$' + product.price.toFixed(2) + '</strong>' +
             '<button type="button" class="add-button focus-ring" data-add="' + product.id + '" ' + (!product.stock ? 'disabled' : '') + '>' +
-              (product.stock ? (state.user ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add to cart' : 'Log in to add') : 'Sold out') +
+              (product.stock ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add to cart' : 'Sold out') +
             '</button>' +
           '</div>' +
         '</div>' +
@@ -1281,12 +1258,6 @@ var REQUIRE_OTP = false;
   function updateCartBadge() { document.getElementById('cart-count').textContent = cartCount(); }
 
   function addToCart(id, qty) {
-    // Customers must be authenticated before anything can enter the cart.
-    if (!state.user) {
-      state.loginNotice = 'Please log in or sign up first before adding items to your cart.';
-      openLoginDialog();
-      return;
-    }
     var product = productById(id);
     if (!product || !product.stock) return;
     var existing = state.cart.filter(function (l) { return l.productId === id; })[0];
@@ -1321,11 +1292,6 @@ var REQUIRE_OTP = false;
   var overlayRoot = document.getElementById('overlay-root');
 
   function openCartDrawer() {
-    if (!state.user) {
-      state.loginNotice = 'Please log in or sign up first to view your cart.';
-      openLoginDialog();
-      return;
-    }
     state.cartOpen = true;
     state.cartStep = 'bag';
     state.reservationError = '';
@@ -1691,7 +1657,7 @@ var REQUIRE_OTP = false;
             '<p>' + product.description + '</p>' +
             '<div class="dialog-details"><span><strong>Flavor</strong>' + product.flavor + '</span><span><strong>In stock</strong>' + (product.stock ? product.stock + ' pieces' : 'sold out') + '</span></div>' +
             '<div class="dialog-buy-row"><strong>$' + product.price.toFixed(2) + '</strong><div class="quantity-control"><button type="button" id="dialog-qty-dec" aria-label="Decrease quantity"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button><span id="dialog-qty">1</span><button type="button" id="dialog-qty-inc" ' + (!product.stock ? 'disabled' : '') + ' aria-label="Increase quantity"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div></div>' +
-            '<button type="button" class="primary-button full-width focus-ring" id="dialog-add" ' + (!product.stock ? 'disabled' : '') + '>' + (product.stock ? (state.user ? 'Add to reservation cart' : 'Log in to add to cart') : 'Currently sold out') + '</button>' +
+            '<button type="button" class="primary-button full-width focus-ring" id="dialog-add" ' + (!product.stock ? 'disabled' : '') + '>' + (product.stock ? 'Add to reservation cart' : 'Currently sold out') + '</button>' +
             '<small class="dialog-notice">We&apos;ll hold it for 24 hours. Payment happens in-store at pickup.</small>' +
           '</div>' +
         '</div>' +
@@ -1713,11 +1679,6 @@ var REQUIRE_OTP = false;
     document.getElementById('dialog-qty-inc').addEventListener('click', function () { dialogQuantity = Math.min(product.stock || 1, dialogQuantity + 1); qtyEl.textContent = dialogQuantity; });
     var addBtn = document.getElementById('dialog-add');
     if (addBtn) addBtn.addEventListener('click', function () {
-      if (!state.user) {
-        state.loginNotice = 'Please log in or sign up first before adding items to your cart.';
-        openLoginDialog();
-        return;
-      }
       addToCart(product.id, dialogQuantity);
       closeProductDialog();
     });
