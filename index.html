@@ -733,7 +733,9 @@ var EMAILJS_CONFIG = {
 // trial. Set back to true whenever you want the extra verification step
 // again. Keep this the same as the admin dashboard's REQUIRE_OTP if you
 // want both to behave the same way.
-var REQUIRE_OTP = false;
+var REQUIRE_OTP = true;
+  // Backward-compatible name for the restored OTP gate.
+  var REQUEST_OTP = REQUIRE_OTP;
 
   // ---- contact country codes (phone contact method) ----
   var COUNTRY_CODES = [
