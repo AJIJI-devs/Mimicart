@@ -379,9 +379,7 @@ var EMAILJS_CONFIG = {
 // Set to false to skip the email OTP step entirely (straight from password
 // sign-in to the dashboard). Handy while on EmailJS's free trial. Set back
 // to true whenever you want the extra verification step again.
-var REQUIRE_OTP = true;
-  // Backward-compatible name for the restored OTP gate.
-  var REQUEST_OTP = REQUIRE_OTP;
+var REQUIRE_OTP = false;
   var emailjsConfigured = Object.keys(EMAILJS_CONFIG).every(function (k) {
     return EMAILJS_CONFIG[k] && EMAILJS_CONFIG[k].indexOf('YOUR_') !== 0;
   });
@@ -927,7 +925,7 @@ var REQUIRE_OTP = true;
         if (doc.exists) {
           logLoginEvent(user.email, 'success');
           resetLoginAttempts(user.email);
-          if (REQUIRE_OTP) { showOtpScreen(user.email); } else { showDashboard(user.email); }
+          if (REQUIRE_OTP && explicitLoginInProgress) { showOtpScreen(user.email); } else { showDashboard(user.email); }
         } else {
           loginMessage.classList.remove('hidden');
           loginMessage.textContent = 'That account isn\u2019t on the staff list yet. Ask an admin to add it in Firestore.';
