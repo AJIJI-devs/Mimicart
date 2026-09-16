@@ -267,7 +267,7 @@
   <section class="tab-panel" id="panel-inventory">
     <div class="seed-banner hidden" id="seed-banner">
       <p><strong>No products in the live catalog yet.</strong> Seed it once with the starter catalog below — this copies today's product list into Firestore so stock updates here show up on the storefront in real time.</p>
-      <button class="primary-button focus-ring" id="seed-button">Seed starter catalog</button>
+      <button class="primary-button focus-ring" id="seed-button">Seed starter catalog</button> <button type="button" id="repair-images-button" class="secondary-button focus-ring">Repair product images</button>
     </div>
     <div class="toolbar-row">
       <input class="search-input focus-ring" id="inventory-search" type="text" placeholder="Search products…" />
@@ -277,7 +277,6 @@
         <option value="low">Low stock (&le; 5)</option>
         <option value="out">Out of stock</option>
       </select>
-      <button type="button" class="secondary-button focus-ring" id="backfill-images-button">Add photos to existing products</button>
       <button type="button" class="secondary-button focus-ring" id="inventory-export-csv">⬇️ Export CSV</button>
     </div>
     <div class="panel-block" style="overflow-x:auto;">
@@ -433,6 +432,7 @@ var REQUIRE_OTP = false;
     ['cheese', 'Cheese', 'sliceable + meltable', 'Frozen', 4.95, 15, null, 'Sliceable, meltable cheese for stews, toast, and midnight snacks.', 'rich + melty', 'Images/CHEESE.png'],
     // Korean Noodles
     ['buldak-rose', 'Buldak Rose', '불닭로제', 'Korean Noodles', 3.25, 16, null, 'Creamy tomato heat — the ros\u00e9 twist on the fire noodle.', 'spicy + creamy', 'Images/BULDAK ROSE.png'],
+    ['buldak-original', 'Buldak Original', '불닭볶음면', 'Korean Noodles', 3.1, 15, null, 'The one that started it all: fiery, chewy, and endlessly craveable.', 'original spicy', 'Images/BULDAK.png'],
     ['buldak-swicy', 'Buldak Swicy', 'sweet + spicy', 'Korean Noodles', 3.25, 14, null, 'Sweet meets spicy in this milder fire noodle remix.', 'sweet + spicy', 'Images/BULDAK SWICY.png'],
     ['cheese-ramen-stir-fry', 'Cheese Ramen Stir Fry', 'cheesy stir-fry', 'Korean Noodles', 3.5, 10, null, 'Stir-fried noodles finished with a blanket of melted cheese.', 'cheesy + savory', 'Images/CHEESE RAMEN STIR FRY.png'],
     ['shin-ramyun', 'Shin Ramyun', '신라면', 'Korean Noodles', 2.25, 24, 'Mimi pick', 'The classic red bowl: spicy, beefy, and endlessly comforting.', 'spicy + beefy', 'Images/SHIN RAMYUN.png'],
@@ -440,10 +440,10 @@ var REQUIRE_OTP = false;
     ['quattro-cheese', 'Quattro Cheese', 'four-cheese bowl', 'Korean Noodles', 3.5, 12, null, 'Four cheeses, one bowl, maximum comfort.', 'four-cheese rich', 'Images/QUATTRO CHEESE.png'],
     ['buldak-cream-carbonara', 'Buldak Cream Carbonara', 'extra-creamy carbonara', 'Korean Noodles', 3.5, 11, null, 'An extra-silky carbonara spin on the original fire noodle.', 'extra creamy heat', 'Images/BULDAK CREAM CARBONARA.png'],
     ['jin', 'Jin Ramyun', '진라면', 'Korean Noodles', 2.1, 22, null, 'A no-fuss favorite: light broth, soft noodles, done in minutes.', 'light + savory', 'Images/JIN.png'],
-    ['buldak-spicy-2x', 'Buldak (Spicy 2\u00d7)', 'extra-spicy 2\u00d7', 'Korean Noodles', 3.4, 9, null, 'For the heat-seekers: double the spice of the original fire noodle.', 'extra spicy', 'Images/BULDAK (SPICY 2\u00d7).png'],
+    ['buldak-spicy-2x', 'Buldak (Spicy 2\u00d7)', 'extra-spicy 2\u00d7', 'Korean Noodles', 3.4, 9, null, 'For the heat-seekers: double the spice of the original fire noodle.', 'extra spicy', 'Images/BELDAK.png'],
     // Sweets
     ['nerds', 'Nerds', 'crunchy candy', 'Sweets', 2.95, 17, null, 'Tiny, crunchy candy clusters in a rainbow of flavors.', 'tangy + crunchy', 'Images/NERDS.png'],
-    ['mnms', 'M&M\u2019s', 'candy-coated chocolate', 'Sweets', 3.25, 20, null, 'Colorful candy shells around a smooth chocolate center.', 'sweet + crunchy', 'Images/M&M\u2019s.png'],
+    ['mnms', 'M&M\u2019s', 'candy-coated chocolate', 'Sweets', 3.25, 20, null, 'Colorful candy shells around a smooth chocolate center.', 'sweet + crunchy', "Images/MAS.png"],
     ['maltesers', 'Maltesers', 'malt + chocolate', 'Sweets', 4.25, 12, null, 'Light, crunchy malt balls coated in milk chocolate.', 'malty crunch', 'Images/MALTESERS.png'],
     ['hershey', 'Hershey', 'milk chocolate', 'Sweets', 2.75, 19, null, 'Classic milk chocolate, simple and familiar.', 'classic chocolate', 'Images/HERSHEY.png'],
     ['pistachio', 'Pistachio', 'roasted nuts', 'Sweets', 6.5, 8, null, 'Roasted pistachios with a naturally rich, nutty bite.', 'roasted + nutty', 'Images/PISTACHIO.png'],
@@ -946,25 +946,6 @@ var REQUIRE_OTP = false;
     }, function (err) { console.error('MimiCart admin: orders listener failed', err); });
   }
 
-  // ---- One-time patch: adds/updates just the "image" field on products
-  // that already exist in Firestore (from a previous seed), without
-  // touching stock, price, or anything else already set. Safe to click
-  // any time you update the RAW_PRODUCTS image filenames above. ----
-  document.getElementById('backfill-images-button').addEventListener('click', function () {
-    if (!confirm('Add the image filename to every existing product? This only sets the image field — stock and everything else stays untouched.')) return;
-    var batch = firebaseDb.batch();
-    RAW_PRODUCTS.forEach(function (row) {
-      var ref = firebaseDb.collection('products').doc(row[0]);
-      batch.update(ref, { image: row[9] || null });
-    });
-    batch.commit().then(function () {
-      showToast('Product photos linked — refresh to see them.');
-    }).catch(function (err) {
-      console.error(err);
-      showToast('Couldn\u2019t update images. Make sure the catalog is already seeded.');
-    });
-  });
-
   // ---------------- SEEDING ----------------
   document.getElementById('seed-button').addEventListener('click', function () {
     if (!confirm('Seed the starter catalog into Firestore? Only do this once.')) return;
@@ -983,6 +964,35 @@ var REQUIRE_OTP = false;
     }).catch(function (err) {
       console.error(err);
       showToast('Couldn\u2019t seed the catalog. Check the console for details.');
+    });
+  });
+
+  // ---------------- IMAGE REPAIR ----------------
+  // Repairs image paths on existing Firestore products without changing
+  // names, prices, stock, descriptions, or other inventory fields.
+  document.getElementById('repair-images-button').addEventListener('click', function () {
+    if (!confirm('Repair product image paths in Firestore? This will only update image fields and will not change stock or prices.')) return;
+
+    var imageMap = {};
+    RAW_PRODUCTS.forEach(function (row) {
+      if (row[9]) imageMap[row[0]] = row[9];
+    });
+
+    firebaseDb.collection('products').get().then(function (snap) {
+      var batch = firebaseDb.batch();
+      var repaired = 0;
+      snap.forEach(function (doc) {
+        if (imageMap[doc.id]) {
+          batch.update(doc.ref, { image: imageMap[doc.id] });
+          repaired++;
+        }
+      });
+      return repaired ? batch.commit().then(function () { return repaired; }) : 0;
+    }).then(function (repaired) {
+      showToast(repaired ? ('Repaired image paths for ' + repaired + ' product(s).') : 'No matching product image paths needed repair.');
+    }).catch(function (err) {
+      console.error('MimiCart: image repair failed', err);
+      showToast('Could not repair product images. Check the console for details.');
     });
   });
 
