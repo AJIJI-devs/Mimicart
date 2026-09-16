@@ -379,7 +379,9 @@ var EMAILJS_CONFIG = {
 // Set to false to skip the email OTP step entirely (straight from password
 // sign-in to the dashboard). Handy while on EmailJS's free trial. Set back
 // to true whenever you want the extra verification step again.
-var REQUIRE_OTP = false;
+var REQUIRE_OTP = true;
+  // Backward-compatible name for the restored OTP gate.
+  var REQUEST_OTP = REQUIRE_OTP;
   var emailjsConfigured = Object.keys(EMAILJS_CONFIG).every(function (k) {
     return EMAILJS_CONFIG[k] && EMAILJS_CONFIG[k].indexOf('YOUR_') !== 0;
   });
