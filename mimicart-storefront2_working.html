@@ -1,0 +1,3009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+<title>MimiCart — Mimi's Sweets & Korean Mart</title>
+<meta name="description" content="Korean market favorites, handpicked for the snack drawer. Reserve now, pay at pickup." />
+<meta property="og:title" content="MimiCart — Mimi's Sweets & Korean Mart" />
+<meta property="og:description" content="Korean market favorites, handpicked for the snack drawer. Reserve now, pay at pickup." />
+<meta property="og:type" content="website" />
+<meta name="theme-color" content="#D71920" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='4' y='4' width='56' height='56' rx='18' ry='18' fill='%23D71920'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-weight='700' font-size='34' fill='%23FFF9F2' text-anchor='middle'%3Em%3C/text%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --background: 36 56% 95%;
+    --foreground: 348 25% 18%;
+    --border: 35 34% 86%;
+    --card: 40 67% 98%;
+    --primary: 358 76% 45%;
+    --primary-foreground: 40 67% 98%;
+    --secondary: 158 32% 31%;
+    --muted: 34 36% 90%;
+    --muted-foreground: 344 13% 43%;
+    --accent: 38 91% 61%;
+    --app-font-sans: 'DM Sans', sans-serif;
+    --app-font-serif: 'Baloo 2', sans-serif;
+    --app-font-mono: 'Space Mono', monospace;
+    --shadow-card: 0 20px 50px rgba(91, 39, 38, 0.10);
+    --shadow-soft: 0 10px 28px rgba(91, 39, 38, 0.08);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--app-font-sans);
+    -webkit-font-smoothing: antialiased;
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    margin: 0;
+    min-width: 320px;
+  }
+  button, input, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  button:disabled { cursor: not-allowed; }
+  ::selection { background: hsl(var(--accent)); color: hsl(var(--foreground)); }
+  svg { display: block; }
+
+  @keyframes float-in { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes bob { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-9px) rotate(2deg); } }
+  @keyframes shimmer { 0% { background-position: 150% 0; } 100% { background-position: -150% 0; } }
+
+  .font-display { font-family: var(--app-font-serif); }
+  .font-mono { font-family: var(--app-font-mono); }
+  .animate-in { animation: float-in .65s cubic-bezier(.22,1,.36,1) both; }
+  .floating { animation: bob 5s ease-in-out infinite; }
+  .noise::after {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 50; opacity: .035;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+  }
+  .skeleton { background: linear-gradient(100deg, hsl(var(--muted)) 30%, hsl(var(--card)) 50%, hsl(var(--muted)) 70%); background-size: 220% 100%; animation: shimmer 1.3s linear infinite; }
+  .focus-ring:focus-visible { outline: 3px solid hsl(var(--accent)); outline-offset: 3px; }
+  .hide-scrollbar { scrollbar-width: none; }
+  .hide-scrollbar::-webkit-scrollbar { display: none; }
+
+  .app-shell { min-height: 100dvh; overflow: hidden; background: hsl(var(--background)); }
+  .site-header { position: sticky; top: 0; z-index: 40; background: rgba(255, 250, 240, .9); backdrop-filter: blur(18px); border-bottom: 1px solid hsl(var(--border)); }
+  .header-inner { width: min(1220px, calc(100% - 48px)); height: 78px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 28px; }
+  .brand-button { border: 0; background: transparent; padding: 0; text-align: left; }
+  .brand { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; align-items: center; column-gap: 9px; min-width: 180px; }
+  .brand-mark { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 12px 12px 12px 4px; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); font: 800 25px/1 var(--app-font-serif); transform: rotate(-7deg); }
+  .brand-word { font: 800 25px/1 var(--app-font-serif); letter-spacing: -.04em; color: hsl(var(--foreground)); }
+  .brand-word span { color: hsl(var(--primary)); }
+  .brand-sub { grid-column: 2; color: hsl(var(--muted-foreground)); font-size: 9px; letter-spacing: .08em; text-transform: uppercase; margin-top: 3px; }
+  .brand-compact { grid-template-rows: auto; min-width: auto; }
+  .brand-compact .brand-sub { display: none; }
+  .desktop-nav { display: flex; align-items: center; gap: 26px; margin-left: auto; }
+  .nav-link { position: relative; border: 0; background: transparent; padding: 7px 0; color: hsl(var(--muted-foreground)); font-size: 13px; font-weight: 600; transition: color .2s ease; }
+  .nav-link:hover, .nav-link.active { color: hsl(var(--foreground)); }
+  .nav-link.active::after { content: ""; position: absolute; bottom: -8px; left: 0; right: 0; margin: auto; width: 5px; height: 5px; border-radius: 50%; background: hsl(var(--primary)); }
+  .header-actions { display: flex; align-items: center; gap: 10px; }
+  .header-icon-button, .mobile-menu-button { width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid hsl(var(--border)); border-radius: 50%; color: hsl(var(--foreground)); background: hsl(var(--card)); }
+  .header-cart { height: 40px; display: inline-flex; align-items: center; gap: 8px; padding: 0 7px 0 13px; border: 1px solid hsl(var(--foreground)); border-radius: 999px; background: hsl(var(--foreground)); color: hsl(var(--card)); font-size: 11px; font-weight: 700; }
+  .header-cart b { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: hsl(var(--accent)); color: hsl(var(--foreground)); font: 700 12px var(--app-font-mono); }
+  .notif-button { position: relative; }
+  .notif-badge { position: absolute; top: -3px; right: -3px; min-width: 17px; height: 17px; padding: 0 4px; display: grid; place-items: center; border-radius: 999px; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); font: 700 9px var(--app-font-mono); line-height: 1; border: 2px solid hsl(var(--background)); }
+  .mobile-menu-button { display: none; }
+
+  .hero-section { position: relative; min-height: 620px; display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 40px; width: min(1220px, calc(100% - 48px)); margin: 0 auto; padding: 76px 0 112px; }
+  .hero-section::before { content: ""; position: absolute; width: 58vw; height: 58vw; max-width: 760px; max-height: 760px; border-radius: 50%; top: -55%; right: -24%; background: hsl(var(--accent) / .27); z-index: -1; }
+  .hero-section::after { content: ""; position: absolute; left: -10vw; bottom: 0; width: 70vw; height: 1px; background: hsl(var(--border)); }
+  .hero-copy { max-width: 620px; z-index: 1; }
+  .eyebrow, .section-kicker, .dialog-eyebrow, .drawer-eyebrow { display: flex; align-items: center; gap: 8px; color: hsl(var(--primary)); font: 700 10px var(--app-font-mono); letter-spacing: .1em; text-transform: uppercase; }
+  .eyebrow-dot { width: 8px; height: 8px; border-radius: 50%; background: hsl(var(--primary)); box-shadow: 0 0 0 5px hsl(var(--primary) / .12); }
+  .hero-title { margin: 19px 0 22px; color: hsl(var(--foreground)); font-size: clamp(59px, 7vw, 99px); font-weight: 800; line-height: .86; letter-spacing: -.055em; }
+  .hero-title em, .category-heading em, .catalogue-heading-row em, .story-copy em { font-style: normal; color: hsl(var(--primary)); }
+  .hero-description { max-width: 500px; margin: 0 0 28px; color: hsl(var(--muted-foreground)); font-size: 15px; line-height: 1.75; }
+  .hero-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 19px; }
+  .primary-button, .secondary-button { min-height: 45px; display: inline-flex; align-items: center; justify-content: center; gap: 9px; border: 1px solid transparent; border-radius: 999px; padding: 0 20px; font-size: 12px; font-weight: 700; transition: transform .2s ease, background-color .2s ease, color .2s ease; }
+  .primary-button { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); box-shadow: 0 9px 18px hsl(var(--primary) / .17); }
+  .primary-button:hover:not(:disabled) { transform: translateY(-2px); background: hsl(358 76% 39%); }
+  .primary-button:disabled { opacity: .45; }
+  .secondary-button { border-color: hsl(var(--border)); background: hsl(var(--card)); color: hsl(var(--foreground)); }
+  .secondary-button:hover { border-color: hsl(var(--primary)); color: hsl(var(--primary)); }
+  .full-width { width: 100%; }
+  .hero-note { display: inline-flex; align-items: center; gap: 5px; color: hsl(var(--muted-foreground)); font-size: 11px; }
+  .hero-note svg { color: hsl(var(--secondary)); }
+  .hero-stage { position: relative; min-height: 475px; }
+  .hero-shelf-card { position: absolute; top: 16px; left: 15%; width: min(390px, 76%); padding: 18px; border: 1px solid rgba(70, 46, 43, .12); border-radius: 24px; background: hsl(var(--card)); box-shadow: var(--shadow-card); transform: rotate(3deg); }
+  .shelf-topline { display: flex; justify-content: space-between; color: hsl(var(--muted-foreground)); font: 10px var(--app-font-mono); letter-spacing: .04em; }
+  .hero-shelf-card .product-art { height: 290px; margin: 14px 0 0; }
+  .shelf-caption { display: flex; align-items: end; justify-content: space-between; padding: 13px 2px 0; }
+  .shelf-caption span { color: hsl(var(--primary)); font: 10px var(--app-font-mono); text-transform: uppercase; }
+  .shelf-caption strong { color: hsl(var(--foreground)); font: 700 21px/1 var(--app-font-serif); text-align: right; }
+  .hero-stamp { position: absolute; top: 2px; right: 7%; z-index: 3; width: 86px; height: 86px; display: grid; place-items: center; align-content: center; border: 1px solid hsl(var(--secondary)); border-radius: 50%; color: hsl(var(--secondary)); background: hsl(var(--accent)); transform: rotate(11deg); }
+  .hero-stamp span { font: 700 25px var(--app-font-serif); }
+  .hero-stamp small { font: 700 8px var(--app-font-mono); text-transform: uppercase; }
+  .hero-mini-product { position: absolute; z-index: 3; width: 135px; padding: 7px; border: 1px solid rgba(70, 46, 43, .13); border-radius: 17px; background: hsl(var(--card)); box-shadow: var(--shadow-soft); }
+  .hero-mini-one { left: 0; bottom: 63px; transform: rotate(-10deg); animation-delay: .2s; }
+  .hero-mini-two { right: 2%; bottom: 23px; transform: rotate(9deg); animation-delay: .8s; }
+  .hero-mini-product .product-art { height: 124px; }
+  .hero-aside-note { position: absolute; right: 1%; bottom: 151px; display: flex; align-items: center; gap: 9px; color: hsl(var(--muted-foreground)); transform: rotate(-5deg); }
+  .hero-aside-note > span { color: hsl(var(--primary)); font: 700 18px var(--app-font-mono); }
+  .hero-aside-note strong, .hero-aside-note small { display: block; }
+  .hero-aside-note strong { color: hsl(var(--foreground)); font-size: 11px; }
+  .hero-aside-note small { font-size: 10px; }
+  .hero-bottom-line { position: absolute; bottom: 30px; left: 0; right: 0; display: flex; align-items: center; gap: 22px; color: hsl(var(--muted-foreground)); font: 10px var(--app-font-mono); text-transform: uppercase; letter-spacing: .06em; }
+  .hero-bottom-line span:nth-child(1) { color: hsl(var(--primary)); font-size: 12px; }
+  .hero-scroll { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+  .hero-scroll > span { width: 32px; height: 1px; background: hsl(var(--primary)); }
+  .hero-orbit { position: absolute; border: 1px solid hsl(var(--secondary) / .2); border-radius: 50%; pointer-events: none; }
+  .hero-orbit-one { width: 160px; height: 160px; left: -60px; top: 80px; }
+  .hero-orbit-two { width: 270px; height: 270px; right: 32%; top: -70px; }
+
+  .category-section, .catalogue-section { width: min(1220px, calc(100% - 48px)); margin: 0 auto; }
+  .category-section { padding: 120px 0 100px; }
+  .section-kicker { color: hsl(var(--muted-foreground)); }
+  .section-kicker > span:first-child { color: hsl(var(--primary)); }
+  .kicker-rule { display: block; width: 70px; height: 1px; background: hsl(var(--border)); margin-left: 4px; }
+  .category-heading { display: flex; align-items: end; justify-content: space-between; gap: 25px; margin: 19px 0 34px; }
+  .category-heading h2, .catalogue-heading-row h2, .story-copy h2 { margin: 0; font-size: clamp(42px, 5vw, 68px); line-height: .9; letter-spacing: -.045em; }
+  .category-heading p { max-width: 210px; margin-bottom: 4px; color: hsl(var(--muted-foreground)); font-size: 13px; line-height: 1.6; }
+  .category-rail { display: grid; grid-template-columns: repeat(6, minmax(145px, 1fr)); border-top: 1px solid hsl(var(--border)); border-bottom: 1px solid hsl(var(--border)); }
+  .category-tile { position: relative; min-height: 164px; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; gap: 8px; padding: 21px 17px 18px; border: 0; border-right: 1px solid hsl(var(--border)); background: transparent; text-align: left; transition: background-color .2s ease, color .2s ease, transform .2s ease; }
+  .category-tile:first-child { border-left: 1px solid hsl(var(--border)); }
+  .category-tile:hover, .category-tile.selected { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); transform: translateY(-5px); }
+  .category-number { font: 10px var(--app-font-mono); opacity: .65; }
+  .category-name { font: 700 22px/1 var(--app-font-serif); }
+  .category-sublabel { font-size: 11px; opacity: .7; }
+  .category-arrow { align-self: flex-end; }
+
+  .catalogue-section { padding: 38px 0 120px; }
+  .catalogue-heading-row { display: flex; align-items: end; justify-content: space-between; gap: 35px; margin: 20px 0 28px; }
+  .catalogue-heading-row p { margin: 17px 0 0; color: hsl(var(--muted-foreground)); font-size: 13px; }
+  .search-wrap { width: min(315px, 100%); display: flex; align-items: center; gap: 10px; padding: 0 15px; border: 1px solid hsl(var(--border)); border-radius: 999px; background: hsl(var(--card)); color: hsl(var(--muted-foreground)); }
+  .search-wrap:focus-within { border-color: hsl(var(--primary)); box-shadow: 0 0 0 3px hsl(var(--primary) / .09); }
+  .search-wrap input { width: 100%; height: 44px; border: 0; outline: 0; background: transparent; color: hsl(var(--foreground)); font-size: 12px; }
+  .search-wrap input::placeholder { color: hsl(var(--muted-foreground)); }
+  .search-wrap button { display: grid; place-items: center; border: 0; background: transparent; color: hsl(var(--muted-foreground)); }
+  .catalogue-toolbar { display: flex; justify-content: space-between; align-items: center; padding: 13px 0; border-top: 1px solid hsl(var(--border)); margin-bottom: 17px; }
+  .result-count { color: hsl(var(--muted-foreground)); font: 10px var(--app-font-mono); text-transform: uppercase; letter-spacing: .04em; }
+  .sort-button { display: inline-flex; align-items: center; gap: 8px; border: 0; background: transparent; color: hsl(var(--foreground)); font-size: 11px; font-weight: 700; }
+  .product-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+  .product-card { min-width: 0; border: 1px solid hsl(var(--border)); border-radius: 18px; background: hsl(var(--card)); box-shadow: 0 5px 0 hsl(var(--border) / .3); transition: transform .25s ease, box-shadow .25s ease; overflow: hidden; }
+  .product-card:hover { transform: translateY(-5px); box-shadow: 0 12px 0 hsl(var(--border) / .45); }
+  .product-visual-button { position: relative; display: block; width: 100%; padding: 11px; border: 0; background: transparent; text-align: left; }
+  .product-card-meta { position: absolute; z-index: 2; top: 19px; left: 19px; right: 19px; display: flex; justify-content: space-between; color: hsl(var(--muted-foreground)); font: 9px var(--app-font-mono); text-transform: uppercase; }
+  .product-card-meta span:first-child { color: hsl(var(--primary)); }
+  .product-art { position: relative; isolation: isolate; height: 214px; display: grid; place-items: center; overflow: hidden; border-radius: 13px; background: var(--tone); }
+  .product-art::before { content: ""; position: absolute; inset: 0; z-index: -1; opacity: .17; background-size: 27px 27px; }
+  .product-art-waves::before { background-image: repeating-linear-gradient(165deg, transparent 0 10px, var(--accent) 11px 13px, transparent 14px 27px); }
+  .product-art-dots::before { background-image: radial-gradient(var(--accent) 2px, transparent 3px); }
+  .product-art-checks::before { background-image: linear-gradient(45deg, var(--accent) 25%, transparent 25%, transparent 75%, var(--accent) 75%), linear-gradient(45deg, var(--accent) 25%, transparent 25%, transparent 75%, var(--accent) 75%); background-position: 0 0, 13px 13px; background-size: 26px 26px; }
+  .product-art-rays::before { background-image: repeating-conic-gradient(from 0deg, var(--accent) 0 8deg, transparent 8deg 22deg); }
+  .product-art::after { content: ""; position: absolute; inset: 12% 17%; border: 1px solid hsl(40 67% 98% / .45); border-radius: 50%; transform: rotate(22deg); }
+  .product-art-pack { position: relative; z-index: 1; width: 58%; min-height: 136px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 5px; padding: 15px 8px; border: 2px solid hsl(40 67% 98% / .8); border-radius: 13px 13px 17px 17px; background: var(--accent); color: hsl(var(--foreground)); box-shadow: 8px 10px 0 hsl(var(--foreground) / .13); text-align: center; transform: rotate(-5deg); }
+  .product-art-pack strong { max-width: 100px; font: 700 17px/1 var(--app-font-serif); }
+  .product-art-korean { font-size: 10px; font-weight: 700; }
+  .product-art-flavor { font: 8px var(--app-font-mono); text-transform: uppercase; opacity: .75; }
+  .product-art-sticker { position: absolute; z-index: 2; top: 18px; right: 18px; display: grid; place-items: center; width: 37px; height: 37px; border-radius: 50%; background: hsl(40 67% 98% / .9); color: hsl(var(--primary)); font: 700 10px var(--app-font-mono); transform: rotate(10deg); }
+  .product-art-sun { position: absolute; bottom: -35px; left: -22px; width: 130px; height: 130px; border-radius: 50%; border: 19px solid hsl(40 67% 98% / .25); }
+  .product-art-small { height: 120px; border-radius: 11px; }
+  .product-art-small .product-art-pack { min-height: 76px; width: 55%; padding: 7px; border-width: 1px; border-radius: 8px; box-shadow: 4px 5px 0 hsl(var(--foreground) / .13); }
+  .product-art-small .product-art-pack strong { max-width: 65px; font-size: 9px; }
+  .product-art-small .product-art-korean, .product-art-small .product-art-flavor, .product-art-small .product-art-sticker { font-size: 5px; }
+  .product-art-small .product-art-sticker { top: 8px; right: 8px; width: 22px; height: 22px; }
+  .product-art-small .product-art-sun { width: 70px; height: 70px; border-width: 10px; bottom: -20px; left: -10px; }
+  /* Real product photo: fills the same tile the illustrated cards use.
+     A square (1:1, e.g. 1080x1080) source photo works best — object-fit
+     crops anything else to fit without stretching it. */
+  .product-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .product-photo-fallback img { display: none; } /* broken link? quietly fall back to the tone color */
+  /* "Add Photo" uploader: hidden by default, revealed only when the real
+     photo fails to load (product-photo-fallback), so a missing/misnamed
+     image file can be fixed right on the page instead of guessing filenames. */
+  .product-photo-upload { display: none; position: absolute; inset: 0; z-index: 3; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
+  .product-photo-fallback .product-photo-upload { display: flex; }
+  .product-photo-upload-label { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: 999px; background: hsl(var(--foreground)); color: hsl(40 67% 98%); font: 700 11px var(--app-font-mono); text-transform: uppercase; letter-spacing: .04em; cursor: pointer; box-shadow: 0 4px 0 hsl(var(--foreground) / .25); }
+  .product-photo-upload-label:hover { filter: brightness(1.08); }
+  .product-photo-upload-hint { font: 700 9px var(--app-font-mono); text-transform: uppercase; letter-spacing: .04em; color: hsl(var(--foreground) / .6); }
+  .product-photo-upload input[type="file"] { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+  .product-art-small .product-photo-upload-label { padding: 5px 10px; font-size: 8px; gap: 4px; }
+  .product-art-small .product-photo-upload-hint { display: none; }
+  .view-detail { position: absolute; right: 18px; bottom: 17px; display: flex; align-items: center; gap: 3px; color: hsl(40 67% 98%); font-size: 10px; font-weight: 700; opacity: 0; transform: translateY(4px); transition: opacity .2s ease, transform .2s ease; }
+  .product-card:hover .view-detail, .product-visual-button:focus-visible .view-detail { opacity: 1; transform: translateY(0); }
+  .product-card-info { padding: 0 15px 15px; }
+  .product-card-title { display: flex; justify-content: space-between; gap: 8px; }
+  .product-card-title h3 { margin: 0; color: hsl(var(--foreground)); font-size: 14px; font-weight: 700; }
+  .product-card-title span { display: block; margin-top: 3px; color: hsl(var(--muted-foreground)); font-size: 10px; }
+  .favorite-button { display: grid; place-items: center; width: 30px; height: 30px; flex: 0 0 auto; border: 1px solid hsl(var(--border)); border-radius: 50%; background: transparent; color: hsl(var(--muted-foreground)); }
+  .favorite-button:hover, .favorite-button.is-favorite { color: hsl(var(--primary)); border-color: hsl(var(--primary) / .45); }
+  .product-card-bottom { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; }
+  .product-card-bottom > strong { font: 700 18px var(--app-font-mono); letter-spacing: -.08em; }
+  .add-button { display: inline-flex; align-items: center; gap: 4px; min-height: 30px; padding: 0 12px; border: 1px solid hsl(var(--foreground)); border-radius: 999px; background: hsl(var(--foreground)); color: hsl(var(--card)); font-size: 10px; font-weight: 700; }
+  .add-button:hover:not(:disabled) { background: hsl(var(--primary)); border-color: hsl(var(--primary)); }
+  .add-button:disabled { opacity: .4; }
+  .skeleton-card { padding: 11px; box-shadow: none; }
+  .skeleton-block { height: 214px; border-radius: 13px; }
+  .skeleton-line { height: 11px; width: 55%; margin-top: 17px; border-radius: 4px; }
+  .skeleton-line-long { width: 75%; }
+  .skeleton-button { height: 30px; width: 50%; margin: 20px 0 5px auto; border-radius: 999px; }
+  .catalogue-state { min-height: 250px; display: flex; align-items: center; flex-direction: column; justify-content: center; gap: 9px; border: 1px dashed hsl(var(--border)); border-radius: 18px; color: hsl(var(--muted-foreground)); text-align: center; }
+  .catalogue-state svg { color: hsl(var(--primary)); }
+  .catalogue-state h3 { margin: 4px 0 0; color: hsl(var(--foreground)); font: 700 24px var(--app-font-serif); }
+  .catalogue-state p { margin: 0 0 9px; font-size: 12px; }
+
+  .story-section { padding: 0 0 95px; }
+  .story-panel { width: min(1220px, calc(100% - 48px)); min-height: 470px; display: grid; grid-template-columns: 1fr 1fr; margin: 0 auto; overflow: hidden; border-radius: 24px; background: hsl(var(--secondary)); color: hsl(var(--primary-foreground)); }
+  .story-copy { position: relative; padding: 63px 10% 55px; }
+  .section-kicker.light { color: hsl(var(--primary-foreground) / .65); }
+  .section-kicker.light > span:first-child { color: hsl(var(--accent)); }
+  .story-copy h2 { margin: 21px 0; color: hsl(var(--primary-foreground)); }
+  .story-copy h2 em { color: hsl(var(--accent)); }
+  .story-copy > p { max-width: 385px; color: hsl(var(--primary-foreground) / .68); font-size: 13px; line-height: 1.75; }
+  .story-signature { display: flex; align-items: center; gap: 11px; margin-top: 37px; }
+  .signature-line { width: 48px; height: 1px; background: hsl(var(--accent)); }
+  .story-signature strong, .story-signature small { display: block; }
+  .story-signature strong { color: hsl(var(--accent)); font: 800 29px var(--app-font-serif); transform: rotate(-8deg); }
+  .story-signature small { color: hsl(var(--primary-foreground) / .55); font-size: 9px; }
+  .story-art { position: relative; overflow: hidden; min-height: 470px; background: hsl(358 50% 38%); }
+  .story-art::before { content: ""; position: absolute; inset: 0; opacity: .15; background-image: radial-gradient(hsl(var(--accent)) 1px, transparent 1.5px); background-size: 15px 15px; }
+  .story-circle { position: absolute; top: 53px; left: 16%; width: 236px; height: 236px; display: grid; place-items: center; border: 1px solid hsl(var(--accent) / .6); border-radius: 50%; color: hsl(var(--accent)); font: 800 36px/.85 var(--app-font-serif); text-align: center; transform: rotate(-15deg); }
+  .story-note { position: absolute; top: 35px; right: 13%; display: flex; align-items: center; gap: 5px; color: hsl(var(--primary-foreground) / .7); font: 9px var(--app-font-mono); text-transform: uppercase; }
+  .story-card { position: absolute; width: 190px; height: 230px; border-radius: 12px; transform: rotate(10deg); }
+  .story-card-back { bottom: 41px; right: 13%; background: hsl(var(--accent)); }
+  .story-card-front { bottom: 51px; right: 21%; display: flex; flex-direction: column; justify-content: space-between; padding: 16px; background: hsl(var(--card)); color: hsl(var(--primary)); box-shadow: 7px 8px 0 hsl(var(--foreground) / .16); transform: rotate(-7deg); }
+  .story-card-label { font: 700 10px/1.15 var(--app-font-mono); letter-spacing: .08em; }
+  .story-card-front strong { align-self: center; font: 800 82px var(--app-font-serif); }
+  .story-card-front small { color: hsl(var(--muted-foreground)); font-size: 9px; }
+  .promise-row { width: min(1050px, calc(100% - 80px)); display: grid; grid-template-columns: repeat(3, 1fr); gap: 35px; margin: 38px auto 0; }
+  .promise-row > div { display: flex; align-items: flex-start; gap: 12px; }
+  .promise-row svg { color: hsl(var(--primary)); margin-top: 2px; }
+  .promise-row strong, .promise-row span { display: block; }
+  .promise-row strong { font-size: 12px; }
+  .promise-row span { margin-top: 4px; color: hsl(var(--muted-foreground)); font-size: 11px; }
+  .site-footer { position: relative; display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 25px; width: min(1220px, calc(100% - 48px)); margin: 0 auto; padding: 27px 0 34px; border-top: 1px solid hsl(var(--border)); }
+  .site-footer > p { margin: 0; color: hsl(var(--muted-foreground)); font-size: 11px; }
+  .footer-link { display: inline-flex; align-items: center; gap: 5px; border: 0; background: transparent; color: hsl(var(--primary)); font-size: 11px; font-weight: 700; }
+  .footer-small { grid-column: 1 / -1; color: hsl(var(--muted-foreground)); font: 9px var(--app-font-mono); text-transform: uppercase; letter-spacing: .05em; }
+
+  .overlay, .drawer-shell { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 20px; background: hsl(348 25% 18% / .66); backdrop-filter: blur(5px); animation: float-in .2s ease both; }
+  .product-dialog, .staff-dialog { position: relative; width: min(800px, 100%); display: grid; grid-template-columns: .9fr 1.1fr; overflow: hidden; border-radius: 22px; background: hsl(var(--card)); box-shadow: 0 30px 80px hsl(348 25% 18% / .3); }
+  .dialog-close { position: absolute; z-index: 3; top: 15px; right: 15px; width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid hsl(var(--border)); border-radius: 50%; background: hsl(var(--card) / .9); color: hsl(var(--foreground)); }
+  .dialog-art { padding: 28px; background: hsl(var(--muted)); }
+  .dialog-art .product-art { height: 100%; min-height: 370px; }
+  .dialog-content { display: flex; flex-direction: column; justify-content: center; padding: 42px 42px 37px; }
+  .dialog-content h2, .staff-dialog h2 { margin: 11px 0 9px; color: hsl(var(--foreground)); font-size: 45px; line-height: .92; letter-spacing: -.04em; }
+  .dialog-content > p, .staff-copy { color: hsl(var(--muted-foreground)); font-size: 13px; line-height: 1.7; }
+  .dialog-details { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 21px 0; padding: 14px 0; border-top: 1px solid hsl(var(--border)); border-bottom: 1px solid hsl(var(--border)); }
+  .dialog-details strong, .dialog-details span { display: block; }
+  .dialog-details strong { margin-bottom: 4px; color: hsl(var(--muted-foreground)); font: 9px var(--app-font-mono); text-transform: uppercase; }
+  .dialog-details span { color: hsl(var(--foreground)); font-size: 12px; }
+  .dialog-buy-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; }
+  .dialog-buy-row > strong { font: 700 22px var(--app-font-mono); letter-spacing: -.07em; }
+  .quantity-control, .cart-quantity { display: inline-flex; align-items: center; gap: 12px; }
+  .quantity-control { padding: 5px; border: 1px solid hsl(var(--border)); border-radius: 999px; }
+  .quantity-control button, .cart-quantity button { width: 25px; height: 25px; display: grid; place-items: center; border: 0; border-radius: 50%; background: hsl(var(--muted)); color: hsl(var(--foreground)); }
+  .quantity-control button:hover:not(:disabled), .cart-quantity button:hover:not(:disabled) { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+  .quantity-control button:disabled, .cart-quantity button:disabled { opacity: .35; }
+  .quantity-control span { width: 14px; text-align: center; font: 11px var(--app-font-mono); }
+  .dialog-notice, .staff-footnote { display: block; margin-top: 13px; color: hsl(var(--muted-foreground)); font-size: 10px; line-height: 1.5; text-align: center; }
+
+  .fulfillment-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin: 0 0 18px; padding: 5px; border: 1px solid hsl(var(--border)); border-radius: 12px; background: hsl(var(--muted)); }
+  .fulfillment-option { min-height: 38px; border: 0; border-radius: 9px; background: transparent; font-size: 11px; font-weight: 700; }
+  .fulfillment-option.active { background: hsl(var(--card)); color: hsl(var(--primary)); box-shadow: 0 2px 8px hsl(var(--foreground) / .08); }
+  .delivery-fee-row { display: flex; justify-content: space-between; gap: 12px; margin: -5px 0 12px; color: hsl(var(--muted-foreground)); font-size: 10px; }
+  .delivery-address-note { margin: -1px 0 10px; color: hsl(var(--muted-foreground)); font-size: 10px; line-height: 1.5; }
+  .drawer-shell { display: block; padding: 0; }
+  .cart-drawer { position: absolute; top: 0; right: 0; bottom: 0; width: min(440px, 100%); display: flex; flex-direction: column; background: hsl(var(--card)); box-shadow: -20px 0 60px hsl(348 25% 18% / .18); animation: float-in .3s cubic-bezier(.22,1,.36,1) both; }
+  .drawer-header { display: flex; align-items: flex-start; justify-content: space-between; padding: 31px 27px 23px; border-bottom: 1px solid hsl(var(--border)); }
+  .drawer-header h2 { margin: 7px 0 0; color: hsl(var(--foreground)); font-size: 36px; line-height: .9; }
+  .drawer-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 19px 27px; }
+  .cart-line { display: grid; grid-template-columns: 94px 1fr; gap: 13px; padding: 13px 0; border-bottom: 1px solid hsl(var(--border)); }
+  .cart-line-info { min-width: 0; }
+  .cart-line-info > strong, .cart-line-info > span, .cart-line-info > b { display: block; }
+  .cart-line-info > strong { overflow: hidden; color: hsl(var(--foreground)); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+  .cart-line-info > span { margin-top: 3px; color: hsl(var(--muted-foreground)); font-size: 9px; }
+  .cart-line-info > b { margin-top: 9px; font: 700 13px var(--app-font-mono); }
+  .cart-quantity { margin-top: 9px; gap: 7px; }
+  .cart-quantity button { width: 21px; height: 21px; }
+  .cart-quantity span { min-width: 12px; text-align: center; font: 10px var(--app-font-mono); }
+  .cart-remove { margin-left: auto; border: 0; background: transparent; color: hsl(var(--muted-foreground)); font-size: 10px; text-decoration: underline; text-underline-offset: 3px; }
+  .cart-remove:hover { color: hsl(var(--primary)); }
+  .drawer-footer { flex: 0 0 auto; padding: 20px 27px 26px; border-top: 1px solid hsl(var(--border)); background: hsl(var(--card)); }
+  .drawer-total, .pickup-summary { display: flex; align-items: center; justify-content: space-between; margin-bottom: 17px; }
+  .drawer-total span { color: hsl(var(--muted-foreground)); font-size: 11px; }
+  .drawer-total strong, .pickup-summary strong { font: 700 20px var(--app-font-mono); letter-spacing: -.08em; }
+  .drawer-footnote { margin: 11px 0 0; color: hsl(var(--muted-foreground)); font-size: 10px; text-align: center; }
+  .empty-cart { min-height: 370px; display: flex; align-items: center; flex-direction: column; justify-content: center; text-align: center; }
+  .empty-cart svg { color: hsl(var(--primary)); }
+  .empty-cart h3 { margin: 13px 0 4px; color: hsl(var(--foreground)); font: 700 25px var(--app-font-serif); }
+  .empty-cart p { max-width: 220px; margin: 0 0 18px; color: hsl(var(--muted-foreground)); font-size: 12px; line-height: 1.6; }
+  .pickup-form-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding: 24px 27px 30px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .pickup-form-wrap::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+  }
+  .back-link { display: inline-flex; align-items: center; gap: 4px; border: 0; background: transparent; color: hsl(var(--muted-foreground)); font-size: 11px; }
+  .pickup-intro { margin: 27px 0; color: hsl(var(--muted-foreground)); font-size: 12px; line-height: 1.65; }
+  .pickup-form-wrap label { display: block; margin: 16px 0 7px; color: hsl(var(--foreground)); font: 700 10px var(--app-font-mono); text-transform: uppercase; }
+  .pickup-form-wrap input, .pickup-form-wrap select { width: 100%; height: 44px; padding: 0 12px; border: 1px solid hsl(var(--border)); border-radius: 10px; outline: 0; background: hsl(var(--background)); color: hsl(var(--foreground)); font-size: 12px; }
+  .pickup-form-wrap input:focus, .pickup-form-wrap select:focus { border-color: hsl(var(--primary)); box-shadow: 0 0 0 3px hsl(var(--primary) / .1); }
+  .contact-method-toggle { margin: 8px 0 0; }
+  .phone-input-row { display: grid; grid-template-columns: 122px 1fr; gap: 8px; }
+  .address-hint { margin: -1px 0 4px; color: hsl(var(--muted-foreground)); font-size: 10px; line-height: 1.5; }
+  .pickup-summary { margin: 27px 0 17px; padding: 14px 0; border-top: 1px solid hsl(var(--border)); border-bottom: 1px solid hsl(var(--border)); }
+  .reservation-done { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 30px 6px 20px; color: hsl(var(--secondary)); }
+  .reservation-done h3 { margin: 0; font: 700 22px var(--app-font-serif); color: hsl(var(--foreground)); }
+  .reservation-done p { margin: 0; color: hsl(var(--muted-foreground)); font-size: 13px; line-height: 1.6; }
+  .pickup-summary span { color: hsl(var(--muted-foreground)); font-size: 12px; }
+  .disabled-action-note { margin: 12px 0; color: hsl(var(--muted-foreground)); font-size: 10px; line-height: 1.5; text-align: center; }
+  .staff-dialog { width: min(420px, 100%); display: block; padding: 38px 37px 31px; }
+  .staff-mark { width: 46px; height: 46px; display: grid; place-items: center; margin-bottom: 22px; border-radius: 15px 15px 15px 5px; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); transform: rotate(-6deg); }
+  .staff-dialog h2 { font-size: 41px; }
+  .staff-copy { margin: 0 0 25px; }
+  .staff-status { margin: 13px 0; padding: 10px 12px; border-left: 3px solid hsl(var(--primary)); background: hsl(var(--primary) / .07); color: hsl(var(--foreground)); font-size: 11px; line-height: 1.45; }
+
+  .login-dialog { width: min(420px, 100%); max-height: calc(100dvh - 40px); overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; display: block; padding: 38px 37px 31px; }
+  .login-dialog::-webkit-scrollbar { width: 0; height: 0; display: none; }
+  .login-mark { width: 46px; height: 46px; display: grid; place-items: center; margin-bottom: 22px; border-radius: 15px 15px 15px 5px; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); transform: rotate(-6deg); }
+  .login-dialog h2 { margin: 11px 0 9px; font-size: 41px; }
+  .login-copy { margin: 0 0 20px; color: hsl(var(--muted-foreground)); font-size: 13px; line-height: 1.7; }
+  .login-dialog label { display: block; margin: 0 0 7px; color: hsl(var(--foreground)); font: 700 10px var(--app-font-mono); text-transform: uppercase; }
+  .login-tabs { display: flex; gap: 4px; margin: 4px 0 20px; padding: 4px; border: 1px solid hsl(var(--border)); border-radius: 999px; background: hsl(var(--muted)); }
+  .login-tab { flex: 1; border: 0; background: transparent; padding: 9px 0; border-radius: 999px; font-size: 11px; font-weight: 700; color: hsl(var(--muted-foreground)); }
+  .login-tab.active { background: hsl(var(--card)); color: hsl(var(--foreground)); box-shadow: 0 2px 6px hsl(348 25% 18% / .08); }
+  .google-button { width: 100%; min-height: 45px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; border: 1px solid hsl(var(--border)); border-radius: 999px; background: hsl(var(--card)); color: hsl(var(--foreground)); font-size: 12px; font-weight: 700; }
+  .google-button:hover:not(:disabled) { border-color: hsl(var(--primary)); }
+  .google-button:disabled { opacity: .5; }
+  .divider-row { display: flex; align-items: center; gap: 10px; margin: 18px 0 16px; color: hsl(var(--muted-foreground)); font: 700 9px var(--app-font-mono); text-transform: uppercase; letter-spacing: .06em; }
+  .divider-row::before, .divider-row::after { content: ""; flex: 1; height: 1px; background: hsl(var(--border)); }
+  .login-field { width: 100%; height: 44px; padding: 0 12px; border: 1px solid hsl(var(--border)); border-radius: 10px; outline: 0; background: hsl(var(--background)); color: hsl(var(--foreground)); font-size: 13px; margin-bottom: 13px; }
+  .login-field:focus { border-color: hsl(var(--primary)); box-shadow: 0 0 0 3px hsl(var(--primary) / .1); }
+  .login-error { margin: 12px 0 0; padding: 10px 12px; border-left: 3px solid hsl(var(--primary)); background: hsl(var(--primary) / .08); color: hsl(var(--foreground)); font-size: 11px; line-height: 1.45; }
+  .login-notice { margin: 12px 0 0; padding: 10px 12px; border-left: 3px solid hsl(var(--secondary)); background: hsl(var(--secondary) / .08); color: hsl(var(--foreground)); font-size: 11px; line-height: 1.45; }
+  .login-switch-note { margin: 15px 0 0; color: hsl(var(--muted-foreground)); font-size: 11px; text-align: center; }
+  .login-switch-note button { border: 0; background: transparent; padding: 0; color: hsl(var(--primary)); font-size: 11px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+  .account-chip { display: flex; align-items: center; gap: 12px; margin: 4px 0 20px; padding: 12px 14px; border: 1px solid hsl(var(--border)); border-radius: 14px; background: hsl(var(--muted)); }
+  .account-chip svg { color: hsl(var(--primary)); flex: 0 0 auto; }
+  .account-chip strong { display: block; font-size: 13px; word-break: break-all; }
+  .account-chip span { display: block; margin-top: 2px; color: hsl(var(--muted-foreground)); font-size: 11px; }
+  .verify-badge { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 10px; font-weight: 700; }
+  .verify-badge.is-verified { color: hsl(var(--secondary)); }
+  .verify-badge.is-unverified { color: hsl(var(--primary)); }
+  .otp-field { width: 100%; height: 54px; padding: 0 12px; border: 1px solid hsl(var(--border)); border-radius: 10px; outline: 0; background: hsl(var(--background)); color: hsl(var(--foreground)); font: 700 26px var(--app-font-mono); letter-spacing: .5em; text-align: center; margin-bottom: 13px; }
+  .otp-field:focus { border-color: hsl(var(--primary)); box-shadow: 0 0 0 3px hsl(var(--primary) / .1); }
+  .otp-actions-row { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; font-size: 11px; }
+  .otp-actions-row button { border: 0; background: transparent; color: hsl(var(--primary)); font-weight: 700; padding: 0; }
+  .otp-actions-row button:disabled { color: hsl(var(--muted-foreground)); cursor: not-allowed; }
+  .login-notice.good { border-color: hsl(var(--secondary)); background: hsl(var(--secondary) / .08); }
+
+  /* ---- password strength checklist (signup) ---- */
+  .password-requirements { list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; margin: 0 0 13px; padding: 10px 12px; border-radius: 10px; background: hsl(var(--muted)); }
+  .password-requirements li { position: relative; padding-left: 18px; color: hsl(var(--muted-foreground)); font-size: 10px; font-weight: 700; }
+  .password-requirements li::before { content: "\2022"; position: absolute; left: 3px; top: 0; color: hsl(var(--muted-foreground)); font-size: 13px; line-height: 1.4; }
+  .password-requirements li.rule-met { color: hsl(var(--secondary)); }
+  .password-requirements li.rule-met::before { content: "\2713"; color: hsl(var(--secondary)); font-size: 10px; }
+
+  /* ---- settings / login activity log ---- */
+  .login-log-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; max-height: 320px; overflow-y: auto; }
+  .login-log-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 10px; background: hsl(var(--muted)); font-size: 11px; }
+  .login-log-row .log-status { font-weight: 700; }
+  .login-log-row .log-meta { color: hsl(var(--muted-foreground)); font-size: 10px; text-align: right; }
+  .login-log-row.log-success .log-status { color: hsl(var(--secondary)); }
+  .login-log-row.log-failed .log-status { color: hsl(var(--primary)); }
+  .login-log-row.log-locked .log-status { color: hsl(28 85% 45%); }
+
+  /* ---- idle "are you still there?" prompt ---- */
+  .idle-overlay { z-index: 90; }
+  .idle-dialog { text-align: center; padding: 32px 30px; }
+  .idle-dialog h2 { margin: 0 0 10px; font-size: 26px; }
+
+  .mimicart-toast { position: fixed; top: 22px; left: 50%; transform: translateX(-50%); z-index: 90; display: flex; align-items: center; gap: 10px; max-width: min(90vw, 400px); padding: 14px 18px; border-radius: 14px; background: hsl(var(--foreground)); color: hsl(var(--card)); font-size: 12px; font-weight: 600; line-height: 1.4; box-shadow: 0 16px 40px hsl(348 25% 18% / .3); animation: float-in .3s cubic-bezier(.22,1,.36,1) both; }
+  .mimicart-toast svg { flex: 0 0 auto; color: hsl(var(--accent)); }
+  .mimicart-toast.welcome-toast { background: hsl(var(--card)); color: hsl(var(--foreground)); border: 1px solid hsl(var(--border)); box-shadow: var(--shadow-card); }
+  .welcome-toast-mark { flex: 0 0 auto; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 10px 10px 10px 3px; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); font: 800 17px/1 var(--app-font-serif); transform: rotate(-6deg); }
+  .welcome-toast-copy strong { display: block; font-size: 13px; }
+  .welcome-toast-copy span { display: block; color: hsl(var(--muted-foreground)); font-size: 11px; margin-top: 1px; }
+  @media (max-width: 480px) { .mimicart-toast { top: 12px; width: calc(100% - 24px); } }
+  /* ---- tiktok-style shipment stage tracker (customer order tracking) ---- */
+  .orders-dialog { width: min(560px, 100%); max-height: 86vh; overflow-y: auto; padding: 30px 26px; border-radius: 24px; background: hsl(var(--card)); border: 1px solid hsl(var(--border)); box-shadow: var(--shadow-card); position: relative; }
+  .orders-list { display: flex; flex-direction: column; gap: 16px; margin-top: 18px; }
+  .order-track-card { padding: 16px 16px 18px; border: 1px solid hsl(var(--border)); border-radius: 16px; background: hsl(var(--background)); }
+  .order-track-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+  .order-track-head strong { font-size: 13px; }
+  .order-track-head span { display: block; color: hsl(var(--muted-foreground)); font-size: 11px; margin-top: 2px; }
+  .order-track-badge { flex-shrink: 0; padding: 3px 10px; border-radius: 999px; font: 700 10px var(--app-font-mono); text-transform: uppercase; background: hsl(var(--accent) / .3); color: hsl(30 70% 32%); }
+  .order-track-badge.is-live { background: hsl(var(--secondary) / .15); color: hsl(var(--secondary)); }
+  .order-track-badge.is-done { background: hsl(var(--secondary) / .15); color: hsl(var(--secondary)); }
+  .order-track-badge.is-cancelled { background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); }
+  .order-track-items { margin: 8px 0 14px; color: hsl(var(--muted-foreground)); font-size: 11px; }
+  .tiktok-tracker { display: flex; align-items: flex-start; }
+  .tiktok-step { flex: 1; display: flex; flex-direction: column; align-items: center; text-align: center; position: relative; }
+  .tiktok-step-icon { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); border: 2px solid hsl(var(--muted)); z-index: 1; }
+  .tiktok-step.is-done .tiktok-step-icon { background: hsl(var(--secondary)); border-color: hsl(var(--secondary)); color: hsl(var(--card)); }
+  .tiktok-step.is-current .tiktok-step-icon { background: hsl(var(--primary)); border-color: hsl(var(--primary)); color: hsl(var(--primary-foreground)); animation: pulse-ring 1.8s ease-in-out infinite; }
+  .tiktok-step-label { margin-top: 7px; font-size: 9.5px; font-weight: 700; color: hsl(var(--muted-foreground)); line-height: 1.3; }
+  .tiktok-step.is-done .tiktok-step-label, .tiktok-step.is-current .tiktok-step-label { color: hsl(var(--foreground)); }
+  .tiktok-step-connector { position: absolute; top: 15px; left: -50%; width: 100%; height: 2px; background: hsl(var(--muted)); z-index: 0; }
+  .tiktok-step.is-done .tiktok-step-connector { background: hsl(var(--secondary)); }
+  .tiktok-step:first-child .tiktok-step-connector { display: none; }
+  @keyframes pulse-ring { 0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / .35); } 50% { box-shadow: 0 0 0 6px hsl(var(--primary) / 0); } }
+  .order-reminder-note { margin: 10px 0 0; padding: 9px 11px; border-radius: 10px; background: hsl(var(--accent) / .25); color: hsl(30 70% 30%); font-size: 11px; line-height: 1.5; }
+  .orders-empty-note { margin-top: 14px; color: hsl(var(--muted-foreground)); font-size: 12px; text-align: center; padding: 30px 10px; }
+  /* ---- notification bell dropdown ---- */
+  .notif-panel { position: fixed; z-index: 91; width: min(360px, 92vw); max-height: 70vh; overflow-y: auto; border-radius: 18px; background: hsl(var(--card)); border: 1px solid hsl(var(--border)); box-shadow: var(--shadow-card); padding: 8px; }
+  .notif-panel-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 10px 8px; }
+  .notif-panel-head h3 { margin: 0; font-size: 13px; font-family: var(--app-font-serif); }
+  .notif-panel-head button { color: hsl(var(--primary)); font-size: 11px; font-weight: 700; background: none; border: 0; }
+  .notif-item { display: flex; gap: 10px; padding: 10px; border-radius: 12px; }
+  .notif-item + .notif-item { margin-top: 2px; }
+  .notif-item.is-unread { background: hsl(var(--accent) / .16); }
+  .notif-item-icon { flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: hsl(var(--primary) / .12); color: hsl(var(--primary)); font-size: 14px; }
+  .notif-item-body strong { display: block; font-size: 12px; }
+  .notif-item-body span { display: block; color: hsl(var(--muted-foreground)); font-size: 11px; margin-top: 2px; line-height: 1.45; }
+  .notif-item-body small { display: block; color: hsl(var(--muted-foreground)); font-size: 10px; margin-top: 4px; }
+  .notif-empty { padding: 34px 16px; text-align: center; color: hsl(var(--muted-foreground)); font-size: 12px; }
+  /* ---- "is this you?" identity confirmation (auto-restored sessions) ---- */
+  .confirm-identity-dialog { width: min(380px, 100%); text-align: center; padding: 30px 28px; border-radius: 20px; background: hsl(var(--card)); border: 1px solid hsl(var(--border)); box-shadow: var(--shadow-card); }
+  .confirm-identity-dialog .login-mark { margin: 0 auto 14px; }
+  .confirm-identity-dialog h2 { margin: 0 0 8px; font-size: 21px; }
+  .confirm-identity-dialog p { margin: 0 0 20px; color: hsl(var(--muted-foreground)); font-size: 13px; line-height: 1.6; }
+  .confirm-identity-dialog p strong { color: hsl(var(--foreground)); }
+  .confirm-identity-actions { display: flex; gap: 10px; }
+  .confirm-identity-actions button { flex: 1; }
+
+  @media (max-width: 980px) {
+    .desktop-nav { gap: 16px; }
+    .product-grid { grid-template-columns: repeat(3, 1fr); }
+    .category-rail { grid-template-columns: repeat(3, 1fr); }
+    .category-tile:nth-child(3) { border-right: 0; }
+    .category-tile:nth-child(n+4) { border-top: 1px solid hsl(var(--border)); }
+  }
+  @media (max-width: 720px) {
+    .header-inner, .hero-section, .category-section, .catalogue-section, .story-panel, .site-footer { width: min(100% - 32px, 600px); }
+    .header-inner { height: 68px; }
+    .brand-sub { display: none; }
+    .brand-word { font-size: 22px; }
+    .brand-mark { width: 30px; height: 30px; font-size: 22px; }
+    .desktop-nav { position: absolute; top: 67px; left: 0; right: 0; display: none; flex-direction: column; align-items: stretch; gap: 0; padding: 8px 16px 16px; border-bottom: 1px solid hsl(var(--border)); background: rgba(255, 250, 240, .98); box-shadow: var(--shadow-soft); }
+    .desktop-nav.mobile-nav-open { display: flex; }
+    .nav-link { padding: 13px 0; text-align: left; border-bottom: 1px solid hsl(var(--border)); }
+    .nav-link.active::after { display: none; }
+    .mobile-menu-button { display: grid; }
+    .header-cart span { display: none; }
+    .header-cart { padding-left: 10px; }
+    .hero-section { display: block; min-height: 760px; padding: 67px 0 95px; }
+    .hero-title { font-size: clamp(59px, 15vw, 85px); }
+    .hero-description { font-size: 13px; }
+    .hero-stage { min-height: 365px; margin-top: 38px; }
+    .hero-shelf-card { left: 15%; width: 70%; }
+    .hero-shelf-card .product-art { height: 205px; }
+    .hero-stamp { right: 2%; width: 74px; height: 74px; }
+    .hero-stamp span { font-size: 21px; }
+    .hero-mini-product { width: 105px; }
+    .hero-mini-product .product-art { height: 93px; }
+    .hero-mini-one { left: 0; bottom: 38px; }
+    .hero-mini-two { right: 0; bottom: 15px; }
+    .hero-aside-note { right: 8px; bottom: -4px; }
+    .hero-bottom-line { bottom: 18px; gap: 8px; font-size: 8px; }
+    .hero-bottom-line span:nth-child(2) { display: none; }
+    .hero-scroll { font-size: 8px; }
+    .category-section { padding: 82px 0 75px; }
+    .category-heading, .catalogue-heading-row { display: block; }
+    .category-heading p { margin-top: 18px; }
+    .category-rail { display: flex; overflow-x: auto; margin-right: -16px; padding-right: 16px; border: 0; gap: 9px; }
+    .category-tile { min-width: 142px; min-height: 145px; border: 1px solid hsl(var(--border)) !important; border-radius: 13px; }
+    .category-tile.selected { transform: none; }
+    .catalogue-section { padding-bottom: 82px; }
+    .catalogue-heading-row h2 { font-size: 53px; }
+    .search-wrap { margin-top: 26px; width: 100%; }
+    .product-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .product-art { height: 165px; }
+    .product-art-pack strong { font-size: 13px; }
+    .product-card-info { padding: 0 11px 12px; }
+    .product-card-title h3 { font-size: 12px; }
+    .product-card-bottom { margin-top: 11px; }
+    .product-card-bottom > strong { font-size: 15px; }
+    .add-button { padding: 0 9px; font-size: 9px; }
+    .story-panel { display: block; }
+    .story-copy { padding: 44px 28px 52px; }
+    .story-art { min-height: 360px; }
+    .story-circle { width: 180px; height: 180px; top: 37px; left: 13%; font-size: 29px; }
+    .story-card { width: 150px; height: 188px; }
+    .story-card-front { right: 16%; bottom: 38px; }
+    .story-card-back { right: 6%; bottom: 28px; }
+    .promise-row { width: min(100% - 32px, 600px); grid-template-columns: 1fr; gap: 19px; margin-top: 28px; }
+    .site-footer { display: flex; flex-wrap: wrap; gap: 16px; }
+    .site-footer > p { width: 100%; }
+    .footer-small { width: 100%; }
+    .overlay { padding: 10px; }
+    .product-dialog { display: block; max-height: calc(100dvh - 20px); overflow-y: auto; }
+    .dialog-art { padding: 20px; }
+    .dialog-art .product-art { min-height: 245px; height: 245px; }
+    .dialog-content { padding: 28px 22px 25px; }
+    .dialog-content h2 { font-size: 39px; }
+    .staff-dialog { padding: 33px 25px 27px; }
+  }
+  @media (max-width: 420px) {
+    .hero-title { font-size: 59px; }
+    .category-heading h2 { font-size: 48px; }
+    .catalogue-heading-row h2 { font-size: 47px; }
+    .product-art { height: 145px; }
+    .product-art-pack { min-height: 105px; width: 65%; }
+    .product-art-pack strong { max-width: 75px; font-size: 11px; }
+    .product-art-korean { font-size: 7px; }
+    .product-art-flavor { font-size: 6px; }
+    .product-art-sticker { width: 29px; height: 29px; font-size: 7px; top: 12px; right: 12px; }
+    .product-card-meta { left: 14px; right: 14px; top: 15px; font-size: 7px; }
+    .product-card-title h3 { font-size: 11px; }
+    .favorite-button { width: 25px; height: 25px; }
+    .add-button { padding: 0 7px; }
+  }
+  [hidden] { display: none !important; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .animate-in, .floating, .skeleton, .overlay, .drawer-shell, .cart-drawer { animation: none !important; }
+    .primary-button, .product-card, .category-tile { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="app-shell noise" id="app-shell">
+
+  <header class="site-header">
+    <div class="header-inner">
+      <button class="brand-button focus-ring" type="button" data-nav="top">
+        <div class="brand">
+          <span class="brand-mark">m</span>
+          <span class="brand-word">Mimi<span>Cart</span></span>
+          <span class="brand-sub">Mimi&apos;s Sweets &amp; Korean Mart</span>
+        </div>
+      </button>
+      <nav class="desktop-nav" id="desktop-nav" aria-label="Primary navigation">
+        <button type="button" class="nav-link active" data-nav="top">Home</button>
+        <button type="button" class="nav-link" data-nav="categories">Shop shelves</button>
+        <button type="button" class="nav-link" data-nav="story">Our corner</button>
+        <button type="button" class="nav-link" id="nav-staff">Staff access</button>
+      </nav>
+      <div class="header-actions">
+        <button class="header-icon-button focus-ring" type="button" data-nav="catalogue" aria-label="Search the catalogue">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        </button>
+        <button class="header-icon-button focus-ring" type="button" id="orders-button" aria-label="Track your orders">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 9.4 7.55 4.24"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+        </button>
+        <button class="header-icon-button focus-ring notif-button" type="button" id="notif-button" aria-label="Order notifications" hidden>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="notif-badge" id="notif-badge" hidden>0</span>
+        </button>
+        <button class="header-icon-button focus-ring" type="button" id="account-button" aria-label="Sign in">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </button>
+        <button class="header-cart focus-ring" type="button" id="open-cart">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+          <span>Reservation cart</span>
+          <b id="cart-count">0</b>
+        </button>
+        <button class="mobile-menu-button focus-ring" type="button" id="mobile-menu-toggle" aria-expanded="false" aria-label="Toggle menu">
+          <svg id="menu-icon" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero-section" id="top">
+      <div class="hero-orbit hero-orbit-one"></div>
+      <div class="hero-orbit hero-orbit-two"></div>
+      <div class="hero-copy animate-in">
+        <div class="eyebrow"><span class="eyebrow-dot"></span> your neighborhood, online</div>
+        <h1 class="hero-title font-display">Tiny treats.<br /><em>Big Seoul</em> energy.</h1>
+        <p class="hero-description">Korean market favorites, handpicked for the snack drawer, the late-night study break, and the friend who always asks, “where did you get that?”</p>
+        <div class="hero-actions">
+          <button type="button" class="primary-button focus-ring" data-nav="categories">
+            Browse the shelves
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </button>
+          <span class="hero-note">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            reserve now, pay at pickup
+          </span>
+        </div>
+      </div>
+      <div class="hero-stage" aria-label="A selection of MimiCart products">
+        <div class="hero-stamp floating"><span>동네</span><small>neighborhood</small></div>
+        <div class="hero-shelf-card">
+          <div class="shelf-topline"><span>오늘의 간식</span><span>01 / 04</span></div>
+          <div id="hero-shelf-art"></div>
+          <div class="shelf-caption"><span>sweet shelf</span><strong>one for you,<br />one for later.</strong></div>
+        </div>
+        <div class="hero-mini-product hero-mini-one floating" id="hero-mini-one"></div>
+        <div class="hero-mini-product hero-mini-two floating" id="hero-mini-two"></div>
+        <div class="hero-aside-note"><span>02</span><div><strong>Curated weekly</strong><small>new finds, old favorites</small></div></div>
+      </div>
+      <div class="hero-bottom-line">
+        <span>서울에서 온 작은 행복</span>
+        <span>small joys from Seoul</span>
+        <span class="hero-scroll"><span></span> scroll to explore</span>
+      </div>
+    </section>
+
+    <section class="category-section" id="categories">
+      <div class="section-kicker"><span>01</span><span>find your mood</span><span class="kicker-rule"></span></div>
+      <div class="category-heading">
+        <div><h2 class="font-display">What are we<br /><em>craving today?</em></h2></div>
+        <p>Start with a feeling. We&apos;ll take it from there.</p>
+      </div>
+      <div class="category-rail hide-scrollbar" id="category-rail"></div>
+    </section>
+
+    <section class="catalogue-section" id="catalogue">
+      <div class="catalogue-header">
+        <div class="section-kicker"><span>02</span><span>the mimi shelf</span><span class="kicker-rule"></span></div>
+        <div class="catalogue-heading-row">
+          <div><h2 class="font-display">Good things,<br /><em>on the shelf.</em></h2><p>Every item has a story. Usually it starts with “just try it.”</p></div>
+          <div class="search-wrap">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="search" id="search-input" placeholder="Search snacks, noodles..." aria-label="Search products" />
+            <button type="button" id="clear-search" hidden aria-label="Clear search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </div>
+        </div>
+      </div>
+      <div class="catalogue-toolbar">
+        <span class="result-count" id="result-count">8 finds waiting for you</span>
+        <button type="button" class="sort-button focus-ring" id="sort-button">Try chocolate finds <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+      </div>
+      <div class="product-grid" id="product-grid"></div>
+    </section>
+
+    <section class="story-section" id="story">
+      <div class="story-panel">
+        <div class="story-copy">
+          <div class="section-kicker light"><span>03</span><span>from mimi&apos;s corner</span><span class="kicker-rule"></span></div>
+          <h2 class="font-display">A small shop<br />with <em>good taste.</em></h2>
+          <p>Mimi started collecting the snacks she missed from Seoul. Then the shelf got bigger, friends got curious, and the corner shop became a little place to share.</p>
+          <div class="story-signature"><span class="signature-line"></span><div><strong>mimi</strong><small>always save room for one more</small></div></div>
+        </div>
+        <div class="story-art">
+          <div class="story-circle"><span>맛있게<br />드세요</span></div>
+          <div class="story-note"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18l-1 11H4L3 9Z"/><path d="M3 9V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3"/><path d="M9 13v3"/><path d="M15 13v3"/></svg><span>open for good finds</span></div>
+          <div class="story-card story-card-back"></div>
+          <div class="story-card story-card-front"><span class="story-card-label">MIMI&apos;S<br />SWEETS</span><strong>맛</strong><small>taste makes a memory</small></div>
+        </div>
+      </div>
+      <div class="promise-row">
+        <div><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 4.5L5 9l4.5 1.9L12 15l1.9-4.5L19 9l-4.5-1.9L12 3Z"/><path d="M5 21v-3M3.5 19.5h3"/><path d="M19 17v3M17.5 18.5h3"/></svg><div><strong>Handpicked shelf</strong><span>No filler, just favorites.</span></div></div>
+        <div><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><div><strong>Ready when you are</strong><span>Reserve now, pick up later.</span></div></div>
+        <div><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.5-1.5 3-3.28 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.22 1.5 4 3 5.5l7 7Z"/></svg><div><strong>Shared with love</strong><span>Made for the group chat.</span></div></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="brand brand-compact"><span class="brand-mark">m</span><span class="brand-word">Mimi<span>Cart</span></span></div>
+    <p>tiny treats from a very good corner shop.</p>
+    <button type="button" id="footer-staff" class="footer-link focus-ring">Staff sign-in <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+    <span class="footer-small">© 2024 MimiCart · made for snack people</span>
+  </footer>
+
+  <!-- Product dialog, cart drawer and staff dialog are injected here at runtime -->
+  <div id="overlay-root"></div>
+</div>
+
+<!-- ============================================================
+     FIREBASE AUTH — Google sign-in + Email/Password (both free,
+     no billing plan required, unlike Phone/SMS auth).
+     1. Go to https://console.firebase.google.com -> create/open a project.
+     2. Build > Authentication > Sign-in method > enable "Email/Password"
+        AND enable "Google" (pick a support email when prompted).
+     3. Project settings > General > "Your apps" > add a Web app, and
+        copy the config object it gives you into FIREBASE_CONFIG below.
+     4. Authentication > Settings > Authorized domains: add the domain(s)
+        this page will be hosted on (localhost is allowed by default,
+        which is why Google sign-in works right away when testing locally).
+     ============================================================ -->
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script>
+  var FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDp8BNZm515RdZm1kdonZbeUh5q8LmwM0w",
+  authDomain: "mimicart-7bfb1.firebaseapp.com",
+  projectId: "mimicart-7bfb1",
+  storageBucket: "mimicart-7bfb1.firebasestorage.app",
+  messagingSenderId: "903185481659",
+  appId: "1:903185481659:web:f678e3723ca80b70428e9e"
+  };
+  var firebaseAuth = null;
+  var firebaseDb = null;
+  var firebaseConfigured = FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey.indexOf('YOUR_') !== 0;
+  if (firebaseConfigured) {
+    try {
+      firebase.initializeApp(FIREBASE_CONFIG);
+      firebaseAuth = firebase.auth();
+      firebaseDb = firebase.firestore();
+    } catch (e) {
+      console.error('Firebase failed to initialize:', e);
+      firebaseConfigured = false;
+    }
+  } else {
+    console.warn('MimiCart: Firebase config placeholders are still in place — sign-in is disabled until FIREBASE_CONFIG is filled in.');
+  }
+</script>
+
+<!-- ============================================================
+     EMAILJS — sends the one-time code customers enter after
+     logging in with email/password. Create a free account at
+     emailjs.com, then fill in the three values below. The
+     template needs two variables: {{to_email}} and {{passcode}}.
+     ============================================================ -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+var EMAILJS_CONFIG = {
+  publicKey: "td2dyhUumgYzQThhx",
+  serviceId: "service_1b08qyf",
+  templateId: "template_na0d1kq"
+};
+// Set to false to skip the email OTP step entirely for email/password
+// logins (Google sign-in never used it). Handy while on EmailJS's free
+// trial. Set back to true whenever you want the extra verification step
+// again. Keep this the same as the admin dashboard's REQUIRE_OTP if you
+// want both to behave the same way.
+var REQUIRE_OTP = false;
+
+  // ---- contact country codes (phone contact method) ----
+  var COUNTRY_CODES = [
+    { code: '+63', label: '\uD83C\uDDF5\uD83C\uDDED +63 Philippines' },
+    { code: '+1', label: '\uD83C\uDDFA\uD83C\uDDF8 +1 US / Canada' },
+    { code: '+44', label: '\uD83C\uDDEC\uD83C\uDDE7 +44 UK' },
+    { code: '+61', label: '\uD83C\uDDE6\uD83C\uDDFA +61 Australia' },
+    { code: '+65', label: '\uD83C\uDDF8\uD83C\uDDEC +65 Singapore' },
+    { code: '+971', label: '\uD83C\uDDE6\uD83C\uDDEA +971 UAE' },
+    { code: '+852', label: '\uD83C\uDDED\uD83C\uDDF0 +852 Hong Kong' },
+    { code: '+966', label: '\uD83C\uDDF8\uD83C\uDDE6 +966 Saudi Arabia' },
+    { code: '+81', label: '\uD83C\uDDEF\uD83C\uDDF5 +81 Japan' },
+    { code: '+82', label: '\uD83C\uDDF0\uD83C\uDDF7 +82 South Korea' }
+  ];
+
+  // ---- PH regions \u2192 provinces (for the structured delivery address) ----
+  var PH_REGIONS = [
+    { name: 'National Capital Region (NCR)', provinces: [] },
+    { name: 'Cordillera Administrative Region (CAR)', provinces: ['Abra', 'Apayao', 'Benguet', 'Ifugao', 'Kalinga', 'Mountain Province'] },
+    { name: 'Region I \u2013 Ilocos Region', provinces: ['Ilocos Norte', 'Ilocos Sur', 'La Union', 'Pangasinan'] },
+    { name: 'Region II \u2013 Cagayan Valley', provinces: ['Batanes', 'Cagayan', 'Isabela', 'Nueva Vizcaya', 'Quirino'] },
+    { name: 'Region III \u2013 Central Luzon', provinces: ['Aurora', 'Bataan', 'Bulacan', 'Nueva Ecija', 'Pampanga', 'Tarlac', 'Zambales'] },
+    { name: 'Region IV-A \u2013 CALABARZON', provinces: ['Batangas', 'Cavite', 'Laguna', 'Quezon', 'Rizal'] },
+    { name: 'MIMAROPA Region', provinces: ['Marinduque', 'Occidental Mindoro', 'Oriental Mindoro', 'Palawan', 'Romblon'] },
+    { name: 'Region V \u2013 Bicol Region', provinces: ['Albay', 'Camarines Norte', 'Camarines Sur', 'Catanduanes', 'Masbate', 'Sorsogon'] },
+    { name: 'Region VI \u2013 Western Visayas', provinces: ['Aklan', 'Antique', 'Capiz', 'Guimaras', 'Iloilo', 'Negros Occidental'] },
+    { name: 'Region VII \u2013 Central Visayas', provinces: ['Bohol', 'Cebu', 'Negros Oriental', 'Siquijor'] },
+    { name: 'Region VIII \u2013 Eastern Visayas', provinces: ['Biliran', 'Eastern Samar', 'Leyte', 'Northern Samar', 'Samar', 'Southern Leyte'] },
+    { name: 'Region IX \u2013 Zamboanga Peninsula', provinces: ['Zamboanga del Norte', 'Zamboanga del Sur', 'Zamboanga Sibugay'] },
+    { name: 'Region X \u2013 Northern Mindanao', provinces: ['Bukidnon', 'Camiguin', 'Lanao del Norte', 'Misamis Occidental', 'Misamis Oriental'] },
+    { name: 'Region XI \u2013 Davao Region', provinces: ['Davao de Oro', 'Davao del Norte', 'Davao del Sur', 'Davao Occidental', 'Davao Oriental'] },
+    { name: 'Region XII \u2013 SOCCSKSARGEN', provinces: ['Cotabato', 'Sarangani', 'South Cotabato', 'Sultan Kudarat'] },
+    { name: 'Region XIII \u2013 Caraga', provinces: ['Agusan del Norte', 'Agusan del Sur', 'Dinagat Islands', 'Surigao del Norte', 'Surigao del Sur'] },
+    { name: 'BARMM', provinces: ['Basilan', 'Lanao del Sur', 'Maguindanao del Norte', 'Maguindanao del Sur', 'Sulu', 'Tawi-Tawi'] }
+  ];
+  function provincesForRegion(regionName) {
+    var region = PH_REGIONS.filter(function (r) { return r.name === regionName; })[0];
+    return region ? region.provinces : [];
+  }
+
+  var emailjsConfigured = Object.keys(EMAILJS_CONFIG).every(function (k) {
+    return EMAILJS_CONFIG[k] && EMAILJS_CONFIG[k].indexOf('YOUR_') !== 0;
+  });
+  if (emailjsConfigured) {
+    try { emailjs.init({ publicKey: EMAILJS_CONFIG.publicKey }); }
+    catch (e) { console.error('EmailJS failed to initialize:', e); emailjsConfigured = false; }
+  }
+</script>
+
+
+
+<script>
+(function () {
+  "use strict";
+
+  // Palette + pattern cycles used to generate distinct illustrated packaging
+  // for every product until real photos are dropped in via `image:`.
+  var PALETTE = [
+    ['#f6c64a', '#b74834'], ['#d77454', '#f8dfb2'], ['#375f56', '#f1cf62'], ['#9bbdb4', '#fbf1d4'],
+    ['#d9503f', '#f7b657'], ['#bd7952', '#f4db9b'], ['#e0b83d', '#fff2b8'], ['#3a6253', '#d9b95d'],
+    ['#7a8fae', '#eef1ee'], ['#c26b7a', '#f6dfe3'], ['#5c8a72', '#eef0c9'], ['#a85c8a', '#f3d9e6'],
+    ['#4a7c6a', '#dff0e0'], ['#8a5a3c', '#f0d2a8']
+  ];
+  var PATTERNS = ['waves', 'dots', 'checks', 'rays'];
+
+  // Raw catalog data — id, display name, a short subtitle (Hangul where the
+  // product genuinely has a Korean name, an English descriptor otherwise),
+  // category, price, stock, optional badge, description and flavor tag.
+  // Add an `image: 'products/filename.png'` property to any entry below to
+  // swap its illustrated packaging for a real photo once one is uploaded.
+  var RAW_PRODUCTS = [
+    // Drinks
+    ['soju', 'Soju', '소주', 'Drinks', 5.5, 14, 'Shop favorite', 'Classically clean and crisp — Korea\u2019s most iconic bottle, ready to pour.', 'clean + smooth'],
+    ['pororo', 'Pororo Juice', 'kids\u2019 juice box', 'Drinks', 2.25, 20, null, 'A cheerful juice box with the little blue penguin along for the ride.', 'fruity + fun'],
+    ['sparkling-lemonade', 'Sparkling Lemonade Juice', 'citrus fizz', 'Drinks', 3.25, 12, null, 'Bright, fizzy lemonade with a fruity citrus kick.', 'citrus fizz'],
+    ['pink-peachade', 'Pink Peachade', 'peach soda', 'Drinks', 2.95, 15, null, 'Soft peach soda with a blush-pink sparkle.', 'peachy fizz'],
+    ['banana-milk', 'Banana Milk', '바나나맛 우유', 'Drinks', 3.25, 10, 'Nostalgia', 'The iconic little bottle: mellow banana, creamy sweetness, no fuss.', 'soft + creamy'],
+    ['yakult-big', 'Yakult Big', '야쿠르트', 'Drinks', 4.5, 9, 'Family size', 'A jumbo-sized version of the tangy probiotic sipper everyone loves.', 'tangy + sweet'],
+    ['strawberry-milk', 'Strawberry Milk', '딸기우유', 'Drinks', 2.75, 16, null, 'Pastel-pink milk with real strawberry sweetness.', 'berry + creamy'],
+    ['oatside', 'Oatside', 'oat milk', 'Drinks', 3.95, 11, null, 'Creamy oat milk, dairy-free and smooth for any time of day.', 'smooth + dairy-free'],
+    ['welchs', 'Welch\u2019s', 'grape juice', 'Drinks', 2.5, 18, null, 'Grape juice that tastes like purple candy, in the best way.', 'grape candy'],
+    ['caffebene', 'Caffe Bene', 'iced caf\u00e9 latte', 'Drinks', 3.75, 8, 'Chill it', 'Korean caf\u00e9-style iced coffee, sweet and smooth.', 'sweet + roasted'],
+    // Frozen
+    ['sausage', 'Sausage', 'grill-ready', 'Frozen', 6.5, 10, null, 'Juicy grilled sausages, ready to pan-fry in minutes.', 'smoky + savory'],
+    ['sausage-korea-pork', 'Sausage (Korea Pork)', 'korean pork sausage', 'Frozen', 7.25, 8, null, 'Korean-style pork sausage with a savory, garlicky snap.', 'garlicky + savory'],
+    ['samanco', 'Samanco', 'ice cream sandwich', 'Frozen', 3.5, 14, null, 'A soft ice cream sandwich tucked between two crisp wafers.', 'sweet + crisp'],
+    ['melona', 'Melona', 'melon ice pop', 'Frozen', 2.75, 20, 'Chill it', 'Melon-flavored ice pop with a soft, milky bite.', 'melon + milky'],
+    ['crab-stick', 'Crab Stick', 'hot pot staple', 'Frozen', 4.25, 12, null, 'Sweet, springy imitation crab for hot pot or salad.', 'sweet + springy'],
+    ['hotpot', 'Hotpot', 'simmer-ready base', 'Frozen', 11.9, 6, 'New in', 'A ready-to-simmer hot pot base with all the fixings.', 'savory broth'],
+    ['la-beaute', 'La Beaute', 'rice cake dessert', 'Frozen', 5.5, 0, null, 'Delicate rice cake dessert, light and lightly sweet.', 'light + sweet'],
+    ['enoki-meat-roll', 'Enoki Meat Roll', 'beef + enoki rolls', 'Frozen', 6.75, 9, null, 'Thin beef wrapped around bundles of enoki mushroom.', 'savory + umami'],
+    ['ice-cream', 'Ice Cream', 'vanilla tub', 'Frozen', 5.25, 13, null, 'A tub of creamy vanilla, ready whenever the craving hits.', 'sweet + creamy'],
+    ['cheese', 'Cheese', 'sliceable + meltable', 'Frozen', 4.95, 15, null, 'Sliceable, meltable cheese for stews, toast, and midnight snacks.', 'rich + melty'],
+    // Korean Noodles
+    ['buldak-rose', 'Buldak Rose', '불닭로제', 'Korean Noodles', 3.25, 16, null, 'Creamy tomato heat — the ros\u00e9 twist on the fire noodle.', 'spicy + creamy'],
+    ['buldak-swicy', 'Buldak Swicy', 'sweet + spicy', 'Korean Noodles', 3.25, 14, null, 'Sweet meets spicy in this milder fire noodle remix.', 'sweet + spicy'],
+    ['cheese-ramen-stir-fry', 'Cheese Ramen Stir Fry', 'cheesy stir-fry', 'Korean Noodles', 3.5, 10, null, 'Stir-fried noodles finished with a blanket of melted cheese.', 'cheesy + savory'],
+    ['shin-ramyun', 'Shin Ramyun', '신라면', 'Korean Noodles', 2.25, 24, 'Mimi pick', 'The classic red bowl: spicy, beefy, and endlessly comforting.', 'spicy + beefy'],
+    ['buldak-carbonara', 'Buldak Carbonara', '불닭까르보나라', 'Korean Noodles', 3.25, 18, 'Best seller', 'Fire noodles gone creamy with a smoky carbonara sauce.', 'spicy + smoky'],
+    ['quattro-cheese', 'Quattro Cheese', 'four-cheese bowl', 'Korean Noodles', 3.5, 12, null, 'Four cheeses, one bowl, maximum comfort.', 'four-cheese rich'],
+    ['buldak-cream-carbonara', 'Buldak Cream Carbonara', 'extra-creamy carbonara', 'Korean Noodles', 3.5, 11, null, 'An extra-silky carbonara spin on the original fire noodle.', 'extra creamy heat'],
+    ['jin', 'Jin Ramyun', '진라면', 'Korean Noodles', 2.1, 22, null, 'A no-fuss favorite: light broth, soft noodles, done in minutes.', 'light + savory'],
+    ['buldak-spicy-2x', 'Buldak (Spicy 2\u00d7)', 'extra-spicy 2\u00d7', 'Korean Noodles', 3.4, 9, null, 'For the heat-seekers: double the spice of the original fire noodle.', 'extra spicy'],
+    // Sweets
+    ['nerds', 'Nerds', 'crunchy candy', 'Sweets', 2.95, 17, null, 'Tiny, crunchy candy clusters in a rainbow of flavors.', 'tangy + crunchy'],
+    ['mnms', 'M&M\u2019s', 'candy-coated chocolate', 'Sweets', 3.25, 20, null, 'Colorful candy shells around a smooth chocolate center.', 'sweet + crunchy'],
+    ['maltesers', 'Maltesers', 'malt + chocolate', 'Sweets', 4.25, 12, null, 'Light, crunchy malt balls coated in milk chocolate.', 'malty crunch'],
+    ['hershey', 'Hershey', 'milk chocolate', 'Sweets', 2.75, 19, null, 'Classic milk chocolate, simple and familiar.', 'classic chocolate'],
+    ['pistachio', 'Pistachio', 'roasted nuts', 'Sweets', 6.5, 8, null, 'Roasted pistachios with a naturally rich, nutty bite.', 'roasted + nutty'],
+    ['macadamia', 'Macadamia', 'roasted nuts', 'Sweets', 7.9, 7, null, 'Buttery macadamia nuts, roasted to a perfect crunch.', 'buttery + nutty'],
+    ['kisses', 'Kisses', 'chocolate drops', 'Sweets', 4.5, 0, null, 'Bite-sized chocolate drops, perfect for sharing (or not).', 'smooth chocolate'],
+    ['bounty', 'Bounty', 'coconut + chocolate', 'Sweets', 2.95, 14, null, 'Coconut filling wrapped in a coat of milk chocolate.', 'coconut + chocolate'],
+    ['nutella', 'Nutella', 'hazelnut cocoa spread', 'Sweets', 6.25, 10, 'Shop favorite', 'Smooth hazelnut cocoa spread for toast, spoons, everything.', 'rich hazelnut'],
+    ['coco-manisa', 'Coco Manisa', 'chewy coconut candy', 'Sweets', 3.75, 13, null, 'Chewy coconut candy with a soft caramel sweetness.', 'chewy + sweet'],
+    // Snacks
+    ['pepero', 'Pepero', '빼빼로', 'Snacks', 3.75, 16, 'Best seller', 'Crunchy almond pieces tucked into a chocolate-dipped biscuit stick.', 'chocolate crunch'],
+    ['energy-bar', 'Energy Bar', 'oats + honey', 'Snacks', 2.25, 21, null, 'A grab-and-go bar with oats, nuts, and a hint of honey.', 'oat + honey'],
+    ['sunflower-seed', 'Sunflower Seed', 'roasted + salted', 'Snacks', 3.1, 15, null, 'Roasted and salted seeds for a slow, snackable break.', 'roasted + salty'],
+    ['favo-rocco', 'Favo Rocco', 'wafer rolls', 'Snacks', 3.5, 10, null, 'Crispy wafer rolls with a light hazelnut filling.', 'hazelnut crunch'],
+    ['lays-stax', 'Lays Stax', 'stackable crisps', 'Snacks', 3.25, 18, null, 'Stackable potato crisps in a resealable tube.', 'crispy + salty'],
+    ['pringles', 'Pringles', 'stackable crisps', 'Snacks', 3.5, 20, 'New in', 'The iconic stackable chip in a satisfying tube.', 'crispy + salty'],
+    ['mini-krunch', 'Mini Krunch', 'corn puffs', 'Snacks', 2.75, 0, null, 'Bite-sized crunchy corn snacks, light and airy.', 'light + crunchy'],
+    ['caramel-popcorn', 'Caramel Popcorn', 'buttery caramel', 'Snacks', 4.25, 11, null, 'Popcorn glazed in a buttery caramel coating.', 'sweet + buttery'],
+    ['nachos', 'Nachos', 'corn chips', 'Snacks', 3.95, 13, null, 'Crunchy corn chips ready for cheese, salsa, or both.', 'crunchy + salty'],
+    ['chicharon', 'Chicharon', 'pork rinds', 'Snacks', 2.95, 9, null, 'Crispy fried pork rinds with a salty crunch.', 'crispy + salty']
+  ];
+
+  // Drop real photos in here as you get them — key is the product id (first
+  // value in each RAW_PRODUCTS row above), value is the image's path or URL.
+  // A square photo (e.g. 1080x1080) fills the tile best; anything else gets
+  // cropped to fit. Leave a product out of this list and it keeps using its
+  // illustrated card.
+  //
+  // These paths assume an "images" folder sitting next to this HTML file,
+  // containing your PNGs with these exact names.
+  var PRODUCT_IMAGES = {
+    // Drinks
+    soju: 'images/SOJU.png',
+    pororo: 'images/PORORO.png',
+    'sparkling-lemonade': 'images/SPARKLING LEMONADE JUICE.png',
+    'pink-peachade': 'images/PINK PEACHADE.png',
+    'banana-milk': 'images/BANANA MILK.png',
+    'yakult-big': 'images/YAKULT BIG.png',
+    'strawberry-milk': 'images/STRAWBERRY MILK.png',
+    oatside: 'images/OATSIDE.png',
+    welchs: 'images/WELCHS.png',
+    caffebene: 'images/CAFFEBENE.png',
+    // Frozen
+    sausage: 'images/SAUSAGE.png',
+    'sausage-korea-pork': 'images/SAUSAGE(KOREA PORK).png',
+    samanco: 'images/SAMANCO.png',
+    melona: 'images/MELONA.png',
+    'crab-stick': 'images/CRAB STICK.png',
+    hotpot: 'images/HOTPOT.png',
+    'la-beaute': 'images/LA BEAUTE.png',
+    'enoki-meat-roll': 'images/ENOKI MEAT ROLL.png',
+    'ice-cream': 'images/ICE CREAM.png',
+    cheese: 'images/CHEESE.png',
+    // Korean Noodles
+    'buldak-rose': 'images/BULDAK ROSE.png',
+    'buldak-swicy': 'images/BULDAK SWICY.png',
+    'cheese-ramen-stir-fry': 'images/CHEESE RAMEN STIR FRY.png',
+    'shin-ramyun': 'images/SHIN RAMYUN.png',
+    'buldak-carbonara': 'images/BULDAK CARBONARA.png',
+    'quattro-cheese': 'images/QUATTRO CHEESE.png',
+    'buldak-cream-carbonara': 'images/BULDAK CREAM CARBONARA.png',
+    jin: 'images/JIN.png',
+    'buldak-spicy-2x': 'images/SPICYBULDAK69.png',
+    // Sweets
+    nerds: 'images/NERDS.png',
+    mnms: 'images/MMS.png',
+    maltesers: 'images/MALTESERS.png',
+    hershey: 'images/HERSHEY.png',
+    pistachio: 'images/PISTACHIO.png',
+    macadamia: 'images/MACADAMIA.png',
+    kisses: 'images/KISSES.png',
+    bounty: 'images/BOUNTY.png',
+    nutella: 'images/NUTELLA.png',
+    'coco-manisa': 'images/COCO MANISA.png',
+    // Snacks
+    pepero: 'images/PEPERO.png',
+    'energy-bar': 'images/ENERGYBAR.png',
+    'sunflower-seed': 'images/SUNFLOWER SEED.png',
+    'favo-rocco': 'images/FAVO ROCCO.png',
+    'lays-stax': 'images/LAYS STAX.png',
+    pringles: 'images/PRINGLES.png',
+    'mini-krunch': 'images/MINI KRUNCH.png',
+    'caramel-popcorn': 'images/CARAMEL POPCORN.png',
+    nachos: 'images/NACHOS.png',
+    chicharon: 'images/CHICHARON.png'
+  };
+
+  // This is the fallback/seed catalog. Once the admin page seeds the
+  // "products" collection in Firestore, the storefront below switches to
+  // reading live product + stock data from Firestore instead of this list.
+  var PRODUCTS = RAW_PRODUCTS.map(function (row, index) {
+    var colors = PALETTE[index % PALETTE.length];
+    return {
+      id: row[0], name: row[1], korean: row[2], category: row[3], price: row[4], stock: row[5],
+      badge: row[6] || undefined, description: row[7], flavor: row[8],
+      tone: colors[0], accent: colors[1], pattern: PATTERNS[index % PATTERNS.length],
+      image: PRODUCT_IMAGES[row[0]] || undefined
+    };
+  });
+  var usingLiveCatalog = false; // becomes true once Firestore returns real product docs
+
+  var CATEGORIES = [
+    { id: 'All', label: 'Everything', sublabel: 'the full shelf' },
+    { id: 'Drinks', label: 'Cool drinks', sublabel: 'bottles + fizz' },
+    { id: 'Frozen', label: 'Freezer finds', sublabel: 'heat + eat' },
+    { id: 'Korean Noodles', label: 'Noodle bar', sublabel: 'quick comfort' },
+    { id: 'Sweets', label: 'Sweet tooth', sublabel: 'little treats' },
+    { id: 'Snacks', label: 'Crunchy', sublabel: 'chips + bites' }
+  ];
+
+  var state = {
+    selectedCategory: 'All',
+    search: '',
+    favorites: new Set(),
+    cart: [], // { productId, quantity }
+    activeProductId: null,
+    cartOpen: false,
+    cartStep: 'bag',
+    staffOpen: false,
+    isLoading: true,
+    pickupDate: '',
+    pickupTime: '',
+    pickupName: '',
+
+    // ---- contact method (phone with country code, or email) ----
+    contactMethod: 'phone',   // 'phone' | 'email'
+    contactCountryCode: '+63',
+    contactPhone: '',
+    contactEmail: '',
+
+    fulfillment: 'pickup', // 'pickup' | 'delivery'
+
+    // ---- structured delivery address (region \u2192 province \u2192 city \u2192 barangay) ----
+    addressRegion: '',
+    addressProvince: '',
+    addressCity: '',
+    addressBarangay: '',
+    addressStreet: '',
+    deliveryNotes: '',
+    reservationSubmitting: false,
+    reservationError: '',
+    // ---- customer login (Firebase: Google sign-in + Email/Password) ----
+    user: null,           // { email, verified, provider } once signed in
+    loginOpen: false,
+    loginMode: 'login',    // 'login' | 'signup'
+    loginEmail: '',
+    loginPassword: '',
+    loginConfirmPassword: '',
+    loginError: '',
+    loginNotice: '',
+    loginLoading: false,
+
+    // ---- one-time code step, shown after a successful email/password login ----
+    otpPending: false,
+    otpCode: '',
+    otpError: '',
+    otpNotice: '',
+    otpResendCooldown: 0,
+
+    // ---- account dialog sub-view: 'main' | 'settings' ----
+    accountView: 'main',
+
+    // ---- client-side login lockout countdown (mm:ss), shown on the login form ----
+    lockoutRemaining: '',
+
+    // ---- customer order tracking (tiktok-style shipment tracker) ----
+    ordersOpen: false,
+    customerOrders: [],      // live orders for the signed-in customer, newest first
+
+    // ---- notification bell (pickup-near / out-for-delivery / etc.) ----
+    notifications: [],
+    notifPanelOpen: false,
+
+    // ---- "is this you?" prompt for sessions restored without an explicit login this visit ----
+    confirmIdentityPending: false
+  };
+
+  // ---- live catalog sync (Firestore "products" collection) ----
+  // The admin dashboard (mimicart-admin.html) is the only place that writes
+  // to this collection. Once staff seed it there, every visitor here sees
+  // live stock levels instead of the hardcoded RAW_PRODUCTS fallback above.
+  function subscribeToLiveCatalog() {
+    if (!firebaseConfigured || !firebaseDb) return;
+    firebaseDb.collection('products').onSnapshot(function (snapshot) {
+      if (snapshot.empty) return; // not seeded yet — keep showing the fallback catalog
+      var next = [];
+      snapshot.forEach(function (doc) {
+        var d = doc.data();
+        next.push({
+          id: doc.id, name: d.name, korean: d.korean, category: d.category,
+          price: d.price, stock: d.stock, badge: d.badge || undefined,
+          description: d.description, flavor: d.flavor, tone: d.tone,
+          accent: d.accent, pattern: d.pattern, image: d.image || undefined
+        });
+      });
+      PRODUCTS = next;
+      usingLiveCatalog = true;
+      renderCategoryRail();
+      renderCatalogue();
+    }, function (err) {
+      console.error('MimiCart: could not load live catalog, showing fallback list.', err);
+    });
+  }
+
+  function productById(id) { return PRODUCTS.filter(function (p) { return p.id === id; })[0]; }
+
+  // ---- local "Add Photo" overrides ----
+  // When a product's real photo file is missing or misnamed, the <img>
+  // fires onerror and the card falls back to a plain color tile. Instead of
+  // hunting down the exact filename, the shopper (or admin) can just pick a
+  // photo right on the card; it's stored as a data URL in localStorage and
+  // used instead of the broken file path from then on.
+  function photoOverrideKey(id) { return 'mimicart:photo-override:' + id; }
+  function getPhotoOverride(id) {
+    try { return localStorage.getItem(photoOverrideKey(id)); } catch (e) { return null; }
+  }
+  function setPhotoOverride(id, dataUrl) {
+    try { localStorage.setItem(photoOverrideKey(id), dataUrl); } catch (e) { /* storage blocked or full — override just won't persist */ }
+  }
+  function photoUploadHTML(id) {
+    return (
+      '<div class="product-photo-upload">' +
+        '<label class="product-photo-upload-label">' +
+          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>' +
+          'Add Photo' +
+          '<input type="file" accept="image/*" data-photo-upload="' + id + '" />' +
+        '</label>' +
+        '<span class="product-photo-upload-hint">photo not found</span>' +
+      '</div>'
+    );
+  }
+  document.addEventListener('change', function (event) {
+    var input = event.target.closest('[data-photo-upload]');
+    if (!input || !input.files || !input.files[0]) return;
+    var id = input.getAttribute('data-photo-upload');
+    var reader = new FileReader();
+    reader.onload = function () {
+      var dataUrl = reader.result;
+      setPhotoOverride(id, dataUrl);
+      // Update every instance of this product's art already on the page
+      // (grid card, hero tiles, detail dialog) without a full re-render.
+      document.querySelectorAll('.product-photo[data-product-id="' + id + '"]').forEach(function (el) {
+        var img = el.querySelector('img');
+        if (img) img.src = dataUrl;
+        el.classList.remove('product-photo-fallback'); // reveals the img, hides the Add Photo button
+      });
+    };
+    reader.readAsDataURL(input.files[0]);
+  });
+
+  function productArtHTML(product, small) {
+    var overrideSrc = getPhotoOverride(product.id);
+    var imageSrc = overrideSrc || product.image;
+    if (imageSrc) {
+      // Real product photo path: fill the tile with the photo and keep the
+      // MIMI corner sticker for brand consistency with the illustrated cards.
+      return (
+        '<div class="product-art product-photo' + (small ? ' product-art-small' : '') + '" data-product-id="' + product.id + '" style="--tone:' + product.tone + '" aria-label="' + product.name + ' product photo">' +
+          '<img src="' + imageSrc + '" alt="' + product.name + '" loading="lazy" onerror="this.parentElement.classList.add(\'product-photo-fallback\')" />' +
+          '<div class="product-art-sticker">MIMI</div>' +
+          photoUploadHTML(product.id) +
+        '</div>'
+      );
+    }
+    return (
+      '<div class="product-art product-art-' + product.pattern + (small ? ' product-art-small' : '') + '" style="--tone:' + product.tone + ';--accent:' + product.accent + '" aria-label="' + product.name + ' package illustration">' +
+        '<div class="product-art-sticker">MIMI</div>' +
+        '<div class="product-art-pack">' +
+          '<span class="product-art-korean">' + product.korean + '</span>' +
+          '<strong>' + product.name + '</strong>' +
+          '<span class="product-art-flavor">' + product.flavor + '</span>' +
+        '</div>' +
+        '<span class="product-art-sun" aria-hidden="true"></span>' +
+      '</div>'
+    );
+  }
+
+  // ---- static hero art (rendered once) ----
+  document.getElementById('hero-shelf-art').innerHTML = productArtHTML(productById('pepero'), false);
+  document.getElementById('hero-mini-one').innerHTML = productArtHTML(productById('shin-ramyun'), true);
+  document.getElementById('hero-mini-two').innerHTML = productArtHTML(productById('buldak-carbonara'), true);
+
+  // ---- category rail ----
+  var categoryRail = document.getElementById('category-rail');
+  function renderCategoryRail() {
+    categoryRail.innerHTML = CATEGORIES.map(function (cat, index) {
+      return (
+        '<button type="button" class="category-tile focus-ring' + (state.selectedCategory === cat.id ? ' selected' : '') + '" data-category="' + cat.id + '">' +
+          '<span class="category-number">0' + (index + 1) + '</span>' +
+          '<span class="category-name">' + cat.label + '</span>' +
+          '<span class="category-sublabel">' + cat.sublabel + '</span>' +
+          '<span class="category-arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>' +
+        '</button>'
+      );
+    }).join('');
+  }
+  categoryRail.addEventListener('click', function (event) {
+    var btn = event.target.closest('[data-category]');
+    if (!btn) return;
+    state.selectedCategory = btn.getAttribute('data-category');
+    renderCategoryRail();
+    renderCatalogue();
+    scrollToId('catalogue');
+  });
+
+  // ---- catalogue / product grid ----
+  var productGrid = document.getElementById('product-grid');
+  var resultCount = document.getElementById('result-count');
+  var searchInput = document.getElementById('search-input');
+  var clearSearchBtn = document.getElementById('clear-search');
+  var sortButton = document.getElementById('sort-button');
+
+  function filteredProducts() {
+    var normalized = state.search.trim().toLowerCase();
+    return PRODUCTS.filter(function (p) {
+      var categoryMatch = state.selectedCategory === 'All' || p.category === state.selectedCategory;
+      var haystack = (p.name + ' ' + p.korean + ' ' + p.category + ' ' + p.flavor).toLowerCase();
+      var searchMatch = !normalized || haystack.indexOf(normalized) !== -1;
+      return categoryMatch && searchMatch;
+    });
+  }
+
+  function skeletonCardHTML() {
+    return (
+      '<article class="product-card skeleton-card" aria-label="Loading product">' +
+        '<div class="skeleton skeleton-block"></div>' +
+        '<div class="skeleton skeleton-line skeleton-line-long"></div>' +
+        '<div class="skeleton skeleton-line"></div>' +
+        '<div class="skeleton skeleton-button"></div>' +
+      '</article>'
+    );
+  }
+
+  function productCardHTML(product) {
+    var favorite = state.favorites.has(product.id);
+    return (
+      '<article class="product-card animate-in" data-testid="card-product-' + product.id + '">' +
+        '<button type="button" class="product-visual-button focus-ring" data-open="' + product.id + '" aria-label="View ' + product.name + '">' +
+          '<div class="product-card-meta"><span>' + (product.badge || product.category) + '</span><span>' + (product.stock > 0 ? product.stock + ' left' : 'sold out') + '</span></div>' +
+          productArtHTML(product, false) +
+          '<span class="view-detail">view details <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>' +
+        '</button>' +
+        '<div class="product-card-info">' +
+          '<div class="product-card-title">' +
+            '<div><h3>' + product.name + '</h3><span>' + product.korean + '</span></div>' +
+            '<button type="button" class="favorite-button focus-ring' + (favorite ? ' is-favorite' : '') + '" data-favorite="' + product.id + '" aria-label="' + (favorite ? 'Remove' : 'Add') + ' ' + product.name + '">' +
+              '<svg width="18" height="18" viewBox="0 0 24 24" fill="' + (favorite ? 'currentColor' : 'none') + '" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.5-1.5 3-3.28 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.22 1.5 4 3 5.5l7 7Z"/></svg>' +
+            '</button>' +
+          '</div>' +
+          '<div class="product-card-bottom">' +
+            '<strong>$' + product.price.toFixed(2) + '</strong>' +
+            '<button type="button" class="add-button focus-ring" data-add="' + product.id + '" ' + (!product.stock ? 'disabled' : '') + '>' +
+              (product.stock ? (state.user ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add to cart' : 'Log in to add') : 'Sold out') +
+            '</button>' +
+          '</div>' +
+        '</div>' +
+      '</article>'
+    );
+  }
+
+  function renderCatalogue() {
+    var products = filteredProducts();
+    if (state.isLoading) {
+      var skeletons = '';
+      for (var i = 0; i < 6; i++) skeletons += skeletonCardHTML();
+      productGrid.innerHTML = skeletons;
+    } else if (products.length) {
+      productGrid.innerHTML = products.map(productCardHTML).join('');
+    } else {
+      productGrid.innerHTML = (
+        '<div class="catalogue-state" style="grid-column:1/-1">' +
+          '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>' +
+          '<h3>No tiny treats found.</h3><p>Try a broader search or peek at everything on the shelf.</p>' +
+          '<button type="button" class="secondary-button" id="reset-search-btn">Reset search</button>' +
+        '</div>'
+      );
+      var resetBtn = document.getElementById('reset-search-btn');
+      if (resetBtn) resetBtn.addEventListener('click', function () { setSearch(''); });
+    }
+    resultCount.textContent = products.length + ' ' + (products.length === 1 ? 'find' : 'finds') + ' waiting for you';
+    clearSearchBtn.hidden = !state.search;
+    sortButton.innerHTML = (state.search ? 'Show everything' : 'Try chocolate finds') + ' <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+  }
+
+  function setSearch(value) {
+    state.search = value;
+    searchInput.value = value;
+    renderCatalogue();
+  }
+
+  searchInput.addEventListener('input', function (e) { state.search = e.target.value; renderCatalogue(); });
+  clearSearchBtn.addEventListener('click', function () { setSearch(''); });
+  sortButton.addEventListener('click', function () { setSearch(state.search ? '' : 'chocolate'); });
+
+  productGrid.addEventListener('click', function (event) {
+    var openBtn = event.target.closest('[data-open]');
+    var favBtn = event.target.closest('[data-favorite]');
+    var addBtn = event.target.closest('[data-add]');
+    if (openBtn) { openProductDialog(openBtn.getAttribute('data-open')); return; }
+    if (favBtn) { toggleFavorite(favBtn.getAttribute('data-favorite')); return; }
+    if (addBtn) { addToCart(addBtn.getAttribute('data-add'), 1); return; }
+  });
+
+  function toggleFavorite(id) {
+    if (state.favorites.has(id)) state.favorites.delete(id); else state.favorites.add(id);
+    renderCatalogue();
+  }
+
+  // ---- cart ----
+  function cartCount() { return state.cart.reduce(function (sum, l) { return sum + l.quantity; }, 0); }
+  function cartSubtotal() {
+    return state.cart.reduce(function (sum, l) {
+      var p = productById(l.productId);
+      return sum + (p ? p.price * l.quantity : 0);
+    }, 0);
+  }
+  function deliveryFee() {
+    return state.fulfillment === 'delivery' && state.cart.length ? 5 : 0;
+  }
+  function cartTotal() { return cartSubtotal() + deliveryFee(); }
+  function updateCartBadge() { document.getElementById('cart-count').textContent = cartCount(); }
+
+  function addToCart(id, qty) {
+    // Customers must be authenticated before anything can enter the cart.
+    if (!state.user) {
+      state.loginNotice = 'Please log in or sign up first before adding items to your cart.';
+      openLoginDialog();
+      return;
+    }
+    var product = productById(id);
+    if (!product || !product.stock) return;
+    var existing = state.cart.filter(function (l) { return l.productId === id; })[0];
+    if (existing) {
+      existing.quantity = Math.min(product.stock, existing.quantity + qty);
+    } else {
+      state.cart.push({ productId: id, quantity: Math.min(product.stock, qty) });
+    }
+    updateCartBadge();
+    openCartDrawer();
+  }
+
+  function updateQuantity(id, delta) {
+    state.cart = state.cart.reduce(function (acc, l) {
+      if (l.productId !== id) { acc.push(l); return acc; }
+      var product = productById(id);
+      var next = l.quantity + delta;
+      if (next <= 0) return acc;
+      acc.push({ productId: id, quantity: Math.min(product.stock, next) });
+      return acc;
+    }, []);
+    updateCartBadge();
+    renderCartDrawer();
+  }
+
+  function removeFromCart(id) {
+    state.cart = state.cart.filter(function (l) { return l.productId !== id; });
+    updateCartBadge();
+    renderCartDrawer();
+  }
+
+  var overlayRoot = document.getElementById('overlay-root');
+
+  function openCartDrawer() {
+    if (!state.user) {
+      state.loginNotice = 'Please log in or sign up first to view your cart.';
+      openLoginDialog();
+      return;
+    }
+    state.cartOpen = true;
+    state.cartStep = 'bag';
+    state.reservationError = '';
+    renderCartDrawer();
+  }
+  function closeCartDrawer() {
+    state.cartOpen = false;
+    overlayRoot.innerHTML = renderStaffDialogIfNeeded() + renderProductDialogIfNeeded() + renderLoginDialogIfNeeded() + renderOrdersDialogIfNeeded() + renderConfirmIdentityIfNeeded();
+    bindLoginDialogEvents();
+    bindOrdersDialogEvents();
+    bindConfirmIdentityEvents();
+  }
+
+  function cartLineHTML(line) {
+    var product = productById(line.productId);
+    return (
+      '<div class="cart-line" data-testid="row-cart-' + product.id + '">' +
+        productArtHTML(product, true) +
+        '<div class="cart-line-info">' +
+          '<strong>' + product.name + '</strong><span>' + product.korean + '</span>' +
+          '<b>$' + (product.price * line.quantity).toFixed(2) + '</b>' +
+          '<div class="cart-quantity">' +
+            '<button type="button" data-qty-dec="' + product.id + '" aria-label="Decrease ' + product.name + '"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>' +
+            '<span>' + line.quantity + '</span>' +
+            '<button type="button" data-qty-inc="' + product.id + '" ' + (line.quantity >= product.stock ? 'disabled' : '') + ' aria-label="Increase ' + product.name + '"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>' +
+            '<button type="button" class="cart-remove" data-remove="' + product.id + '">Remove</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  // ---- contact method (phone-with-country-code, or email) ----
+  function contactIsValid() {
+    if (state.contactMethod === 'email') {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.contactEmail.trim());
+    }
+    return state.contactPhone.trim().replace(/\D/g, '').length >= 7;
+  }
+  function contactValue() {
+    if (state.contactMethod === 'email') return state.contactEmail.trim();
+    return (state.contactCountryCode + ' ' + state.contactPhone.trim()).trim();
+  }
+
+  // ---- structured delivery address ----
+  function addressIsComplete() {
+    var regionOk = state.addressRegion.trim();
+    var provinceOk = provincesForRegion(state.addressRegion).length === 0 || state.addressProvince.trim();
+    return !!(regionOk && provinceOk && state.addressCity.trim() && state.addressBarangay.trim() && state.addressStreet.trim());
+  }
+  function fullAddressText() {
+    return [state.addressStreet.trim(), state.addressBarangay.trim(), state.addressCity.trim(), state.addressProvince.trim(), state.addressRegion.trim()]
+      .filter(Boolean).join(', ');
+  }
+
+  function updateReservationButtonState() {
+    var btn = document.getElementById('submit-reservation');
+    if (!btn) return;
+    var ready = state.pickupName.trim() && contactIsValid() &&
+      (state.fulfillment === 'delivery' ? addressIsComplete() : state.pickupDate && state.pickupTime);
+    btn.disabled = !ready || state.reservationSubmitting;
+  }
+
+  function renderCartDrawer() {
+    if (!state.cartOpen) return;
+    var total = cartTotal();
+    var bodyHTML;
+    if (state.cartStep === 'bag') {
+      bodyHTML = (
+        '<div class="drawer-body">' +
+          (state.cart.length
+            ? state.cart.map(cartLineHTML).join('')
+            : '<div class="empty-cart"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg><h3>Your cart is taking a nap.</h3><p>Add a few shelf finds and they&apos;ll wait here for you.</p><button type="button" class="secondary-button" id="empty-cart-close">Keep browsing</button></div>') +
+        '</div>' +
+        (state.cart.length
+          ? '<div class="drawer-footer"><div class="drawer-total"><span>estimated total</span><strong>$' + total.toFixed(2) + '</strong></div><button type="button" class="primary-button full-width focus-ring" id="continue-pickup">Choose delivery or pickup <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button><p class="drawer-footnote">Choose pickup or delivery. Payment can be arranged when the order is confirmed.</p></div>'
+          : '')
+      );
+    } else if (state.cartStep === 'done') {
+      bodyHTML = (
+        '<div class="pickup-form-wrap">' +
+          '<div class="reservation-done"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>' +
+            '<h3>Order reserved!</h3>' +
+            '<p>' + (state.fulfillment === 'delivery' ? 'Your order is queued for delivery to <strong>' + fullAddressText() + '</strong>.' : 'We’ve set your items aside for <strong>' + state.pickupDate + '</strong>, ' + state.pickupTime + '. See you at pickup!') + '</p>' +
+          '</div>' +
+          '<button type="button" class="secondary-button full-width focus-ring" id="reservation-done-close">Done</button>' +
+        '</div>'
+      );
+    } else {
+      var itemCount = state.cart.reduce(function (s, l) { return s + l.quantity; }, 0);
+      var today = new Date().toISOString().slice(0, 10);
+      var isDelivery = state.fulfillment === 'delivery';
+      var isEmail = state.contactMethod === 'email';
+      var fulfillmentReady = isDelivery ? addressIsComplete() : (state.pickupDate && state.pickupTime);
+      var canSubmit = fulfillmentReady && state.pickupName.trim() && contactIsValid() && !state.reservationSubmitting;
+      var regionProvinces = provincesForRegion(state.addressRegion);
+
+      var contactHTML = (
+        '<label>Contact method</label>' +
+        '<div class="fulfillment-toggle contact-method-toggle">' +
+          '<button type="button" class="fulfillment-option ' + (!isEmail ? 'active' : '') + '" data-contact-method="phone">\uD83D\uDCDE Phone</button>' +
+          '<button type="button" class="fulfillment-option ' + (isEmail ? 'active' : '') + '" data-contact-method="email">\uD83D\uDCE7 Email</button>' +
+        '</div>' +
+        (isEmail
+          ? '<label for="pickup-contact-email">Email address</label><input id="pickup-contact-email" type="email" autocomplete="email" placeholder="you@example.com" value="' + state.contactEmail.replace(/"/g, '&quot;') + '" />'
+          : '<label for="pickup-contact-phone">Phone number</label>' +
+            '<div class="phone-input-row">' +
+              '<select id="contact-country-code" aria-label="Country code">' +
+                COUNTRY_CODES.map(function (c) { return '<option value="' + c.code + '"' + (state.contactCountryCode === c.code ? ' selected' : '') + '>' + c.label + '</option>'; }).join('') +
+              '</select>' +
+              '<input id="pickup-contact-phone" type="tel" autocomplete="tel" placeholder="9XX XXX XXXX" value="' + state.contactPhone.replace(/"/g, '&quot;') + '" />' +
+            '</div>')
+      );
+
+      var addressHTML = (
+        '<p class="delivery-address-note">Enter your complete address, just like registering on a government app \u2014 region, then province, city, and barangay.</p>' +
+        '<label for="delivery-region">Region</label>' +
+        '<select id="delivery-region"><option value="">Select region</option>' +
+          PH_REGIONS.map(function (r) { return '<option value="' + r.name.replace(/"/g, '&quot;') + '"' + (state.addressRegion === r.name ? ' selected' : '') + '>' + r.name + '</option>'; }).join('') +
+        '</select>' +
+        (regionProvinces.length
+          ? '<label for="delivery-province">Province</label><select id="delivery-province"><option value="">Select province</option>' +
+            regionProvinces.map(function (p) { return '<option value="' + p.replace(/"/g, '&quot;') + '"' + (state.addressProvince === p ? ' selected' : '') + '>' + p + '</option>'; }).join('') +
+            '</select>'
+          : (state.addressRegion ? '<p class="address-hint">NCR has no provinces \u2014 go straight to city below.</p>' : '')) +
+        '<label for="delivery-city">City / Municipality</label><input id="delivery-city" type="text" autocomplete="address-level2" placeholder="e.g. Quezon City" value="' + state.addressCity.replace(/"/g, '&quot;') + '" />' +
+        '<label for="delivery-barangay">Barangay</label><input id="delivery-barangay" type="text" autocomplete="address-level3" placeholder="e.g. Barangay Holy Spirit" value="' + state.addressBarangay.replace(/"/g, '&quot;') + '" />' +
+        '<label for="delivery-street">House no. / Street</label><input id="delivery-street" type="text" autocomplete="street-address" placeholder="Unit/house no., street name" value="' + state.addressStreet.replace(/"/g, '&quot;') + '" />' +
+        '<label for="delivery-notes">Delivery notes (optional)</label><input id="delivery-notes" type="text" placeholder="Landmark, gate instructions, etc." value="' + state.deliveryNotes.replace(/"/g, '&quot;') + '" />'
+      );
+
+      bodyHTML = (
+        '<div class="pickup-form-wrap">' +
+          '<button type="button" class="back-link focus-ring" id="back-to-cart"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg> Back to cart</button>' +
+          '<p class="pickup-intro">Choose how you want to receive your order. Add your contact details so Mimi’s can confirm the reservation.</p>' +
+          '<div class="fulfillment-toggle">' +
+            '<button type="button" class="fulfillment-option ' + (!isDelivery ? 'active' : '') + '" data-fulfillment="pickup">🏪 Pickup</button>' +
+            '<button type="button" class="fulfillment-option ' + (isDelivery ? 'active' : '') + '" data-fulfillment="delivery">🚚 Delivery</button>' +
+          '</div>' +
+          '<label for="pickup-name">Name</label><input id="pickup-name" type="text" autocomplete="name" placeholder="Your name" value="' + state.pickupName.replace(/"/g, '&quot;') + '" />' +
+          contactHTML +
+          (isDelivery
+            ? addressHTML
+            : '<label for="pickup-date">Pickup date</label><input id="pickup-date" type="date" min="' + today + '" value="' + state.pickupDate + '" />' +
+              '<label for="pickup-time">Pickup window</label><select id="pickup-time"><option value="">Choose a time</option>' +
+                ['12:00–14:00', '14:00–16:00', '16:00–18:00', '18:00–20:00'].map(function (t) { return '<option value="' + t + '"' + (state.pickupTime === t ? ' selected' : '') + '>' + t + '</option>'; }).join('') +
+              '</select>') +
+          '<div class="pickup-summary"><span>' + itemCount + ' items</span><strong>$' + total.toFixed(2) + '</strong></div>' +
+          (isDelivery ? '<div class="delivery-fee-row"><span>Delivery fee</span><span>$5.00</span></div>' : '') +
+          (state.reservationError ? '<p class="login-error">' + state.reservationError + '</p>' : '') +
+          '<button type="button" class="primary-button full-width focus-ring" id="submit-reservation" ' + (!canSubmit ? 'disabled' : '') + '>' + (state.reservationSubmitting ? 'Sending…' : (isDelivery ? 'Reserve & arrange delivery' : 'Request reservation')) + ' <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>' +
+          '<p class="disabled-action-note">' + (isDelivery ? 'Delivery fee is included in the total above. MimiCart will contact you to confirm delivery details and payment.' : 'No payment today — pay at pickup. We’ll keep your items aside for the window above.') + '</p>' +
+        '</div>'
+      );
+    }
+
+    var html = (
+      '<div class="drawer-shell" role="presentation" id="drawer-shell-el">' +
+        '<aside class="cart-drawer" role="dialog" aria-modal="true" aria-labelledby="cart-title">' +
+          '<div class="drawer-header"><div><span class="drawer-eyebrow">your little haul</span><h2 id="cart-title" class="font-display">' + (state.cartStep === 'bag' ? 'Reservation cart' : 'Order details') + '</h2></div><button type="button" class="dialog-close focus-ring" id="close-cart" aria-label="Close reservation cart"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>' +
+          bodyHTML +
+        '</aside>' +
+      '</div>'
+    );
+    overlayRoot.innerHTML = html + renderStaffDialogIfNeeded() + renderProductDialogIfNeeded() + renderLoginDialogIfNeeded();
+    bindLoginDialogEvents();
+
+    var shellEl = document.getElementById('drawer-shell-el');
+    shellEl.addEventListener('mousedown', function (e) { if (e.target === shellEl) closeCartDrawer(); });
+    document.getElementById('close-cart').addEventListener('click', closeCartDrawer);
+
+    if (state.cartStep === 'bag') {
+      var emptyCloseBtn = document.getElementById('empty-cart-close');
+      if (emptyCloseBtn) emptyCloseBtn.addEventListener('click', closeCartDrawer);
+      var continueBtn = document.getElementById('continue-pickup');
+      if (continueBtn) continueBtn.addEventListener('click', function () {
+        if (!state.user) { openLoginDialog(); return; }
+        state.cartStep = 'pickup';
+        renderCartDrawer();
+      });
+      shellEl.querySelectorAll('[data-qty-dec]').forEach(function (b) { b.addEventListener('click', function () { updateQuantity(b.getAttribute('data-qty-dec'), -1); }); });
+      shellEl.querySelectorAll('[data-qty-inc]').forEach(function (b) { b.addEventListener('click', function () { updateQuantity(b.getAttribute('data-qty-inc'), 1); }); });
+      shellEl.querySelectorAll('[data-remove]').forEach(function (b) { b.addEventListener('click', function () { removeFromCart(b.getAttribute('data-remove')); }); });
+    } else if (state.cartStep === 'pickup') {
+      document.getElementById('back-to-cart').addEventListener('click', function () { state.cartStep = 'bag'; renderCartDrawer(); });
+      shellEl.querySelectorAll('[data-fulfillment]').forEach(function (b) { b.addEventListener('click', function () { state.fulfillment = b.getAttribute('data-fulfillment'); renderCartDrawer(); }); });
+      shellEl.querySelectorAll('[data-contact-method]').forEach(function (b) { b.addEventListener('click', function () { state.contactMethod = b.getAttribute('data-contact-method'); renderCartDrawer(); }); });
+      document.getElementById('pickup-name').addEventListener('input', function (e) { state.pickupName = e.target.value; });
+
+      var contactPhoneEl = document.getElementById('pickup-contact-phone');
+      var contactEmailEl = document.getElementById('pickup-contact-email');
+      var countryCodeEl = document.getElementById('contact-country-code');
+      if (contactPhoneEl) contactPhoneEl.addEventListener('input', function (e) { state.contactPhone = e.target.value; updateReservationButtonState(); });
+      if (contactEmailEl) contactEmailEl.addEventListener('input', function (e) { state.contactEmail = e.target.value; updateReservationButtonState(); });
+      if (countryCodeEl) countryCodeEl.addEventListener('change', function (e) { state.contactCountryCode = e.target.value; });
+
+      var pickupDateEl = document.getElementById('pickup-date');
+      var pickupTimeEl = document.getElementById('pickup-time');
+      if (pickupDateEl) pickupDateEl.addEventListener('change', function (e) { state.pickupDate = e.target.value; renderCartDrawer(); });
+      if (pickupTimeEl) pickupTimeEl.addEventListener('change', function (e) { state.pickupTime = e.target.value; renderCartDrawer(); });
+
+      var regionEl = document.getElementById('delivery-region');
+      var provinceEl = document.getElementById('delivery-province');
+      var cityEl = document.getElementById('delivery-city');
+      var barangayEl = document.getElementById('delivery-barangay');
+      var streetEl = document.getElementById('delivery-street');
+      var deliveryNotesEl = document.getElementById('delivery-notes');
+      if (regionEl) regionEl.addEventListener('change', function (e) { state.addressRegion = e.target.value; state.addressProvince = ''; renderCartDrawer(); });
+      if (provinceEl) provinceEl.addEventListener('change', function (e) { state.addressProvince = e.target.value; updateReservationButtonState(); });
+      if (cityEl) cityEl.addEventListener('input', function (e) { state.addressCity = e.target.value; updateReservationButtonState(); });
+      if (barangayEl) barangayEl.addEventListener('input', function (e) { state.addressBarangay = e.target.value; updateReservationButtonState(); });
+      if (streetEl) streetEl.addEventListener('input', function (e) { state.addressStreet = e.target.value; updateReservationButtonState(); });
+      if (deliveryNotesEl) deliveryNotesEl.addEventListener('input', function (e) { state.deliveryNotes = e.target.value; });
+
+      var submitBtn = document.getElementById('submit-reservation');
+      if (submitBtn) submitBtn.addEventListener('click', submitReservation);
+    } else if (state.cartStep === 'done') {
+      document.getElementById('reservation-done-close').addEventListener('click', function () {
+        state.cart = [];
+        state.cartStep = 'bag';
+        state.pickupDate = '';
+        state.pickupTime = '';
+        state.pickupName = '';
+        state.contactMethod = 'phone';
+        state.contactCountryCode = '+63';
+        state.contactPhone = '';
+        state.contactEmail = '';
+        state.fulfillment = 'pickup';
+        state.addressRegion = '';
+        state.addressProvince = '';
+        state.addressCity = '';
+        state.addressBarangay = '';
+        state.addressStreet = '';
+        state.deliveryNotes = '';
+        updateCartBadge();
+        closeCartDrawer();
+      });
+    }
+  }
+
+  // ---- reservation submission ----
+  // Writes an order into Firestore ("orders" collection) and decrements
+  // stock on each product doc, so the admin dashboard sees it immediately
+  // and inventory stays accurate. Falls back to a local-only simulation
+  // (no persistence) if Firestore isn't reachable, so the demo still works.
+  // Human-readable order number used as the actual Firestore document ID
+  // (instead of an auto-generated id) so orders are easy to spot in the
+  // Firestore console and easy to reference with the customer, e.g. on the
+  // phone: "MC-250915-7QQ2".
+  // Order document ID = just the customer's name (e.g. "axel"), so it's
+  // easy to spot in the Firestore console. Note: if the same name places a
+  // second order, it will OVERWRITE the first order's document under that
+  // same name — there's no uniqueness suffix, exactly as requested.
+  function slugifyName(name) {
+    var slug = (name || 'guest').toLowerCase().trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 40);
+    return slug || 'guest';
+  }
+  function generateOrderNumber(customerName) {
+    return slugifyName(customerName);
+  }
+
+  function submitReservation() {
+    if (state.reservationSubmitting || !state.cart.length) return;
+    state.reservationError = '';
+
+    var lineItems = state.cart.map(function (line) {
+      var product = productById(line.productId);
+      return product ? { productId: product.id, name: product.name, price: product.price, quantity: line.quantity } : null;
+    }).filter(Boolean);
+    if (!lineItems.length) return;
+
+    var order = {
+      items: lineItems,
+      total: cartTotal(),
+      customerName: state.pickupName.trim(),
+      customerContact: contactValue(),
+      contactMethod: state.contactMethod,
+      customerEmail: state.user ? state.user.email : null,
+      fulfillment: state.fulfillment,
+      pickupDate: state.fulfillment === 'pickup' ? state.pickupDate : null,
+      pickupTime: state.fulfillment === 'pickup' ? state.pickupTime : null,
+      deliveryAddress: state.fulfillment === 'delivery' ? fullAddressText() : null,
+      deliveryRegion: state.fulfillment === 'delivery' ? state.addressRegion.trim() : null,
+      deliveryProvince: state.fulfillment === 'delivery' ? state.addressProvince.trim() : null,
+      deliveryCity: state.fulfillment === 'delivery' ? state.addressCity.trim() : null,
+      deliveryBarangay: state.fulfillment === 'delivery' ? state.addressBarangay.trim() : null,
+      deliveryStreet: state.fulfillment === 'delivery' ? state.addressStreet.trim() : null,
+      deliveryNotes: state.fulfillment === 'delivery' ? state.deliveryNotes.trim() : null,
+      deliveryFee: deliveryFee(),
+      status: 'pending'
+    };
+
+    state.reservationSubmitting = true;
+    renderCartDrawer();
+
+    if (!firebaseConfigured || !firebaseDb || !usingLiveCatalog) {
+      // No live backend catalog yet (Firestore not configured, or staff
+      // haven't seeded the product catalog from the admin page) — simulate
+      // locally so the flow is still demoable.
+      lineItems.forEach(function (item) {
+        var p = productById(item.productId);
+        if (p) p.stock = Math.max(0, p.stock - item.quantity);
+      });
+      state.reservationSubmitting = false;
+      state.cartStep = 'done';
+      renderCatalogue();
+      renderCartDrawer();
+      return;
+    }
+
+    var batch = firebaseDb.batch();
+    var orderNumber = generateOrderNumber(order.customerName);
+    var orderRef = firebaseDb.collection('orders').doc(orderNumber);
+    batch.set(orderRef, Object.assign({}, order, { orderNumber: orderNumber, createdAt: firebase.firestore.FieldValue.serverTimestamp() }));
+    lineItems.forEach(function (item) {
+      var productRef = firebaseDb.collection('products').doc(item.productId);
+      batch.update(productRef, { stock: firebase.firestore.FieldValue.increment(-item.quantity) });
+    });
+
+    batch.commit().then(function () {
+      state.reservationSubmitting = false;
+      state.cartStep = 'done';
+      renderCartDrawer();
+    }).catch(function (err) {
+      console.error('MimiCart: reservation failed', err);
+      state.reservationSubmitting = false;
+      // Surface the real Firebase error (e.g. "Missing or insufficient
+      // permissions") instead of a generic message, so it's obvious what
+      // to fix (almost always a Firestore Security Rules issue) without
+      // needing to open the browser console.
+      var reason = (err && (err.message || err.code)) ? (err.message || err.code) : 'Please try again.';
+      state.reservationError = 'Couldn\u2019t send that reservation. (' + reason + ')';
+      renderCartDrawer();
+    });
+  }
+
+  document.getElementById('open-cart').addEventListener('click', openCartDrawer);
+
+  // ---- product dialog ----
+  function openProductDialog(id) {
+    state.activeProductId = id;
+    renderOverlays();
+  }
+  function closeProductDialog() {
+    state.activeProductId = null;
+    renderOverlays();
+  }
+
+  function renderProductDialogIfNeeded() {
+    if (!state.activeProductId) return '';
+    var product = productById(state.activeProductId);
+    return (
+      '<div class="overlay" role="presentation" id="product-overlay">' +
+        '<div class="product-dialog" role="dialog" aria-modal="true" aria-labelledby="product-dialog-title">' +
+          '<button type="button" class="dialog-close focus-ring" id="close-product-dialog" aria-label="Close product details"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>' +
+          '<div class="dialog-art">' + productArtHTML(product, false) + '</div>' +
+          '<div class="dialog-content">' +
+            '<span class="dialog-eyebrow">' + (product.badge || product.category) + ' · ' + product.korean + '</span>' +
+            '<h2 id="product-dialog-title" class="font-display">' + product.name + '</h2>' +
+            '<p>' + product.description + '</p>' +
+            '<div class="dialog-details"><span><strong>Flavor</strong>' + product.flavor + '</span><span><strong>In stock</strong>' + (product.stock ? product.stock + ' pieces' : 'sold out') + '</span></div>' +
+            '<div class="dialog-buy-row"><strong>$' + product.price.toFixed(2) + '</strong><div class="quantity-control"><button type="button" id="dialog-qty-dec" aria-label="Decrease quantity"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button><span id="dialog-qty">1</span><button type="button" id="dialog-qty-inc" ' + (!product.stock ? 'disabled' : '') + ' aria-label="Increase quantity"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div></div>' +
+            '<button type="button" class="primary-button full-width focus-ring" id="dialog-add" ' + (!product.stock ? 'disabled' : '') + '>' + (product.stock ? (state.user ? 'Add to reservation cart' : 'Log in to add to cart') : 'Currently sold out') + '</button>' +
+            '<small class="dialog-notice">We&apos;ll hold it for 24 hours. Payment happens in-store at pickup.</small>' +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  var dialogQuantity = 1;
+
+  function bindProductDialogEvents() {
+    var overlay = document.getElementById('product-overlay');
+    if (!overlay) return;
+    var product = productById(state.activeProductId);
+    dialogQuantity = 1;
+    overlay.addEventListener('mousedown', function (e) { if (e.target === overlay) closeProductDialog(); });
+    document.getElementById('close-product-dialog').addEventListener('click', closeProductDialog);
+    var qtyEl = document.getElementById('dialog-qty');
+    document.getElementById('dialog-qty-dec').addEventListener('click', function () { dialogQuantity = Math.max(1, dialogQuantity - 1); qtyEl.textContent = dialogQuantity; });
+    document.getElementById('dialog-qty-inc').addEventListener('click', function () { dialogQuantity = Math.min(product.stock || 1, dialogQuantity + 1); qtyEl.textContent = dialogQuantity; });
+    var addBtn = document.getElementById('dialog-add');
+    if (addBtn) addBtn.addEventListener('click', function () {
+      if (!state.user) {
+        state.loginNotice = 'Please log in or sign up first before adding items to your cart.';
+        openLoginDialog();
+        return;
+      }
+      addToCart(product.id, dialogQuantity);
+      closeProductDialog();
+    });
+  }
+
+  // =====================================================================
+  // ORDER TRACKING — a tiktok-style shipment tracker for the customer.
+  // Staff push each order forward from the admin dashboard (Orders tab);
+  // this listens live on the same Firestore doc and updates the tracker,
+  // plus fires a notification when the order gets close to pickup time,
+  // or flips to "out for delivery" / "ready" / "completed".
+  // =====================================================================
+  var ORDER_STAGES = {
+    pickup: ['pending', 'processing', 'ready', 'completed'],
+    delivery: ['pending', 'processing', 'out_for_delivery', 'completed']
+  };
+  function stagesFor(order) { return ORDER_STAGES[order.fulfillment === 'delivery' ? 'delivery' : 'pickup']; }
+  function stageInfo(key, order) {
+    switch (key) {
+      case 'pending': return { label: 'Order placed', icon: '\uD83D\uDCDD' };
+      case 'processing': return { label: 'Preparing', icon: '\uD83D\uDCE6' };
+      case 'ready': return { label: 'Ready for pickup', icon: '\uD83C\uDFEA' };
+      case 'out_for_delivery': return { label: 'Out for delivery', icon: '\uD83D\uDE9A' };
+      case 'completed': return { label: order.fulfillment === 'delivery' ? 'Delivered' : 'Picked up', icon: '\u2705' };
+      default: return { label: key, icon: '\u2022' };
+    }
+  }
+
+  var unsubscribeCustomerOrders = null;
+  var previousOrderStatuses = {};   // { orderId: lastKnownStatus } — used to detect status changes for notifications
+  var remindedPickupOrders = {};    // { orderId: true } — one pickup-time reminder per order per page load
+
+  // ---- notification bell: persisted per-email so it survives a reload ----
+  function notifKey(email) { return 'mimicart:notifications:' + normalizeEmail(email); }
+  function loadNotifications(email) {
+    try {
+      var raw = localStorage.getItem(notifKey(email));
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) { return []; }
+  }
+  function saveNotifications(email, list) {
+    try { localStorage.setItem(notifKey(email), JSON.stringify(list)); } catch (e) { /* ignore */ }
+  }
+  function updateNotifBadge() {
+    var btn = document.getElementById('notif-button');
+    var badge = document.getElementById('notif-badge');
+    if (!btn || !badge) return;
+    btn.hidden = !state.user;
+    var unread = state.notifications.filter(function (n) { return !n.read; }).length;
+    badge.hidden = unread === 0;
+    badge.textContent = unread > 9 ? '9+' : String(unread);
+  }
+  function addNotification(title, body, kind) {
+    var entry = { id: 'n_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), title: title, body: body, kind: kind || 'info', time: Date.now(), read: false };
+    state.notifications.unshift(entry);
+    state.notifications = state.notifications.slice(0, 30);
+    if (state.user) saveNotifications(state.user.email, state.notifications);
+    updateNotifBadge();
+    if (state.notifPanelOpen) renderNotifPanel();
+  }
+
+  function notifyOrderUpdate(title, body, kind) {
+    showToast(body);
+    addNotification(title, body, kind);
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      try { new Notification(title, { body: body, icon: 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 64 64\'%3E%3Crect x=\'4\' y=\'4\' width=\'56\' height=\'56\' rx=\'18\' fill=\'%23D71920\'/%3E%3C/svg%3E' }); } catch (e) { /* notifications blocked — the toast + bell still show it */ }
+    }
+  }
+
+  function subscribeToCustomerOrders() {
+    if (!firebaseConfigured || !firebaseDb || !state.user) return;
+    if (unsubscribeCustomerOrders) unsubscribeCustomerOrders();
+    state.notifications = loadNotifications(state.user.email);
+    updateNotifBadge();
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      Notification.requestPermission(); // best-effort; toast + bell notifications work either way
+    }
+    unsubscribeCustomerOrders = firebaseDb.collection('orders')
+      .where('customerEmail', '==', state.user.email)
+      .onSnapshot(function (snap) {
+        var next = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
+        next.sort(function (a, b) {
+          var da = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate().getTime() : 0;
+          var db_ = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate().getTime() : 0;
+          return db_ - da;
+        });
+
+        next.forEach(function (order) {
+          var prev = previousOrderStatuses[order.id];
+          if (prev && prev !== order.status) {
+            if (order.status === 'ready') {
+              notifyOrderUpdate('Pickup ready! \uD83C\uDFEA', 'Your MimiCart order is ready for pickup \u2014 see you soon!', 'ready');
+            } else if (order.status === 'out_for_delivery') {
+              notifyOrderUpdate('Out for delivery! \uD83D\uDE9A', 'Your MimiCart order is out for delivery and on its way.', 'delivery');
+            } else if (order.status === 'completed') {
+              notifyOrderUpdate('Order complete \u2705', (order.fulfillment === 'delivery' ? 'Delivered! ' : 'Picked up! ') + 'Thanks for shopping with MimiCart.', 'done');
+            } else if (order.status === 'processing') {
+              notifyOrderUpdate('Order update \uD83D\uDCE6', 'Mimi\u2019s is preparing your order now.', 'info');
+            }
+          }
+          previousOrderStatuses[order.id] = order.status;
+        });
+
+        state.customerOrders = next;
+        if (state.ordersOpen) renderOverlays();
+      }, function (err) { console.error('MimiCart: could not load your orders', err); });
+  }
+
+  function unsubscribeFromCustomerOrders() {
+    if (unsubscribeCustomerOrders) { unsubscribeCustomerOrders(); unsubscribeCustomerOrders = null; }
+    state.customerOrders = [];
+    state.notifications = [];
+    state.notifPanelOpen = false;
+    previousOrderStatuses = {};
+    remindedPickupOrders = {};
+    updateNotifBadge();
+  }
+
+  // Parses a pickup window like "16:00\u201318:00" for a given date, and warns
+  // the customer once their pickup time is within 30 minutes.
+  function checkPickupReminders() {
+    if (!state.customerOrders.length) return;
+    var now = Date.now();
+    state.customerOrders.forEach(function (order) {
+      if (order.fulfillment !== 'pickup') return;
+      if (order.status === 'completed' || order.status === 'cancelled') return;
+      if (!order.pickupDate || !order.pickupTime) return;
+      if (remindedPickupOrders[order.id]) return;
+      var startTime = (order.pickupTime.split(/[\u2013-]/)[0] || '').trim();
+      if (!startTime) return;
+      var target = new Date(order.pickupDate + 'T' + startTime + ':00');
+      if (isNaN(target.getTime())) return;
+      var diffMs = target.getTime() - now;
+      if (diffMs > 0 && diffMs <= 30 * 60 * 1000) {
+        remindedPickupOrders[order.id] = true;
+        notifyOrderUpdate('Pickup time is near! \u23F0', 'Your pickup window (' + order.pickupTime + ') starts soon \u2014 head over to Mimi\u2019s!', 'reminder');
+      }
+    });
+  }
+  setInterval(checkPickupReminders, 60 * 1000);
+
+  function tiktokTrackerHTML(order) {
+    if (order.status === 'cancelled') {
+      return '<p class="order-track-items" style="margin-top:0">This order was cancelled. Items were returned to stock.</p>';
+    }
+    var stages = stagesFor(order);
+    var currentIdx = stages.indexOf(order.status);
+    return '<div class="tiktok-tracker">' + stages.map(function (key, i) {
+      var info = stageInfo(key, order);
+      var cls = i < currentIdx ? 'is-done' : (i === currentIdx ? 'is-current' : '');
+      return (
+        '<div class="tiktok-step ' + cls + '">' +
+          '<span class="tiktok-step-connector"></span>' +
+          '<span class="tiktok-step-icon">' + (i < currentIdx ? '\u2713' : info.icon) + '</span>' +
+          '<span class="tiktok-step-label">' + info.label + '</span>' +
+        '</div>'
+      );
+    }).join('') + '</div>';
+  }
+
+  function orderTrackCardHTML(order) {
+    var itemsSummary = (order.items || []).map(function (it) { return it.quantity + '\u00d7 ' + it.name; }).join(', ');
+    var placed = order.createdAt && order.createdAt.toDate ? order.createdAt.toDate() : null;
+    var badgeClass = order.status === 'cancelled' ? 'is-cancelled' : (order.status === 'completed' ? 'is-done' : (order.status === 'pending' ? '' : 'is-live'));
+    var reminderNote = '';
+    if (order.fulfillment === 'pickup' && order.status !== 'completed' && order.status !== 'cancelled' && order.pickupDate && order.pickupTime) {
+      reminderNote = '<p class="order-reminder-note">\uD83D\uDCE2 We\u2019ll notify you here when your pickup window (' + order.pickupTime + ' on ' + order.pickupDate + ') is close, and the moment it\u2019s ready.</p>';
+    } else if (order.fulfillment === 'delivery' && order.status !== 'completed' && order.status !== 'cancelled') {
+      reminderNote = '<p class="order-reminder-note">\uD83D\uDCE2 We\u2019ll notify you here the moment your order is out for delivery.</p>';
+    }
+    return (
+      '<div class="order-track-card">' +
+        '<div class="order-track-head">' +
+          '<div><strong>' + (order.fulfillment === 'delivery' ? 'Delivery order' : 'Pickup order') + '</strong>' +
+          '<span>#' + (order.orderNumber || order.id) + ' \u2022 ' + (placed ? placed.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' \u2022 ' : '') + '$' + Number(order.total || 0).toFixed(2) + '</span></div>' +
+          '<span class="order-track-badge ' + badgeClass + '">' + stageInfo(order.status, order).label + '</span>' +
+        '</div>' +
+        '<p class="order-track-items">' + itemsSummary + '</p>' +
+        tiktokTrackerHTML(order) +
+        reminderNote +
+      '</div>'
+    );
+  }
+
+  function renderOrdersDialogIfNeeded() {
+    if (!state.ordersOpen) return '';
+    var listHTML = state.customerOrders.length
+      ? '<div class="orders-list">' + state.customerOrders.map(orderTrackCardHTML).join('') + '</div>'
+      : '<p class="orders-empty-note">No reservations yet \u2014 once you place one, you\u2019ll be able to track it right here, live.</p>';
+    return (
+      '<div class="overlay" role="presentation" id="orders-overlay">' +
+        '<div class="orders-dialog" role="dialog" aria-modal="true" aria-labelledby="orders-dialog-title">' +
+          '<button type="button" class="dialog-close focus-ring" id="close-orders-dialog" aria-label="Close order tracking"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>' +
+          '<span class="dialog-eyebrow">live tracking</span>' +
+          '<h2 id="orders-dialog-title" class="font-display">Your orders</h2>' +
+          '<p class="login-copy">Watch your order move from placed to picked up or delivered, just like a delivery app.</p>' +
+          listHTML +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  function bindOrdersDialogEvents() {
+    var overlay = document.getElementById('orders-overlay');
+    if (!overlay) return;
+    overlay.addEventListener('mousedown', function (e) { if (e.target === overlay) closeOrdersDialog(); });
+    document.getElementById('close-orders-dialog').addEventListener('click', closeOrdersDialog);
+  }
+
+  function openOrdersDialog() {
+    if (!state.user) {
+      state.loginNotice = 'Please log in to track your orders.';
+      openLoginDialog();
+      return;
+    }
+    state.loginOpen = false;
+    state.ordersOpen = true;
+    renderOverlays();
+  }
+  function closeOrdersDialog() {
+    state.ordersOpen = false;
+    renderOverlays();
+  }
+
+  var ordersButton = document.getElementById('orders-button');
+  if (ordersButton) ordersButton.addEventListener('click', openOrdersDialog);
+
+  // ---- notification bell panel (pickup-near / out-for-delivery / etc.) ----
+  function notifIconForKind(kind) {
+    switch (kind) {
+      case 'ready': return '\uD83C\uDFEA';
+      case 'delivery': return '\uD83D\uDE9A';
+      case 'reminder': return '\u23F0';
+      case 'done': return '\u2705';
+      default: return '\uD83D\uDCE6';
+    }
+  }
+  function renderNotifPanel() {
+    var panel = document.getElementById('notif-panel');
+    if (!panel) return;
+    panel.innerHTML = (
+      '<div class="notif-panel-head"><h3 class="font-display">Notifications</h3>' +
+        (state.notifications.length ? '<button type="button" id="notif-clear-all">Clear all</button>' : '') +
+      '</div>' +
+      (state.notifications.length
+        ? state.notifications.map(function (n) {
+            return (
+              '<div class="notif-item' + (n.read ? '' : ' is-unread') + '">' +
+                '<span class="notif-item-icon">' + notifIconForKind(n.kind) + '</span>' +
+                '<div class="notif-item-body"><strong>' + n.title + '</strong><span>' + n.body + '</span><small>' + formatLogTime(n.time) + '</small></div>' +
+              '</div>'
+            );
+          }).join('')
+        : '<div class="notif-empty">No notifications yet. We\u2019ll let you know here when your order\u2019s pickup time is near, or it\u2019s out for delivery.</div>')
+    );
+    var clearBtn = document.getElementById('notif-clear-all');
+    if (clearBtn) clearBtn.addEventListener('click', function () {
+      state.notifications = [];
+      if (state.user) saveNotifications(state.user.email, state.notifications);
+      updateNotifBadge();
+      renderNotifPanel();
+    });
+  }
+  function positionNotifPanel(panel) {
+    var btn = document.getElementById('notif-button');
+    if (!btn) return;
+    var rect = btn.getBoundingClientRect();
+    var width = Math.min(360, window.innerWidth * 0.92);
+    var left = Math.min(rect.left, window.innerWidth - width - 12);
+    panel.style.left = Math.max(12, left) + 'px';
+    panel.style.top = (rect.bottom + 10) + 'px';
+  }
+  function openNotifPanel() {
+    if (!state.user) { openLoginDialog(); return; }
+    state.notifPanelOpen = true;
+    var panel = document.createElement('div');
+    panel.className = 'notif-panel';
+    panel.id = 'notif-panel';
+    document.body.appendChild(panel);
+    positionNotifPanel(panel);
+    renderNotifPanel();
+    // opening the bell marks everything as read
+    state.notifications.forEach(function (n) { n.read = true; });
+    if (state.user) saveNotifications(state.user.email, state.notifications);
+    updateNotifBadge();
+    setTimeout(function () {
+      document.addEventListener('mousedown', outsideNotifClick);
+      window.addEventListener('resize', repositionNotifPanel);
+    }, 0);
+  }
+  function closeNotifPanel() {
+    state.notifPanelOpen = false;
+    var panel = document.getElementById('notif-panel');
+    if (panel) panel.remove();
+    document.removeEventListener('mousedown', outsideNotifClick);
+    window.removeEventListener('resize', repositionNotifPanel);
+  }
+  function outsideNotifClick(e) {
+    var panel = document.getElementById('notif-panel');
+    var btn = document.getElementById('notif-button');
+    if (!panel) return;
+    if (panel.contains(e.target) || (btn && btn.contains(e.target))) return;
+    closeNotifPanel();
+  }
+  function repositionNotifPanel() {
+    var panel = document.getElementById('notif-panel');
+    if (panel) positionNotifPanel(panel);
+  }
+  var notifButtonEl = document.getElementById('notif-button');
+  if (notifButtonEl) notifButtonEl.addEventListener('click', function () {
+    if (state.notifPanelOpen) closeNotifPanel(); else openNotifPanel();
+  });
+
+  // ---- staff dialog (static preview — no live auth in this exported build) ----
+  function renderStaffDialogIfNeeded() {
+    if (!state.staffOpen) return '';
+    return (
+      '<div class="overlay" role="presentation" id="staff-overlay">' +
+        '<div class="staff-dialog" role="dialog" aria-modal="true" aria-labelledby="staff-dialog-title">' +
+          '<button type="button" class="dialog-close focus-ring" id="close-staff-dialog" aria-label="Close staff sign-in"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>' +
+          '<div class="staff-mark"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18l-1 11H4L3 9Z"/><path d="M3 9V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3"/></svg></div>' +
+          '<span class="dialog-eyebrow">mimi&apos;s back room</span>' +
+          '<h2 id="staff-dialog-title" class="font-display">Staff sign-in</h2>' +
+          '<p class="staff-copy">For the people behind the shelf. Customers can reserve without an account.</p>' +
+          '<button type="button" class="primary-button full-width focus-ring" disabled>Continue with account provider <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>' +
+          '<p class="staff-footnote">Sign-in isn&apos;t wired up in this static export — connect your auth provider to enable it.</p>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  function bindStaffDialogEvents() {
+    var overlay = document.getElementById('staff-overlay');
+    if (!overlay) return;
+    overlay.addEventListener('mousedown', function (e) { if (e.target === overlay) closeStaffDialog(); });
+    document.getElementById('close-staff-dialog').addEventListener('click', closeStaffDialog);
+  }
+
+  function openStaffDialog() { state.staffOpen = true; renderOverlays(); }
+  function closeStaffDialog() { state.staffOpen = false; renderOverlays(); }
+
+  // Staff sign-in now lives on its own page (mimicart-admin.html), kept
+  // separate from the customer-facing storefront but linked from here.
+  document.getElementById('nav-staff').addEventListener('click', function () { setMobileNav(false); window.open('mimicart-admin.html', '_blank'); });
+  document.getElementById('footer-staff').addEventListener('click', function () { window.open('mimicart-admin.html', '_blank'); });
+
+  // ================================================================
+  // BASIC SECURITY HELPERS
+  // (password strength policy, client-side login lockout + a login
+  // history log, and an idle "are you still there?" check)
+  //
+  // Important honesty note: everything below runs in the visitor's own
+  // browser and is stored in that browser's localStorage. It's a good
+  // UX-level deterrent (slows down casual guessing, gives people a
+  // record of their own sign-ins) but it is NOT a substitute for real
+  // server-side protection — anyone can clear their browser storage or
+  // open a private window to reset it. For actual brute-force
+  // protection, pair this with Firebase App Check + a Cloud Function
+  // (or Identity Platform's built-in throttling) that enforces the
+  // lockout server-side. See the notes at the bottom of this file.
+  // ================================================================
+  var MAX_LOGIN_ATTEMPTS = 5;
+  var LOCKOUT_MS = 5 * 60 * 1000;      // 5 minutes
+  var IDLE_LIMIT_MS = 10 * 60 * 1000;  // 10 minutes
+  var IDLE_GRACE_MS = 60 * 1000;       // 60s to respond to "are you still there?"
+
+  function normalizeEmail(email) { return (email || '').trim().toLowerCase(); }
+
+  function passwordPolicyIssues(pw) {
+    pw = pw || '';
+    var issues = [];
+    if (pw.length < 8) issues.push('at least 8 characters');
+    if (!/[a-z]/.test(pw)) issues.push('a lowercase letter');
+    if (!/[A-Z]/.test(pw)) issues.push('an uppercase letter');
+    if (!/[0-9]/.test(pw)) issues.push('a number');
+    if (!/[^A-Za-z0-9]/.test(pw)) issues.push('a symbol (like ! ? # $ %)');
+    return issues;
+  }
+  function passwordRuleState(pw) {
+    pw = pw || '';
+    return {
+      length: pw.length >= 8,
+      lower: /[a-z]/.test(pw),
+      upper: /[A-Z]/.test(pw),
+      number: /[0-9]/.test(pw),
+      symbol: /[^A-Za-z0-9]/.test(pw)
+    };
+  }
+  function updatePasswordChecklist(pw) {
+    var list = document.getElementById('password-requirements');
+    if (!list) return;
+    var ruleState = passwordRuleState(pw);
+    Object.keys(ruleState).forEach(function (rule) {
+      var item = list.querySelector('[data-rule="' + rule + '"]');
+      if (item) item.classList.toggle('rule-met', ruleState[rule]);
+    });
+  }
+
+  // ---- login attempt / lockout tracking (per email, in this browser) ----
+  function attemptsKey(email) { return 'mimicart:login-attempts:' + normalizeEmail(email); }
+  function getAttemptRecord(email) {
+    try {
+      var raw = localStorage.getItem(attemptsKey(email));
+      return raw ? JSON.parse(raw) : { count: 0, lockUntil: 0 };
+    } catch (e) { return { count: 0, lockUntil: 0 }; }
+  }
+  function setAttemptRecord(email, record) {
+    try { localStorage.setItem(attemptsKey(email), JSON.stringify(record)); } catch (e) { /* ignore */ }
+  }
+  function lockoutMsRemaining(email) {
+    var record = getAttemptRecord(email);
+    var remaining = record.lockUntil - Date.now();
+    return remaining > 0 ? remaining : 0;
+  }
+  function recordFailedLogin(email) {
+    var record = getAttemptRecord(email);
+    if (record.lockUntil && record.lockUntil > Date.now()) return record; // already locked
+    record.count = (record.count || 0) + 1;
+    if (record.count >= MAX_LOGIN_ATTEMPTS) {
+      record.lockUntil = Date.now() + LOCKOUT_MS;
+      record.count = 0;
+    }
+    setAttemptRecord(email, record);
+    return record;
+  }
+  function resetLoginAttempts(email) { setAttemptRecord(email, { count: 0, lockUntil: 0 }); }
+  function formatCountdown(ms) {
+    var totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+    var m = Math.floor(totalSeconds / 60);
+    var s = totalSeconds % 60;
+    return m + ':' + (s < 10 ? '0' : '') + s;
+  }
+  var lockoutCountdownTimer = null;
+  function startLockoutCountdown(email) {
+    clearInterval(lockoutCountdownTimer);
+    function tick() {
+      var remaining = lockoutMsRemaining(email);
+      if (remaining <= 0) {
+        clearInterval(lockoutCountdownTimer);
+        state.lockoutRemaining = '';
+        state.loginError = '';
+        renderOverlays();
+        return;
+      }
+      state.lockoutRemaining = formatCountdown(remaining);
+      var el = document.getElementById('lockout-countdown');
+      if (el) el.textContent = state.lockoutRemaining;
+    }
+    tick();
+    lockoutCountdownTimer = setInterval(tick, 1000);
+  }
+
+  // ---- device fingerprint shown in the login log (best-effort, from the User-Agent) ----
+  function detectDevice() {
+    var ua = navigator.userAgent || '';
+    var os = 'Unknown device';
+    if (/iPhone/.test(ua)) os = 'iPhone';
+    else if (/iPad/.test(ua)) os = 'iPad';
+    else if (/Android/.test(ua)) os = /Mobile/.test(ua) ? 'Android phone' : 'Android tablet';
+    else if (/Macintosh/.test(ua)) os = 'Mac';
+    else if (/Windows/.test(ua)) os = 'Windows PC';
+    else if (/Linux/.test(ua)) os = 'Linux';
+    var browser = 'browser';
+    if (/Edg\//.test(ua)) browser = 'Edge';
+    else if (/OPR\//.test(ua) || /Opera/.test(ua)) browser = 'Opera';
+    else if (/Chrome\//.test(ua) && !/Chromium/.test(ua)) browser = 'Chrome';
+    else if (/CriOS\//.test(ua)) browser = 'Chrome';
+    else if (/Firefox\//.test(ua)) browser = 'Firefox';
+    else if (/Safari\//.test(ua)) browser = 'Safari';
+    return os + ' \u2022 ' + browser;
+  }
+
+  // ---- login history log (per email, in this browser) ----
+  function loginLogKey(email) { return 'mimicart:login-logs:' + normalizeEmail(email); }
+  function getLoginLogs(email) {
+    try {
+      var raw = localStorage.getItem(loginLogKey(email));
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) { return []; }
+  }
+  function logLoginEvent(email, status, method) {
+    if (!email) return;
+    var logs = getLoginLogs(email);
+    logs.unshift({ time: Date.now(), status: status, method: method, device: detectDevice() });
+    logs = logs.slice(0, 20); // keep the most recent 20
+    try { localStorage.setItem(loginLogKey(email), JSON.stringify(logs)); } catch (e) { /* ignore */ }
+  }
+  function formatLogTime(ts) {
+    var d = new Date(ts);
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' \u2022 ' +
+      d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  }
+
+  // ---- idle timeout: "are you still there?" ----
+  var lastActivityAt = Date.now();
+  var idleCheckTimer = null;
+  var idleGraceTimer = null;
+  var idlePromptShown = false;
+  ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'].forEach(function (evt) {
+    window.addEventListener(evt, function () {
+      lastActivityAt = Date.now();
+      if (idlePromptShown) dismissIdlePrompt(true);
+    }, { passive: true });
+  });
+  function showIdlePrompt() {
+    if (idlePromptShown || !state.user) return;
+    idlePromptShown = true;
+    var overlay = document.createElement('div');
+    overlay.className = 'overlay idle-overlay';
+    overlay.id = 'idle-overlay';
+    overlay.innerHTML =
+      '<div class="login-dialog idle-dialog" role="alertdialog" aria-modal="true" aria-labelledby="idle-title">' +
+        '<h2 id="idle-title" class="font-display">Still there?</h2>' +
+        '<p class="login-copy">You\u2019ve been idle for a while. For your security, we\u2019ll sign you out in <strong id="idle-seconds">60</strong>s unless you say you\u2019re still here.</p>' +
+        '<button type="button" class="primary-button full-width focus-ring" id="idle-stay-button">I\u2019m still here</button>' +
+      '</div>';
+    document.body.appendChild(overlay);
+    document.getElementById('idle-stay-button').addEventListener('click', function () { dismissIdlePrompt(true); });
+
+    var secondsLeft = Math.floor(IDLE_GRACE_MS / 1000);
+    var secondsEl = document.getElementById('idle-seconds');
+    var countdown = setInterval(function () {
+      secondsLeft -= 1;
+      if (secondsEl) secondsEl.textContent = String(Math.max(0, secondsLeft));
+      if (secondsLeft <= 0) clearInterval(countdown);
+    }, 1000);
+
+    idleGraceTimer = setTimeout(function () {
+      clearInterval(countdown);
+      dismissIdlePrompt(false);
+      if (state.user) {
+        showToast('Signed out after being idle. Log back in whenever you\u2019re ready.');
+        signOutUser();
+      }
+    }, IDLE_GRACE_MS);
+  }
+  function dismissIdlePrompt(stillHere) {
+    idlePromptShown = false;
+    clearTimeout(idleGraceTimer);
+    var overlay = document.getElementById('idle-overlay');
+    if (overlay) overlay.remove();
+    if (stillHere) lastActivityAt = Date.now();
+  }
+  idleCheckTimer = setInterval(function () {
+    if (!state.user || idlePromptShown) return;
+    if (Date.now() - lastActivityAt >= IDLE_LIMIT_MS) showIdlePrompt();
+  }, 15000);
+
+  // ---- customer sign-in (Firebase: Google sign-in + Email/Password, both free) ----
+  var mimicartToastTimer = null;
+  function showToast(message) {
+    var existing = document.getElementById('mimicart-toast');
+    if (existing) existing.remove();
+    if (mimicartToastTimer) clearTimeout(mimicartToastTimer);
+
+    var toast = document.createElement('div');
+    toast.className = 'mimicart-toast';
+    toast.id = 'mimicart-toast';
+    toast.setAttribute('role', 'status');
+    toast.innerHTML =
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' +
+      '<span>' + message + '</span>';
+    document.body.appendChild(toast);
+
+    mimicartToastTimer = setTimeout(function () {
+      toast.remove();
+      mimicartToastTimer = null;
+    }, 4500);
+  }
+
+  // ---- "Welcome back" banner shown right after a successful login ----
+  var welcomeToastTimer = null;
+  function showWelcomeToast(user) {
+    if (!user) return;
+    var existing = document.getElementById('mimicart-toast');
+    if (existing) existing.remove();
+    if (mimicartToastTimer) clearTimeout(mimicartToastTimer);
+    if (welcomeToastTimer) clearTimeout(welcomeToastTimer);
+
+    var name = (user.email || '').split('@')[0];
+    var toast = document.createElement('div');
+    toast.className = 'mimicart-toast welcome-toast';
+    toast.id = 'mimicart-toast';
+    toast.setAttribute('role', 'status');
+    toast.innerHTML =
+      '<span class="welcome-toast-mark">m</span>' +
+      '<span class="welcome-toast-copy"><strong>Welcome back, ' + name + '!</strong><span>You\u2019re signed in \u2014 ready to shop the shelf.</span></span>';
+    document.body.appendChild(toast);
+
+    welcomeToastTimer = setTimeout(function () {
+      toast.remove();
+      welcomeToastTimer = null;
+    }, 4500);
+  }
+
+  // ---- one-time code (OTP) state for email/password logins ----
+  // None of this is persisted to disk; it only lives in memory for this tab.
+  var pendingOtp = { code: null, expiresAt: 0 };
+  var pendingOtpUser = null;       // the Firebase user object waiting on a code
+  var otpVerifiedThisSession = false;
+  var otpResendCooldownTimer = null;
+  var suppressOtpFlow = false;     // true while signUpWithEmail is mid-flight
+
+  function renderLoginDialogIfNeeded() {
+    if (!state.loginOpen) return '';
+
+    var errorHTML = state.loginError ? '<p class="login-error">' + state.loginError + '</p>' : '';
+    var noticeHTML = state.loginNotice ? '<p class="login-notice">' + state.loginNotice + '</p>' : '';
+    var configWarningHTML = !firebaseConfigured
+      ? '<p class="login-error">Sign-in isn&apos;t connected yet. Add your Firebase project keys to FIREBASE_CONFIG near the top of the page, and enable Google + Email/Password under Authentication &gt; Sign-in method.</p>'
+      : '';
+    var bodyHTML;
+    var titleHTML;
+    var copyHTML;
+
+    if (state.otpPending) {
+      // one-time code step, shown right after a successful password sign-in
+      var otpErrorHTML = state.otpError ? '<p class="login-error">' + state.otpError + '</p>' : '';
+      var otpNoticeHTML = state.otpNotice ? '<p class="login-notice' + (state.otpError ? '' : ' good') + '">' + state.otpNotice + '</p>' : '';
+      titleHTML = '<h2 id="login-dialog-title" class="font-display">Check your email</h2>';
+      copyHTML = '<p class="login-copy">We sent a 6-digit code to <strong>' + (pendingOtpUser ? pendingOtpUser.email : '') + '</strong>. Enter it below to finish logging in.</p>';
+      bodyHTML = (
+        '<label for="otp-code-input">Verification code</label>' +
+        '<input id="otp-code-input" class="otp-field" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" value="' + state.otpCode + '" />' +
+        otpErrorHTML + otpNoticeHTML +
+        '<button type="button" class="primary-button full-width focus-ring" id="otp-verify-button" style="margin-top:15px" ' + (state.loginLoading ? 'disabled' : '') + '>' +
+          (state.loginLoading ? 'Verifying\u2026' : 'Verify code') +
+        '</button>' +
+        '<div class="otp-actions-row">' +
+          '<button type="button" id="otp-resend-button" ' + (state.otpResendCooldown > 0 ? 'disabled' : '') + '>' + (state.otpResendCooldown > 0 ? 'Resend code (' + state.otpResendCooldown + 's)' : 'Resend code') + '</button>' +
+          '<button type="button" id="otp-cancel-button">Use a different account</button>' +
+        '</div>'
+      );
+    } else if (state.user && state.accountView === 'settings') {
+      // settings sub-view: login activity log for this account
+      titleHTML = '<h2 id="login-dialog-title" class="font-display">Settings</h2>';
+      copyHTML = '<p class="login-copy">Recent sign-in activity for <strong>' + state.user.email + '</strong>, kept on this device.</p>';
+      var logs = getLoginLogs(state.user.email);
+      var logsHTML = logs.length
+        ? '<ul class="login-log-list">' + logs.map(function (entry) {
+            var statusClass = entry.status === 'success' ? 'log-success' : (entry.status === 'locked' ? 'log-locked' : 'log-failed');
+            var statusLabel = entry.status === 'success' ? '\u2713 Signed in' : (entry.status === 'locked' ? '\u23f1 Locked out' : '\u2717 Failed attempt');
+            var methodLabel = entry.method === 'google' ? 'Google' : 'Email &amp; password';
+            var deviceLabel = entry.device ? entry.device + ' \u2022 ' : '';
+            return '<li class="login-log-row ' + statusClass + '"><span class="log-status">' + statusLabel + '</span><span class="log-meta">' + methodLabel + ' \u2022 ' + deviceLabel + formatLogTime(entry.time) + '</span></li>';
+          }).join('') + '</ul>'
+        : '<p class="login-copy">No sign-in activity recorded yet on this device.</p>';
+      bodyHTML = (
+        logsHTML +
+        '<button type="button" class="secondary-button full-width focus-ring" id="settings-back-button" style="margin-top:15px">\u2190 Back to account</button>'
+      );
+    } else if (state.user) {
+      // signed-in view, opened from the account button
+      titleHTML = '<h2 id="login-dialog-title" class="font-display">Your account</h2>';
+      copyHTML = '';
+      var verified = state.user.verified;
+      bodyHTML = (
+        '<div class="account-chip"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' +
+          '<div><strong>' + state.user.email + '</strong>' +
+          '<span>' + (state.user.provider === 'google' ? 'Signed in with Google' : 'Signed in with email') + '</span>' +
+          (state.user.provider === 'password'
+            ? '<span class="verify-badge ' + (verified ? 'is-verified' : 'is-unverified') + '">' + (verified ? '\u2713 Email verified' : '\u26a0 Email not verified yet') + '</span>'
+            : '') +
+          '</div>' +
+        '</div>' +
+        (state.user.provider === 'password' && !verified
+          ? '<button type="button" class="secondary-button full-width focus-ring" id="resend-verification-button" style="margin-bottom:11px" ' + (state.loginLoading ? 'disabled' : '') + '>' + (state.loginLoading ? 'Sending\u2026' : 'Resend verification email') + '</button>'
+          : '') +
+        noticeHTML + errorHTML +
+        '<button type="button" class="secondary-button full-width focus-ring" id="track-orders-button" style="margin-top:11px">\uD83D\uDCE6 Track my orders</button>' +
+        '<button type="button" class="secondary-button full-width focus-ring" id="account-settings-button" style="margin-top:9px">Settings &amp; login logs</button>' +
+        '<button type="button" class="secondary-button full-width focus-ring" id="sign-out-button" style="margin-top:9px">Sign out</button>'
+      );
+    } else {
+      titleHTML = '<h2 id="login-dialog-title" class="font-display">' + (state.loginMode === 'signup' ? 'Create an account' : 'Sign in') + '</h2>';
+      copyHTML = '<p class="login-copy">' + (state.loginMode === 'signup' ? 'Set up an account so you can reserve faster next time.' : 'Log in with Google or your email to manage your reservations.') + '</p>';
+      var isSignup = state.loginMode === 'signup';
+      bodyHTML = (
+        '<div class="login-tabs">' +
+          '<button type="button" class="login-tab ' + (!isSignup ? 'active' : '') + '" id="tab-login">Log in</button>' +
+          '<button type="button" class="login-tab ' + (isSignup ? 'active' : '') + '" id="tab-signup">Sign up</button>' +
+        '</div>' +
+        '<button type="button" class="google-button focus-ring" id="google-signin-button" ' + (state.loginLoading ? 'disabled' : '') + '>' +
+          '<svg width="17" height="17" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.49 12.27c0-.85-.08-1.66-.22-2.44H12v4.63h6.47a5.54 5.54 0 0 1-2.4 3.63v3h3.89c2.27-2.09 3.53-5.17 3.53-8.82Z"/><path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.95-2.91l-3.89-3c-1.08.73-2.46 1.15-4.06 1.15-3.13 0-5.78-2.11-6.73-4.96H1.26v3.11A12 12 0 0 0 12 24Z"/><path fill="#FBBC05" d="M5.27 14.28A7.2 7.2 0 0 1 4.89 12c0-.79.14-1.56.38-2.28V6.61H1.26A12 12 0 0 0 0 12c0 1.94.46 3.77 1.26 5.39l4.01-3.11Z"/><path fill="#EA4335" d="M12 4.75c1.76 0 3.34.6 4.58 1.79l3.44-3.44C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.69 1.26 6.61l4.01 3.11C6.22 6.86 8.87 4.75 12 4.75Z"/></svg>' +
+          (state.loginLoading ? 'Please wait\u2026' : 'Continue with Google') +
+        '</button>' +
+        '<div class="divider-row">or</div>' +
+        '<label for="login-email">Email</label>' +
+        '<input id="login-email" class="login-field" type="email" autocomplete="email" placeholder="you@email.com" value="' + state.loginEmail + '" />' +
+        '<label for="login-password">Password</label>' +
+        '<input id="login-password" class="login-field" type="password" autocomplete="' + (isSignup ? 'new-password' : 'current-password') + '" placeholder="' + (isSignup ? 'Create a strong password' : 'Your password') + '" value="' + state.loginPassword + '" style="' + (isSignup ? 'margin-bottom:9px' : '') + '" />' +
+        (isSignup
+          ? '<ul class="password-requirements" id="password-requirements">' +
+              '<li data-rule="length">At least 8 characters</li>' +
+              '<li data-rule="upper">One uppercase letter</li>' +
+              '<li data-rule="lower">One lowercase letter</li>' +
+              '<li data-rule="number">One number</li>' +
+              '<li data-rule="symbol">One symbol (! ? # $ %)</li>' +
+            '</ul>'
+          : '') +
+        (isSignup
+          ? '<label for="login-confirm-password">Confirm password</label><input id="login-confirm-password" class="login-field" type="password" autocomplete="new-password" placeholder="Type it again" value="' + state.loginConfirmPassword + '" />'
+          : '') +
+        configWarningHTML + errorHTML + noticeHTML +
+        '<button type="button" class="primary-button full-width focus-ring" id="email-submit-button" style="margin-top:15px" ' + (state.loginLoading ? 'disabled' : '') + '>' +
+          (state.loginLoading ? (isSignup ? 'Creating account\u2026' : 'Logging in\u2026') : (isSignup ? 'Create account' : 'Log in')) +
+        '</button>' +
+        (isSignup
+          ? '<small class="dialog-notice">We&apos;ll send a verification link to confirm it&apos;s really your email.</small>'
+          : '<p class="login-switch-note">Don&apos;t have an account yet? <button type="button" id="go-to-signup">Sign up</button></p>')
+      );
+    }
+
+    return (
+      '<div class="overlay" role="presentation" id="login-overlay">' +
+        '<div class="login-dialog" role="dialog" aria-modal="true" aria-labelledby="login-dialog-title">' +
+          '<button type="button" class="dialog-close focus-ring" id="close-login-dialog" aria-label="Close sign-in"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>' +
+          '<div class="login-mark"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>' +
+          '<span class="dialog-eyebrow">mimi&apos;s front door</span>' +
+          titleHTML +
+          copyHTML +
+          bodyHTML +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  function bindLoginDialogEvents() {
+    var overlay = document.getElementById('login-overlay');
+    if (!overlay) return;
+    overlay.addEventListener('mousedown', function (e) { if (e.target === overlay) closeLoginDialog(); });
+    document.getElementById('close-login-dialog').addEventListener('click', closeLoginDialog);
+
+    var signOutBtn = document.getElementById('sign-out-button');
+    if (signOutBtn) signOutBtn.addEventListener('click', signOutUser);
+
+    var settingsBtn = document.getElementById('account-settings-button');
+    if (settingsBtn) settingsBtn.addEventListener('click', function () { state.accountView = 'settings'; renderOverlays(); });
+    var settingsBackBtn = document.getElementById('settings-back-button');
+    if (settingsBackBtn) settingsBackBtn.addEventListener('click', function () { state.accountView = 'main'; renderOverlays(); });
+
+    var trackOrdersBtn = document.getElementById('track-orders-button');
+    if (trackOrdersBtn) trackOrdersBtn.addEventListener('click', function () { state.loginOpen = false; openOrdersDialog(); });
+
+    var resendBtn = document.getElementById('resend-verification-button');
+    if (resendBtn) resendBtn.addEventListener('click', resendVerificationEmail);
+
+    var tabLogin = document.getElementById('tab-login');
+    var tabSignup = document.getElementById('tab-signup');
+    if (tabLogin) tabLogin.addEventListener('click', function () { switchLoginMode('login'); });
+    if (tabSignup) tabSignup.addEventListener('click', function () { switchLoginMode('signup'); });
+
+    var goToSignup = document.getElementById('go-to-signup');
+    if (goToSignup) goToSignup.addEventListener('click', function () { switchLoginMode('signup'); });
+
+    var googleBtn = document.getElementById('google-signin-button');
+    if (googleBtn) googleBtn.addEventListener('click', signInWithGoogle);
+
+    var emailInput = document.getElementById('login-email');
+    if (emailInput) {
+      emailInput.addEventListener('input', function () { state.loginEmail = emailInput.value; });
+      if (!document.getElementById('login-password') || !state.loginEmail) emailInput.focus();
+    }
+    var passwordInput = document.getElementById('login-password');
+    if (passwordInput) {
+      passwordInput.addEventListener('input', function () {
+        state.loginPassword = passwordInput.value;
+        updatePasswordChecklist(passwordInput.value);
+      });
+      updatePasswordChecklist(passwordInput.value); // reflect any value already typed before a re-render
+    }
+    var confirmInput = document.getElementById('login-confirm-password');
+    if (confirmInput) confirmInput.addEventListener('input', function () { state.loginConfirmPassword = confirmInput.value; });
+
+    var submitBtn = document.getElementById('email-submit-button');
+    if (submitBtn) submitBtn.addEventListener('click', function () {
+      if (state.loginMode === 'signup') signUpWithEmail(); else logInWithEmail();
+    });
+
+    var otpInput = document.getElementById('otp-code-input');
+    if (otpInput) {
+      otpInput.addEventListener('input', function () {
+        state.otpCode = otpInput.value.replace(/\D/g, '').slice(0, 6);
+        otpInput.value = state.otpCode;
+      });
+      otpInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') verifyOtpCode(); });
+      otpInput.focus();
+    }
+    var otpVerifyBtn = document.getElementById('otp-verify-button');
+    if (otpVerifyBtn) otpVerifyBtn.addEventListener('click', verifyOtpCode);
+    var otpResendBtn = document.getElementById('otp-resend-button');
+    if (otpResendBtn) otpResendBtn.addEventListener('click', resendOtpCode);
+    var otpCancelBtn = document.getElementById('otp-cancel-button');
+    if (otpCancelBtn) otpCancelBtn.addEventListener('click', function () { cancelOtpStep(false); });
+  }
+
+  function switchLoginMode(mode) {
+    state.loginMode = mode;
+    state.loginError = '';
+    state.loginNotice = '';
+    renderOverlays();
+  }
+
+  function openLoginDialog() {
+    state.loginOpen = true;
+    state.loginError = '';
+    state.loginNotice = '';
+    state.accountView = 'main';
+    if (!state.user) state.loginMode = 'login';
+    renderOverlays();
+  }
+  function closeLoginDialog() {
+    if (state.otpPending) { cancelOtpStep(true); return; }
+    state.loginOpen = false;
+    renderOverlays();
+  }
+
+  function userFromFirebaseUser(fbUser) {
+    var isGoogle = (fbUser.providerData || []).some(function (p) { return p.providerId === 'google.com'; });
+    return {
+      email: fbUser.email,
+      verified: isGoogle ? true : !!fbUser.emailVerified,
+      provider: isGoogle ? 'google' : 'password'
+    };
+  }
+
+  function signInWithGoogle() {
+    state.loginError = '';
+    if (!firebaseConfigured) {
+      state.loginError = 'Sign-in isn\u2019t connected yet. Add your Firebase project keys to FIREBASE_CONFIG near the top of the page to enable this.';
+      renderOverlays();
+      return;
+    }
+    state.loginLoading = true;
+    renderOverlays();
+    var provider = new firebase.auth.GoogleAuthProvider();
+    explicitLoginInProgress = true;
+    firebaseAuth.signInWithPopup(provider).then(function (result) {
+      state.loginLoading = false;
+      state.loginError = '';
+      state.loginNotice = '';
+      if (result && result.user && result.user.email) logLoginEvent(result.user.email, 'success', 'google');
+      renderOverlays();
+      // onAuthStateChanged (below) sets state.user and closes the dialog —
+      // Google accounts skip the one-time code step.
+    }).catch(function (err) {
+      explicitLoginInProgress = false;
+      state.loginLoading = false;
+      state.loginError = (err && err.message) ? err.message : 'Google sign-in didn\u2019t go through. Please try again.';
+      renderOverlays();
+    });
+  }
+
+  function signUpWithEmail() {
+    state.loginError = '';
+    state.loginNotice = '';
+
+    if (!firebaseConfigured) {
+      state.loginError = 'Sign-in isn\u2019t connected yet. Add your Firebase project keys to FIREBASE_CONFIG near the top of the page to enable this.';
+      renderOverlays();
+      return;
+    }
+    var email = (state.loginEmail || '').trim();
+    if (!email || email.indexOf('@') === -1) {
+      state.loginError = 'Enter a valid email address.';
+      renderOverlays();
+      return;
+    }
+    if (!state.loginPassword || passwordPolicyIssues(state.loginPassword).length) {
+      state.loginError = 'Password needs ' + passwordPolicyIssues(state.loginPassword).join(', ') + '.';
+      renderOverlays();
+      return;
+    }
+    if (state.loginPassword !== state.loginConfirmPassword) {
+      state.loginError = 'Passwords don\u2019t match.';
+      renderOverlays();
+      return;
+    }
+
+    state.loginLoading = true;
+    renderOverlays();
+
+    suppressOtpFlow = true;
+    firebaseAuth.createUserWithEmailAndPassword(email, state.loginPassword).then(function (result) {
+      return result.user.sendEmailVerification().then(function () {
+        return firebaseAuth.signOut();
+      });
+    }).then(function () {
+      suppressOtpFlow = false;
+      state.loginLoading = false;
+      state.user = null;
+      state.loginMode = 'login';
+      state.loginPassword = '';
+      state.loginConfirmPassword = '';
+      state.loginNotice = 'Account created! We sent a verification link to ' + email + ' \u2014 confirm it, then log in below.';
+      renderOverlays();
+      updateAccountButton();
+      showToast('Verification email sent to ' + email + '.');
+    }).catch(function (err) {
+      suppressOtpFlow = false;
+      state.loginLoading = false;
+      if (err && err.code === 'auth/email-already-in-use') {
+        state.loginError = 'That email is already registered \u2014 try logging in instead.';
+        state.loginMode = 'login';
+      } else {
+        state.loginError = (err && err.message) ? err.message : 'Couldn\u2019t create the account. Please try again.';
+      }
+      renderOverlays();
+    });
+  }
+
+  function logInWithEmail() {
+    state.loginError = '';
+    state.loginNotice = '';
+
+    if (!firebaseConfigured) {
+      state.loginError = 'Sign-in isn\u2019t connected yet. Add your Firebase project keys to FIREBASE_CONFIG near the top of the page to enable this.';
+      renderOverlays();
+      return;
+    }
+    var email = (state.loginEmail || '').trim();
+    if (!email || !state.loginPassword) {
+      state.loginError = 'Enter your email and password.';
+      renderOverlays();
+      return;
+    }
+
+    // ---- client-side lockout: 5 failed attempts = 5 minute cooldown ----
+    var remaining = lockoutMsRemaining(email);
+    if (remaining > 0) {
+      state.loginError = 'Too many failed attempts. Try again in <strong id="lockout-countdown">' + formatCountdown(remaining) + '</strong>.';
+      renderOverlays();
+      startLockoutCountdown(email);
+      return;
+    }
+
+    state.loginLoading = true;
+    renderOverlays();
+
+    explicitLoginInProgress = true;
+    firebaseAuth.signInWithEmailAndPassword(email, state.loginPassword).then(function () {
+      state.loginLoading = false;
+      state.loginPassword = '';
+      resetLoginAttempts(email);
+      logLoginEvent(email, 'success', 'password');
+      renderOverlays();
+      // onAuthStateChanged (below) notices the new session and kicks off
+      // the one-time email code before state.user gets set.
+    }).catch(function (err) {
+      explicitLoginInProgress = false;
+      state.loginLoading = false;
+      logLoginEvent(email, 'failed', 'password');
+      var record = recordFailedLogin(email);
+      if (record.lockUntil && record.lockUntil > Date.now()) {
+        state.loginError = 'Too many failed attempts. Try again in <strong id="lockout-countdown">' + formatCountdown(lockoutMsRemaining(email)) + '</strong>.';
+        renderOverlays();
+        startLockoutCountdown(email);
+        return;
+      }
+      var attemptsLeft = MAX_LOGIN_ATTEMPTS - record.count;
+      var attemptsNote = attemptsLeft <= 2 ? ' (' + attemptsLeft + ' attempt' + (attemptsLeft === 1 ? '' : 's') + ' left before a 5-minute lockout)' : '';
+      if (err && (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password')) {
+        state.loginError = 'This email isn\u2019t registered yet, or the password is wrong. New here? Sign up first.' + attemptsNote;
+      } else {
+        state.loginError = ((err && err.message) ? err.message : 'Couldn\u2019t log you in. Please try again.') + attemptsNote;
+      }
+      renderOverlays();
+    });
+  }
+
+  function resendVerificationEmail() {
+    if (!firebaseAuth || !firebaseAuth.currentUser) return;
+    state.loginLoading = true;
+    state.loginError = '';
+    state.loginNotice = '';
+    renderOverlays();
+    firebaseAuth.currentUser.sendEmailVerification().then(function () {
+      state.loginLoading = false;
+      state.loginNotice = 'Verification email sent \u2014 check your inbox.';
+      renderOverlays();
+      showToast('Verification email sent \u2014 check your inbox.');
+    }).catch(function (err) {
+      state.loginLoading = false;
+      state.loginError = (err && err.message) ? err.message : 'Couldn\u2019t send the email. Please try again.';
+      renderOverlays();
+    });
+  }
+
+  function signOutUser() {
+    if (firebaseConfigured && firebaseAuth) firebaseAuth.signOut();
+    state.user = null;
+    state.loginOpen = false;
+    state.accountView = 'main';
+    state.loginEmail = '';
+    state.loginPassword = '';
+    state.loginConfirmPassword = '';
+    state.ordersOpen = false;
+    unsubscribeFromCustomerOrders();
+    renderOverlays();
+    updateAccountButton();
+  }
+
+  function updateAccountButton() {
+    var btn = document.getElementById('account-button');
+    if (!btn) return;
+    if (state.user) {
+      btn.setAttribute('aria-label', 'Account: ' + state.user.email);
+      btn.style.borderColor = 'hsl(var(--primary))';
+      btn.style.color = 'hsl(var(--primary))';
+    } else {
+      btn.setAttribute('aria-label', 'Sign in');
+      btn.style.borderColor = '';
+      btn.style.color = '';
+      closeNotifPanel();
+    }
+    updateNotifBadge();
+  }
+
+  // ---- OTP step: shown after password sign-in, before account access ----
+  function generateOtpCode() {
+    return String(Math.floor(100000 + Math.random() * 900000)); // always 6 digits
+  }
+
+  function sendOtpCode(email) {
+    var code = generateOtpCode();
+    pendingOtp = { code: code, expiresAt: Date.now() + 5 * 60 * 1000 }; // valid 5 min
+
+    if (!emailjsConfigured) {
+      // Lets you finish building/testing the flow before EmailJS is wired up.
+      console.warn('EmailJS isn\u2019t configured yet \u2014 your OTP code is:', code);
+      return Promise.resolve();
+    }
+    return emailjs.send(EMAILJS_CONFIG.serviceId, EMAILJS_CONFIG.templateId, {
+      to_email: email,
+      passcode: code
+    });
+  }
+
+  function startOtpResendCooldown(seconds) {
+    state.otpResendCooldown = seconds;
+    var btn = document.getElementById('otp-resend-button');
+    if (btn) { btn.disabled = true; btn.textContent = 'Resend code (' + seconds + 's)'; }
+    clearInterval(otpResendCooldownTimer);
+    otpResendCooldownTimer = setInterval(function () {
+      state.otpResendCooldown -= 1;
+      var b = document.getElementById('otp-resend-button');
+      if (state.otpResendCooldown <= 0) {
+        clearInterval(otpResendCooldownTimer);
+        state.otpResendCooldown = 0;
+        if (b) { b.disabled = false; b.textContent = 'Resend code'; }
+      } else if (b) {
+        b.textContent = 'Resend code (' + state.otpResendCooldown + 's)';
+      }
+    }, 1000);
+  }
+
+  function beginOtpStep(fbUser) {
+    pendingOtpUser = fbUser;
+    state.loginLoading = false;
+    state.loginOpen = true;
+    state.otpPending = true;
+    state.otpCode = '';
+    state.otpError = '';
+    state.otpNotice = 'Sending your code\u2026';
+    renderOverlays();
+
+    sendOtpCode(fbUser.email).then(function () {
+      state.otpNotice = 'Code sent! Check ' + fbUser.email + '.';
+      renderOverlays();
+    }).catch(function (err) {
+      console.error('MimiCart: OTP email failed', err);
+      state.otpError = 'Couldn\u2019t send the code email. Try resending, or check the EmailJS setup notes near the top of the page.';
+      renderOverlays();
+    });
+    startOtpResendCooldown(30);
+  }
+
+  function verifyOtpCode() {
+    state.otpError = '';
+    if (!pendingOtp.code || Date.now() > pendingOtp.expiresAt) {
+      state.otpError = 'That code expired. Tap "Resend code" for a new one.';
+      renderOverlays();
+      return;
+    }
+    if (state.otpCode !== pendingOtp.code) {
+      state.otpError = 'That code isn\u2019t right. Please try again.';
+      state.otpCode = '';
+      renderOverlays();
+      return;
+    }
+    otpVerifiedThisSession = true;
+    state.user = userFromFirebaseUser(pendingOtpUser);
+    state.otpPending = false;
+    state.otpCode = '';
+    state.otpNotice = '';
+    state.otpError = '';
+    state.loginOpen = false;
+    clearInterval(otpResendCooldownTimer);
+    pendingOtpUser = null;
+    renderOverlays();
+    updateAccountButton();
+    showWelcomeToast(state.user);
+    subscribeToCustomerOrders();
+  }
+
+  function resendOtpCode() {
+    if (!pendingOtpUser || state.otpResendCooldown > 0) return;
+    state.otpError = '';
+    state.otpNotice = 'Sending your code\u2026';
+    renderOverlays();
+    sendOtpCode(pendingOtpUser.email).then(function () {
+      state.otpNotice = 'Code sent! Check ' + pendingOtpUser.email + '.';
+      renderOverlays();
+    }).catch(function (err) {
+      console.error('MimiCart: OTP email failed', err);
+      state.otpError = 'Couldn\u2019t send the code email. Please try again.';
+      renderOverlays();
+    });
+    startOtpResendCooldown(30);
+  }
+
+  function cancelOtpStep(alsoClose) {
+    clearInterval(otpResendCooldownTimer);
+    if (firebaseAuth) firebaseAuth.signOut();
+    pendingOtpUser = null;
+    pendingOtp = { code: null, expiresAt: 0 };
+    state.otpPending = false;
+    state.otpCode = '';
+    state.otpError = '';
+    state.otpNotice = '';
+    state.loginMode = 'login';
+    if (alsoClose) state.loginOpen = false;
+    renderOverlays();
+    updateAccountButton();
+  }
+
+  document.getElementById('account-button').addEventListener('click', openLoginDialog);
+
+  if (firebaseConfigured && firebaseAuth) {
+    firebaseAuth.onAuthStateChanged(function (fbUser) {
+      if (suppressOtpFlow) return; // signUpWithEmail is managing its own UI right now
+
+      if (!fbUser) {
+        state.user = null;
+        state.otpPending = false;
+        pendingOtpUser = null;
+        pendingOtp = { code: null, expiresAt: 0 };
+        otpVerifiedThisSession = false;
+        clearInterval(otpResendCooldownTimer);
+        updateAccountButton();
+        unsubscribeFromCustomerOrders();
+        return;
+      }
+
+      var isGoogle = (fbUser.providerData || []).some(function (p) { return p.providerId === 'google.com'; });
+      if (isGoogle || otpVerifiedThisSession || !REQUIRE_OTP) {
+        if (!explicitLoginInProgress && !state.user) {
+          // This tab didn't just perform a login action — Firebase is
+          // restoring a session that was already active on this device
+          // (e.g. page reload, or the browser remembering a prior visit).
+          // Before handing over the account, double-check it's really them.
+          pendingConfirmUser = fbUser;
+          state.confirmIdentityPending = true;
+          renderOverlays();
+          return;
+        }
+        explicitLoginInProgress = false;
+        var wasSignedIn = !!state.user;
+        state.user = userFromFirebaseUser(fbUser);
+        state.otpPending = false;
+        state.loginOpen = false;
+        state.loginLoading = false;
+        renderOverlays();
+        updateAccountButton();
+        if (!wasSignedIn) showWelcomeToast(state.user);
+        subscribeToCustomerOrders();
+        return;
+      }
+
+      // Email/password session that hasn't passed the one-time code check
+      // yet in this tab — start (or restart) the OTP step.
+      beginOtpStep(fbUser);
+    });
+  }
+
+  // ---- "is this you?" — confirms an auto-restored session belongs to the person at the keyboard ----
+  var explicitLoginInProgress = false;  // set true right before an explicit sign-in action in this tab
+  var pendingConfirmUser = null;        // the Firebase user object awaiting a yes/no
+
+  function renderConfirmIdentityIfNeeded() {
+    if (!state.confirmIdentityPending || !pendingConfirmUser) return '';
+    return (
+      '<div class="overlay" role="presentation" id="confirm-identity-overlay">' +
+        '<div class="confirm-identity-dialog" role="alertdialog" aria-modal="true" aria-labelledby="confirm-identity-title">' +
+          '<div class="login-mark"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>' +
+          '<h2 id="confirm-identity-title" class="font-display">Is this you?</h2>' +
+          '<p>This browser is already signed in as <strong>' + pendingConfirmUser.email + '</strong>. Confirm it\u2019s you before we load the account.</p>' +
+          '<div class="confirm-identity-actions">' +
+            '<button type="button" class="secondary-button focus-ring" id="confirm-identity-no">No, sign out</button>' +
+            '<button type="button" class="primary-button focus-ring" id="confirm-identity-yes">Yes, it\u2019s me</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+  function bindConfirmIdentityEvents() {
+    var overlay = document.getElementById('confirm-identity-overlay');
+    if (!overlay) return;
+    document.getElementById('confirm-identity-yes').addEventListener('click', confirmIdentityYes);
+    document.getElementById('confirm-identity-no').addEventListener('click', confirmIdentityNo);
+  }
+  function confirmIdentityYes() {
+    if (!pendingConfirmUser) return;
+    var fbUser = pendingConfirmUser;
+    pendingConfirmUser = null;
+    state.confirmIdentityPending = false;
+    state.user = userFromFirebaseUser(fbUser);
+    state.otpPending = false;
+    state.loginOpen = false;
+    state.loginLoading = false;
+    renderOverlays();
+    updateAccountButton();
+    showWelcomeToast(state.user);
+    subscribeToCustomerOrders();
+  }
+  function confirmIdentityNo() {
+    pendingConfirmUser = null;
+    state.confirmIdentityPending = false;
+    if (firebaseConfigured && firebaseAuth) firebaseAuth.signOut();
+    state.user = null;
+    renderOverlays();
+    updateAccountButton();
+    showToast('Signed out for your security. Log in whenever you\u2019re ready.');
+  }
+
+  function renderOverlays() {
+    if (state.cartOpen) { renderCartDrawer(); return; }
+    overlayRoot.innerHTML = renderProductDialogIfNeeded() + renderStaffDialogIfNeeded() + renderLoginDialogIfNeeded() + renderOrdersDialogIfNeeded() + renderConfirmIdentityIfNeeded();
+    bindProductDialogEvents();
+    bindStaffDialogEvents();
+    bindLoginDialogEvents();
+    bindOrdersDialogEvents();
+    bindConfirmIdentityEvents();
+  }
+
+  // ---- escape key closes topmost overlay ----
+  window.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    if (state.notifPanelOpen) closeNotifPanel();
+    else if (state.activeProductId) closeProductDialog();
+    else if (state.ordersOpen) closeOrdersDialog();
+    else if (state.loginOpen) closeLoginDialog();
+    else if (state.staffOpen) closeStaffDialog();
+    else if (state.cartOpen) closeCartDrawer();
+    // note: the "is this you?" identity check has no Escape shortcut —
+    // it requires an explicit Yes/No so a shared device can't be skipped past.
+  });
+
+  // ---- header nav ----
+  function scrollToId(id) {
+    var el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  document.querySelectorAll('[data-nav]').forEach(function (btn) {
+    btn.addEventListener('click', function () { setMobileNav(false); scrollToId(btn.getAttribute('data-nav')); });
+  });
+
+  var desktopNav = document.getElementById('desktop-nav');
+  var mobileToggle = document.getElementById('mobile-menu-toggle');
+  function setMobileNav(open) {
+    desktopNav.classList.toggle('mobile-nav-open', open);
+    mobileToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    mobileToggle.innerHTML = open
+      ? '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
+      : '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>';
+  }
+  mobileToggle.addEventListener('click', function () { setMobileNav(!desktopNav.classList.contains('mobile-nav-open')); });
+
+  // ---- initial render ----
+  renderCategoryRail();
+  renderCatalogue();
+  updateCartBadge();
+  updateAccountButton();
+  subscribeToLiveCatalog();
+  setTimeout(function () { state.isLoading = false; renderCatalogue(); }, 650);
+})();
+</script>
+</body>
+</html>

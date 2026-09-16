@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+<title>MimiCart — Staff Dashboard</title>
+<meta name="robots" content="noindex, nofollow" />
+<meta name="theme-color" content="#D71920" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='4' y='4' width='56' height='56' rx='18' ry='18' fill='%23D71920'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-weight='700' font-size='34' fill='%23FFF9F2' text-anchor='middle'%3Em%3C/text%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --background: 36 56% 95%;
+    --foreground: 348 25% 18%;
+    --border: 35 34% 86%;
+    --card: 40 67% 98%;
+    --primary: 358 76% 45%;
+    --primary-foreground: 40 67% 98%;
+    --secondary: 158 32% 31%;
+    --muted: 34 36% 90%;
+    --muted-foreground: 344 13% 43%;
+    --accent: 38 91% 61%;
+    --good: 152 40% 34%;
+    --bad: 358 76% 45%;
+    --app-font-sans: 'DM Sans', sans-serif;
+    --app-font-serif: 'Baloo 2', sans-serif;
+    --app-font-mono: 'Space Mono', monospace;
+    --shadow-card: 0 16px 40px rgba(91, 39, 38, 0.10);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-width: 320px; font-family: var(--app-font-sans);
+    -webkit-font-smoothing: antialiased;
+    background: hsl(var(--background)); color: hsl(var(--foreground));
+  }
+  button, input, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  button:disabled { cursor: not-allowed; opacity: .5; }
+  .font-display { font-family: var(--app-font-serif); }
+  .font-mono { font-family: var(--app-font-mono); }
+  .focus-ring:focus-visible { outline: 3px solid hsl(var(--accent)); outline-offset: 2px; }
+
+  /* ---- shared bits ---- */
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-mark { width: 34px; height: 34px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 12px 12px 12px 4px; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); font: 800 22px/1 var(--app-font-serif); transform: rotate(-7deg); }
+  .brand-word { font: 800 21px/1 var(--app-font-serif); letter-spacing: -.03em; }
+  .brand-word span { color: hsl(var(--primary)); }
+  .brand-sub { color: hsl(var(--muted-foreground)); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
+  .primary-button, .secondary-button, .ghost-button { min-height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid transparent; border-radius: 999px; padding: 0 18px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+  .primary-button { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+  .primary-button:hover:not(:disabled) { background: hsl(358 76% 39%); }
+  .secondary-button { border-color: hsl(var(--border)); background: hsl(var(--card)); color: hsl(var(--foreground)); }
+  .secondary-button:hover:not(:disabled) { border-color: hsl(var(--primary)); color: hsl(var(--primary)); }
+  .ghost-button { border-color: transparent; background: transparent; color: hsl(var(--muted-foreground)); padding: 0 10px; min-height: 32px; }
+  .ghost-button:hover { color: hsl(var(--foreground)); }
+  .tiny-button { min-height: 30px; padding: 0 12px; font-size: 11px; border-radius: 999px; border: 1px solid hsl(var(--border)); background: hsl(var(--card)); }
+  .tiny-button:hover:not(:disabled) { border-color: hsl(var(--primary)); color: hsl(var(--primary)); }
+
+  /* ---- login screen ---- */
+  .login-screen { min-height: 100dvh; display: grid; place-items: center; padding: 24px; }
+  .login-card { width: min(400px, 100%); padding: 34px 30px; border-radius: 22px; background: hsl(var(--card)); box-shadow: var(--shadow-card); border: 1px solid hsl(var(--border)); }
+  .login-card h1 { margin: 18px 0 6px; font-size: 28px; }
+  .login-card p.lede { margin: 0 0 22px; color: hsl(var(--muted-foreground)); font-size: 13px; line-height: 1.6; }
+  .field-label { display: block; margin: 14px 0 6px; font: 700 10px var(--app-font-mono); text-transform: uppercase; letter-spacing: .05em; }
+  .field-input { width: 100%; height: 44px; padding: 0 13px; border: 1px solid hsl(var(--border)); border-radius: 10px; outline: 0; background: hsl(var(--background)); color: hsl(var(--foreground)); font-size: 13px; }
+  .field-input:focus { border-color: hsl(var(--primary)); box-shadow: 0 0 0 3px hsl(var(--primary) / .1); }
+  .full-width { width: 100%; }
+  .notice-box { margin-top: 14px; padding: 11px 13px; border-left: 3px solid hsl(var(--primary)); background: hsl(var(--primary) / .08); font-size: 12px; line-height: 1.5; border-radius: 0 8px 8px 0; }
+  .notice-box.setup { border-color: hsl(var(--secondary)); background: hsl(var(--secondary) / .08); }
+  .back-to-shop { display: inline-flex; align-items: center; gap: 6px; margin-top: 20px; color: hsl(var(--muted-foreground)); font-size: 12px; text-decoration: none; }
+  .back-to-shop:hover { color: hsl(var(--foreground)); }
+
+  /* ---- OTP verification screen ---- */
+  .otp-input { width: 100%; height: 54px; padding: 0 13px; border: 1px solid hsl(var(--border)); border-radius: 10px; outline: 0; background: hsl(var(--background)); color: hsl(var(--foreground)); font: 700 26px var(--app-font-mono); letter-spacing: .5em; text-align: center; }
+  .otp-input:focus { border-color: hsl(var(--primary)); box-shadow: 0 0 0 3px hsl(var(--primary) / .1); }
+  .otp-row { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; font-size: 12px; }
+  .otp-row button { border: 0; background: transparent; color: hsl(var(--primary)); font-weight: 700; padding: 0; }
+  .otp-row button:disabled { color: hsl(var(--muted-foreground)); cursor: not-allowed; }
+  .notice-box.good { border-color: hsl(var(--good)); background: hsl(var(--good) / .08); }
+
+  /* ---- dashboard shell ---- */
+  .dash-header { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 26px; background: rgba(255, 250, 240, .92); backdrop-filter: blur(14px); border-bottom: 1px solid hsl(var(--border)); flex-wrap: wrap; }
+  .dash-user { display: flex; align-items: center; gap: 12px; }
+  .dash-user-email { font-size: 12px; color: hsl(var(--muted-foreground)); }
+  .tabs { display: flex; gap: 6px; padding: 14px 26px 0; flex-wrap: wrap; }
+  .tab-button { border: 0; background: transparent; padding: 10px 16px; border-radius: 10px 10px 0 0; font-size: 12px; font-weight: 700; color: hsl(var(--muted-foreground)); border-bottom: 3px solid transparent; }
+  .tab-button.active { color: hsl(var(--primary)); border-bottom-color: hsl(var(--primary)); }
+  .tab-panel { display: none; padding: 22px 26px 60px; max-width: 1180px; margin: 0 auto; }
+  .tab-panel.active { display: block; }
+
+  /* ---- stat cards ---- */
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
+  .stat-card { padding: 18px 20px; border-radius: 16px; background: hsl(var(--card)); border: 1px solid hsl(var(--border)); }
+  .stat-card span { display: block; font: 700 10px var(--app-font-mono); text-transform: uppercase; letter-spacing: .05em; color: hsl(var(--muted-foreground)); margin-bottom: 8px; }
+  .stat-card strong { display: block; font: 800 28px var(--app-font-serif); letter-spacing: -.02em; }
+  .stat-card small { display: block; margin-top: 4px; font-size: 11px; color: hsl(var(--muted-foreground)); }
+
+  .panel-block { padding: 20px 22px; border-radius: 16px; background: hsl(var(--card)); border: 1px solid hsl(var(--border)); margin-bottom: 20px; }
+  .panel-block h2 { margin: 0 0 4px; font-size: 18px; }
+  .panel-block .panel-sub { margin: 0 0 16px; color: hsl(var(--muted-foreground)); font-size: 12px; }
+
+  /* revenue bar chart */
+  .bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 150px; padding-top: 10px; }
+  .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 6px; }
+  .bar-fill { width: 100%; max-width: 26px; border-radius: 5px 5px 2px 2px; background: hsl(var(--primary) / .8); min-height: 2px; transition: height .3s ease; }
+  .bar-label { font-size: 9px; color: hsl(var(--muted-foreground)); writing-mode: horizontal-tb; }
+
+  /* ---- tables ---- */
+  .toolbar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .search-input { flex: 1; min-width: 180px; height: 40px; padding: 0 14px; border: 1px solid hsl(var(--border)); border-radius: 999px; background: hsl(var(--background)); outline: 0; font-size: 12px; }
+  .search-input:focus { border-color: hsl(var(--primary)); }
+  .filter-select { height: 40px; padding: 0 12px; border: 1px solid hsl(var(--border)); border-radius: 999px; background: hsl(var(--background)); font-size: 12px; }
+  table.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .data-table th { text-align: left; padding: 8px 10px; font: 700 10px var(--app-font-mono); text-transform: uppercase; letter-spacing: .04em; color: hsl(var(--muted-foreground)); border-bottom: 1px solid hsl(var(--border)); }
+  .data-table td { padding: 10px; border-bottom: 1px solid hsl(var(--border) / .6); vertical-align: middle; }
+  .data-table tr:last-child td { border-bottom: 0; }
+  .prod-name { font-weight: 700; }
+  .prod-sub { display: block; color: hsl(var(--muted-foreground)); font-size: 11px; }
+  .stock-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px; font: 700 11px var(--app-font-mono); }
+  .stock-ok { background: hsl(var(--good) / .12); color: hsl(var(--good)); }
+  .stock-low { background: hsl(38 91% 61% / .22); color: hsl(30 70% 32%); }
+  .stock-out { background: hsl(var(--bad) / .12); color: hsl(var(--bad)); }
+  .stock-editor { display: flex; align-items: center; gap: 6px; }
+  .stock-editor input { width: 60px; height: 32px; text-align: center; border: 1px solid hsl(var(--border)); border-radius: 8px; background: hsl(var(--background)); outline: 0; }
+  .stock-editor input:focus { border-color: hsl(var(--primary)); }
+  .stock-editor button { width: 30px; height: 30px; border-radius: 8px; border: 1px solid hsl(var(--border)); background: hsl(var(--card)); }
+  .restock-row { display: flex; gap: 5px; margin-top: 6px; }
+  .status-badge { display: inline-flex; padding: 3px 10px; border-radius: 999px; font: 700 10px var(--app-font-mono); text-transform: uppercase; }
+  .status-pending { background: hsl(38 91% 61% / .22); color: hsl(30 70% 32%); }
+  .status-processing { background: hsl(210 80% 60% / .18); color: hsl(212 60% 42%); }
+  .status-ready { background: hsl(268 60% 60% / .18); color: hsl(268 45% 45%); }
+  .status-out_for_delivery { background: hsl(268 60% 60% / .18); color: hsl(268 45% 45%); }
+  .status-completed { background: hsl(var(--good) / .12); color: hsl(var(--good)); }
+  .status-cancelled { background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); }
+  .order-items { font-size: 11px; color: hsl(var(--muted-foreground)); max-width: 220px; }
+  /* ---- tiktok-style shipment stage tracker (admin order row) ---- */
+  .stage-track { display: flex; align-items: center; gap: 3px; margin-top: 7px; max-width: 150px; }
+  .stage-dot { width: 8px; height: 8px; border-radius: 50%; background: hsl(var(--border)); flex-shrink: 0; }
+  .stage-dot.is-done { background: hsl(var(--good)); }
+  .stage-dot.is-current { background: hsl(var(--primary)); box-shadow: 0 0 0 3px hsl(var(--primary) / .2); }
+  .stage-line { flex: 1; height: 2px; background: hsl(var(--border)); min-width: 6px; }
+  .stage-line.is-done { background: hsl(var(--good)); }
+  .stage-actions { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+  .empty-state { text-align: center; padding: 40px 20px; color: hsl(var(--muted-foreground)); font-size: 13px; }
+  /* ---- settings tab: security summary + login logs ---- */
+  .security-summary { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+  .security-summary li { padding: 11px 13px; border-radius: 10px; background: hsl(var(--muted)); font-size: 12px; line-height: 1.5; }
+  .login-log-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; max-height: 340px; overflow-y: auto; }
+  .login-log-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 10px; background: hsl(var(--muted)); font-size: 12px; }
+  .login-log-row .log-status { font-weight: 700; }
+  .login-log-row .log-meta { color: hsl(var(--muted-foreground)); font-size: 11px; text-align: right; }
+  .login-log-row.log-success .log-status { color: hsl(var(--secondary)); }
+  .login-log-row.log-failed .log-status { color: hsl(var(--primary)); }
+  .login-log-row.log-locked .log-status { color: hsl(28 85% 45%); }
+  /* ---- idle "are you still there?" prompt ---- */
+  .idle-overlay { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 24px; background: hsl(348 25% 12% / .55); backdrop-filter: blur(3px); }
+  .idle-dialog { width: min(380px, 100%); text-align: center; padding: 30px 28px; border-radius: 20px; background: hsl(var(--card)); border: 1px solid hsl(var(--border)); box-shadow: var(--shadow-card); }
+  .idle-dialog h2 { margin: 0 0 10px; font-size: 24px; }
+  .idle-dialog p { margin: 0 0 18px; color: hsl(var(--muted-foreground)); font-size: 13px; line-height: 1.6; }
+  .seed-banner { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 20px; border-radius: 16px; background: hsl(var(--secondary) / .1); border: 1px solid hsl(var(--secondary) / .3); margin-bottom: 20px; flex-wrap: wrap; }
+  .seed-banner p { margin: 0; font-size: 12px; line-height: 1.5; max-width: 560px; }
+  .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 90; padding: 12px 18px; border-radius: 12px; background: hsl(var(--foreground)); color: hsl(var(--card)); font-size: 12px; font-weight: 600; box-shadow: 0 14px 34px rgba(0,0,0,.25); }
+  .hidden { display: none !important; }
+
+  @media (max-width: 860px) {
+    .stat-grid { grid-template-columns: repeat(2, 1fr); }
+    .data-table { display: block; overflow-x: auto; white-space: nowrap; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     STAFF LOGIN SCREEN
+     ============================================================ -->
+<div class="login-screen" id="login-screen">
+  <div class="login-card">
+    <div class="brand-mark">m</div>
+    <h1 class="font-display">Staff sign-in</h1>
+    <p class="lede">This dashboard is separate from the MimiCart storefront and only staff accounts can get in.</p>
+
+    <div id="config-warning" class="notice-box setup hidden">
+      Firebase isn't configured yet in this file, so sign-in is disabled. See the setup notes at the bottom of this page.
+    </div>
+
+    <form id="login-form">
+      <label class="field-label" for="login-email">Email</label>
+      <input class="field-input" id="login-email" type="email" autocomplete="username" required />
+      <label class="field-label" for="login-password">Password</label>
+      <input class="field-input" id="login-password" type="password" autocomplete="current-password" required />
+      <button type="submit" class="primary-button full-width focus-ring" id="login-submit" style="margin-top:20px;">Sign in</button>
+    </form>
+    <div id="login-message" class="notice-box hidden"></div>
+
+    <a class="back-to-shop" href="mimicart-storefront2.html">&larr; Back to the storefront</a>
+  </div>
+</div>
+
+<!-- ============================================================
+     OTP VERIFICATION SCREEN (shown after a successful password
+     sign-in, before the dashboard unlocks)
+     ============================================================ -->
+<div class="login-screen hidden" id="otp-screen">
+  <div class="login-card">
+    <div class="brand-mark">m</div>
+    <h1 class="font-display">Check your email</h1>
+    <p class="lede">We sent a 6-digit code to <strong id="otp-target-email"></strong>. Enter it below to finish signing in.</p>
+
+    <form id="otp-form">
+      <label class="field-label" for="otp-code">Verification code</label>
+      <input class="otp-input" id="otp-code" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" required />
+      <button type="submit" class="primary-button full-width focus-ring" id="otp-submit" style="margin-top:20px;">Verify code</button>
+    </form>
+    <div id="otp-message" class="notice-box hidden"></div>
+
+    <div class="otp-row">
+      <button type="button" id="otp-resend">Resend code</button>
+      <button type="button" id="otp-cancel">Use a different account</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     DASHBOARD (shown once a staff account is verified)
+     ============================================================ -->
+<div id="dashboard" class="hidden">
+  <header class="dash-header">
+    <div class="brand">
+      <div class="brand-mark">m</div>
+      <div>
+        <div class="brand-word">Mimi<span>Cart</span></div>
+        <div class="brand-sub">Staff dashboard</div>
+      </div>
+    </div>
+    <div class="dash-user">
+      <span class="dash-user-email" id="dash-user-email"></span>
+      <a class="ghost-button focus-ring" href="mimicart-storefront2.html" target="_blank">View storefront</a>
+      <button class="secondary-button focus-ring" id="sign-out-button">Sign out</button>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button type="button" class="tab-button active" data-tab="overview">Overview</button>
+    <button type="button" class="tab-button" data-tab="inventory">Inventory</button>
+    <button type="button" class="tab-button" data-tab="orders">Orders</button>
+    <button type="button" class="tab-button" data-tab="settings">Settings</button>
+  </nav>
+
+  <!-- ---------------- OVERVIEW / REVENUE ---------------- -->
+  <section class="tab-panel active" id="panel-overview">
+    <div class="stat-grid" id="revenue-stats"></div>
+    <div class="panel-block">
+      <h2 class="font-display">Last 14 days</h2>
+      <p class="panel-sub">Revenue from completed orders, by day.</p>
+      <div class="bar-chart" id="revenue-chart"></div>
+    </div>
+    <div class="panel-block">
+      <h2 class="font-display">Recently completed</h2>
+      <p class="panel-sub">The latest orders marked as picked up and paid.</p>
+      <div id="recent-completed"></div>
+    </div>
+  </section>
+
+  <!-- ---------------- INVENTORY ---------------- -->
+  <section class="tab-panel" id="panel-inventory">
+    <div class="seed-banner hidden" id="seed-banner">
+      <p><strong>No products in the live catalog yet.</strong> Seed it once with the starter catalog below — this copies today's product list into Firestore so stock updates here show up on the storefront in real time.</p>
+      <button class="primary-button focus-ring" id="seed-button">Seed starter catalog</button>
+    </div>
+    <div class="toolbar-row">
+      <input class="search-input focus-ring" id="inventory-search" type="text" placeholder="Search products…" />
+      <select class="filter-select focus-ring" id="inventory-category"><option value="All">All categories</option></select>
+      <select class="filter-select focus-ring" id="inventory-stock-filter">
+        <option value="all">All stock levels</option>
+        <option value="low">Low stock (&le; 5)</option>
+        <option value="out">Out of stock</option>
+      </select>
+      <button type="button" class="secondary-button focus-ring" id="backfill-images-button">Add photos to existing products</button>
+      <button type="button" class="secondary-button focus-ring" id="inventory-export-csv">⬇️ Export CSV</button>
+    </div>
+    <div class="panel-block" style="overflow-x:auto;">
+      <table class="data-table">
+        <thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Stock</th><th>Restock</th></tr></thead>
+        <tbody id="inventory-body"></tbody>
+      </table>
+      <div class="empty-state hidden" id="inventory-empty">No products match that search.</div>
+    </div>
+  </section>
+
+  <!-- ---------------- ORDERS ---------------- -->
+  <section class="tab-panel" id="panel-orders">
+    <div class="toolbar-row">
+      <select class="filter-select focus-ring" id="orders-status-filter">
+        <option value="all">All statuses</option>
+        <option value="pending">Order placed</option>
+        <option value="processing">Preparing order</option>
+        <option value="ready">Ready for pickup</option>
+        <option value="out_for_delivery">Out for delivery</option>
+        <option value="completed">Completed</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
+      <button type="button" class="secondary-button focus-ring" id="orders-export-csv">⬇️ Export CSV</button>
+    </div>
+    <div class="panel-block" style="overflow-x:auto;">
+      <table class="data-table">
+        <thead><tr><th>Customer</th><th>Items</th><th>Total</th><th>Pickup</th><th>Status</th><th>Placed</th><th></th></tr></thead>
+        <tbody id="orders-body"></tbody>
+      </table>
+      <div class="empty-state hidden" id="orders-empty">No orders yet.</div>
+    </div>
+  </section>
+
+  <!-- ---------------- SETTINGS / LOGIN LOGS ---------------- -->
+  <section class="tab-panel" id="panel-settings">
+    <div class="panel-block">
+      <h2 class="font-display">Sign-in security</h2>
+      <p class="panel-sub">Basic client-side protections active on this dashboard. See the setup notes at the bottom of this page for the real, server-side version of these.</p>
+      <ul class="security-summary">
+        <li><strong>Login lockout:</strong> 5 failed password attempts locks that account out for 5 minutes on this device.</li>
+        <li><strong>Idle check:</strong> after 10 minutes of no activity, staff are asked to confirm they\u2019re still there or get signed out automatically.</li>
+      </ul>
+    </div>
+    <div class="panel-block">
+      <h2 class="font-display">Login activity</h2>
+      <p class="panel-sub">Recent sign-in attempts for <strong id="settings-log-email">this account</strong>, kept on this device.</p>
+      <ul class="login-log-list" id="settings-log-list"></ul>
+    </div>
+  </section>
+</div>
+
+<div id="toast-root"></div>
+
+<!-- ============================================================
+     FIREBASE — same project as the storefront. See the setup
+     notes below for the one-time Firestore configuration this
+     dashboard needs (security rules + staff allow-list).
+     ============================================================ -->
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script>
+  var FIREBASE_CONFIG = {
+    apiKey: "AIzaSyDp8BNZm515RdZm1kdonZbeUh5q8LmwM0w",
+    authDomain: "mimicart-7bfb1.firebaseapp.com",
+    projectId: "mimicart-7bfb1",
+    storageBucket: "mimicart-7bfb1.firebasestorage.app",
+    messagingSenderId: "903185481659",
+    appId: "1:903185481659:web:f678e3723ca80b70428e9e"
+  };
+  var firebaseAuth = null;
+  var firebaseDb = null;
+  var firebaseConfigured = FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey.indexOf('YOUR_') !== 0;
+  if (firebaseConfigured) {
+    try {
+      firebase.initializeApp(FIREBASE_CONFIG);
+      firebaseAuth = firebase.auth();
+      firebaseDb = firebase.firestore();
+    } catch (e) {
+      console.error('Firebase failed to initialize:', e);
+      firebaseConfigured = false;
+    }
+  }
+</script>
+
+<!-- ============================================================
+     EMAILJS — sends the one-time login code. Create a free
+     account at emailjs.com, then fill in the three values below.
+     See the setup notes at the bottom of this page for the
+     matching email template.
+     ============================================================ -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+var EMAILJS_CONFIG = {
+  publicKey: "td2dyhUumgYzQThhx",
+  serviceId: "service_1b08qyf",
+  templateId: "template_na0d1kq"
+};
+// Set to false to skip the email OTP step entirely (straight from password
+// sign-in to the dashboard). Handy while on EmailJS's free trial. Set back
+// to true whenever you want the extra verification step again.
+var REQUIRE_OTP = false;
+  var emailjsConfigured = Object.keys(EMAILJS_CONFIG).every(function (k) {
+    return EMAILJS_CONFIG[k] && EMAILJS_CONFIG[k].indexOf('YOUR_') !== 0;
+  });
+  if (emailjsConfigured) {
+    try { emailjs.init({ publicKey: EMAILJS_CONFIG.publicKey }); }
+    catch (e) { console.error('EmailJS failed to initialize:', e); emailjsConfigured = false; }
+  }
+</script>
+
+<script>
+(function () {
+  "use strict";
+
+  if (!firebaseConfigured) {
+    document.getElementById('config-warning').classList.remove('hidden');
+    document.getElementById('login-submit').disabled = true;
+  }
+
+  // ---- same illustrated-packaging seed data as the storefront's fallback
+  // catalog, used only for the one-time "Seed starter catalog" action ----
+  var PALETTE = [
+    ['#f6c64a', '#b74834'], ['#d77454', '#f8dfb2'], ['#375f56', '#f1cf62'], ['#9bbdb4', '#fbf1d4'],
+    ['#d9503f', '#f7b657'], ['#bd7952', '#f4db9b'], ['#e0b83d', '#fff2b8'], ['#3a6253', '#d9b95d'],
+    ['#7a8fae', '#eef1ee'], ['#c26b7a', '#f6dfe3'], ['#5c8a72', '#eef0c9'], ['#a85c8a', '#f3d9e6'],
+    ['#4a7c6a', '#dff0e0'], ['#8a5a3c', '#f0d2a8']
+  ];
+  var PATTERNS = ['waves', 'dots', 'checks', 'rays'];
+  var RAW_PRODUCTS = [
+    // Drinks
+    ['soju', 'Soju', '소주', 'Drinks', 5.5, 14, 'Shop favorite', 'Classically clean and crisp — Korea\u2019s most iconic bottle, ready to pour.', 'clean + smooth', 'Images/SOJU.png'],
+    ['pororo', 'Pororo Juice', 'kids\u2019 juice box', 'Drinks', 2.25, 20, null, 'A cheerful juice box with the little blue penguin along for the ride.', 'fruity + fun', 'Images/PORORO.png'],
+    ['sparkling-lemonade', 'Sparkling Lemonade Juice', 'citrus fizz', 'Drinks', 3.25, 12, null, 'Bright, fizzy lemonade with a fruity citrus kick.', 'citrus fizz', 'Images/SPARKLING LEMONADE JUICE.png'],
+    ['pink-peachade', 'Pink Peachade', 'peach soda', 'Drinks', 2.95, 15, null, 'Soft peach soda with a blush-pink sparkle.', 'peachy fizz', 'Images/PINK PEACHADE.png'],
+    ['banana-milk', 'Banana Milk', '바나나맛 우유', 'Drinks', 3.25, 10, 'Nostalgia', 'The iconic little bottle: mellow banana, creamy sweetness, no fuss.', 'soft + creamy', 'Images/BANANA MILK.png'],
+    ['yakult-big', 'Yakult Big', '야쿠르트', 'Drinks', 4.5, 9, 'Family size', 'A jumbo-sized version of the tangy probiotic sipper everyone loves.', 'tangy + sweet', 'Images/YAKULT BIG.png'],
+    ['strawberry-milk', 'Strawberry Milk', '딸기우유', 'Drinks', 2.75, 16, null, 'Pastel-pink milk with real strawberry sweetness.', 'berry + creamy', 'Images/STRAWBERRY MILK.png'],
+    ['oatside', 'Oatside', 'oat milk', 'Drinks', 3.95, 11, null, 'Creamy oat milk, dairy-free and smooth for any time of day.', 'smooth + dairy-free', 'Images/OATSIDE.png'],
+    ['welchs', 'Welch\u2019s', 'grape juice', 'Drinks', 2.5, 18, null, 'Grape juice that tastes like purple candy, in the best way.', 'grape candy', 'Images/WELCHS.png'],
+    ['caffebene', 'Caffe Bene', 'iced caf\u00e9 latte', 'Drinks', 3.75, 8, 'Chill it', 'Korean caf\u00e9-style iced coffee, sweet and smooth.', 'sweet + roasted', 'Images/CAFFEBENE.png'],
+    // Frozen
+    ['sausage', 'Sausage', 'grill-ready', 'Frozen', 6.5, 10, null, 'Juicy grilled sausages, ready to pan-fry in minutes.', 'smoky + savory', 'Images/SAUSAGE.png'],
+    ['sausage-korea-pork', 'Sausage (Korea Pork)', 'korean pork sausage', 'Frozen', 7.25, 8, null, 'Korean-style pork sausage with a savory, garlicky snap.', 'garlicky + savory', 'Images/SAUSAGE(KOREA PORK).png'],
+    ['samanco', 'Samanco', 'ice cream sandwich', 'Frozen', 3.5, 14, null, 'A soft ice cream sandwich tucked between two crisp wafers.', 'sweet + crisp', 'Images/SAMANCO.png'],
+    ['melona', 'Melona', 'melon ice pop', 'Frozen', 2.75, 20, 'Chill it', 'Melon-flavored ice pop with a soft, milky bite.', 'melon + milky', 'Images/MELONA.png'],
+    ['crab-stick', 'Crab Stick', 'hot pot staple', 'Frozen', 4.25, 12, null, 'Sweet, springy imitation crab for hot pot or salad.', 'sweet + springy', 'Images/CRAB STICK.png'],
+    ['hotpot', 'Hotpot', 'simmer-ready base', 'Frozen', 11.9, 6, 'New in', 'A ready-to-simmer hot pot base with all the fixings.', 'savory broth', 'Images/HOTPOT.png'],
+    ['la-beaute', 'La Beaute', 'rice cake dessert', 'Frozen', 5.5, 0, null, 'Delicate rice cake dessert, light and lightly sweet.', 'light + sweet', 'Images/LA BEAUTE.png'],
+    ['enoki-meat-roll', 'Enoki Meat Roll', 'beef + enoki rolls', 'Frozen', 6.75, 9, null, 'Thin beef wrapped around bundles of enoki mushroom.', 'savory + umami', 'Images/ENOKI MEAT ROLL.png'],
+    ['ice-cream', 'Ice Cream', 'vanilla tub', 'Frozen', 5.25, 13, null, 'A tub of creamy vanilla, ready whenever the craving hits.', 'sweet + creamy', 'Images/ICE CREAM.png'],
+    ['cheese', 'Cheese', 'sliceable + meltable', 'Frozen', 4.95, 15, null, 'Sliceable, meltable cheese for stews, toast, and midnight snacks.', 'rich + melty', 'Images/CHEESE.png'],
+    // Korean Noodles
+    ['buldak-rose', 'Buldak Rose', '불닭로제', 'Korean Noodles', 3.25, 16, null, 'Creamy tomato heat — the ros\u00e9 twist on the fire noodle.', 'spicy + creamy', 'Images/BULDAK ROSE.png'],
+    ['buldak-swicy', 'Buldak Swicy', 'sweet + spicy', 'Korean Noodles', 3.25, 14, null, 'Sweet meets spicy in this milder fire noodle remix.', 'sweet + spicy', 'Images/BULDAK SWICY.png'],
+    ['cheese-ramen-stir-fry', 'Cheese Ramen Stir Fry', 'cheesy stir-fry', 'Korean Noodles', 3.5, 10, null, 'Stir-fried noodles finished with a blanket of melted cheese.', 'cheesy + savory', 'Images/CHEESE RAMEN STIR FRY.png'],
+    ['shin-ramyun', 'Shin Ramyun', '신라면', 'Korean Noodles', 2.25, 24, 'Mimi pick', 'The classic red bowl: spicy, beefy, and endlessly comforting.', 'spicy + beefy', 'Images/SHIN RAMYUN.png'],
+    ['buldak-carbonara', 'Buldak Carbonara', '불닭까르보나라', 'Korean Noodles', 3.25, 18, 'Best seller', 'Fire noodles gone creamy with a smoky carbonara sauce.', 'spicy + smoky', 'Images/BULDAK CARBONARA.png'],
+    ['quattro-cheese', 'Quattro Cheese', 'four-cheese bowl', 'Korean Noodles', 3.5, 12, null, 'Four cheeses, one bowl, maximum comfort.', 'four-cheese rich', 'Images/QUATTRO CHEESE.png'],
+    ['buldak-cream-carbonara', 'Buldak Cream Carbonara', 'extra-creamy carbonara', 'Korean Noodles', 3.5, 11, null, 'An extra-silky carbonara spin on the original fire noodle.', 'extra creamy heat', 'Images/BULDAK CREAM CARBONARA.png'],
+    ['jin', 'Jin Ramyun', '진라면', 'Korean Noodles', 2.1, 22, null, 'A no-fuss favorite: light broth, soft noodles, done in minutes.', 'light + savory', 'Images/JIN.png'],
+    ['buldak-spicy-2x', 'Buldak (Spicy 2\u00d7)', 'extra-spicy 2\u00d7', 'Korean Noodles', 3.4, 9, null, 'For the heat-seekers: double the spice of the original fire noodle.', 'extra spicy', 'Images/BULDAK (SPICY 2\u00d7).png'],
+    // Sweets
+    ['nerds', 'Nerds', 'crunchy candy', 'Sweets', 2.95, 17, null, 'Tiny, crunchy candy clusters in a rainbow of flavors.', 'tangy + crunchy', 'Images/NERDS.png'],
+    ['mnms', 'M&M\u2019s', 'candy-coated chocolate', 'Sweets', 3.25, 20, null, 'Colorful candy shells around a smooth chocolate center.', 'sweet + crunchy', 'Images/M&M\u2019s.png'],
+    ['maltesers', 'Maltesers', 'malt + chocolate', 'Sweets', 4.25, 12, null, 'Light, crunchy malt balls coated in milk chocolate.', 'malty crunch', 'Images/MALTESERS.png'],
+    ['hershey', 'Hershey', 'milk chocolate', 'Sweets', 2.75, 19, null, 'Classic milk chocolate, simple and familiar.', 'classic chocolate', 'Images/HERSHEY.png'],
+    ['pistachio', 'Pistachio', 'roasted nuts', 'Sweets', 6.5, 8, null, 'Roasted pistachios with a naturally rich, nutty bite.', 'roasted + nutty', 'Images/PISTACHIO.png'],
+    ['macadamia', 'Macadamia', 'roasted nuts', 'Sweets', 7.9, 7, null, 'Buttery macadamia nuts, roasted to a perfect crunch.', 'buttery + nutty', 'Images/MACADAMIA.png'],
+    ['kisses', 'Kisses', 'chocolate drops', 'Sweets', 4.5, 0, null, 'Bite-sized chocolate drops, perfect for sharing (or not).', 'smooth chocolate', 'Images/KISSES.png'],
+    ['bounty', 'Bounty', 'coconut + chocolate', 'Sweets', 2.95, 14, null, 'Coconut filling wrapped in a coat of milk chocolate.', 'coconut + chocolate', 'Images/BOUNTY.png'],
+    ['nutella', 'Nutella', 'hazelnut cocoa spread', 'Sweets', 6.25, 10, 'Shop favorite', 'Smooth hazelnut cocoa spread for toast, spoons, everything.', 'rich hazelnut', 'Images/NUTELLA.png'],
+    ['coco-manisa', 'Coco Manisa', 'chewy coconut candy', 'Sweets', 3.75, 13, null, 'Chewy coconut candy with a soft caramel sweetness.', 'chewy + sweet', 'Images/COCO MANISA.png'],
+    // Snacks
+    ['pepero', 'Pepero', '빼빼로', 'Snacks', 3.75, 16, 'Best seller', 'Crunchy almond pieces tucked into a chocolate-dipped biscuit stick.', 'chocolate crunch', 'Images/PEPERO.png'],
+    ['energy-bar', 'Energy Bar', 'oats + honey', 'Snacks', 2.25, 21, null, 'A grab-and-go bar with oats, nuts, and a hint of honey.', 'oat + honey', 'Images/ENERGYBAR.png'],
+    ['sunflower-seed', 'Sunflower Seed', 'roasted + salted', 'Snacks', 3.1, 15, null, 'Roasted and salted seeds for a slow, snackable break.', 'roasted + salty', 'Images/SUNFLOWER SEED.png'],
+    ['favo-rocco', 'Favo Rocco', 'wafer rolls', 'Snacks', 3.5, 10, null, 'Crispy wafer rolls with a light hazelnut filling.', 'hazelnut crunch', 'Images/FAVO ROCCO.png'],
+    ['lays-stax', 'Lays Stax', 'stackable crisps', 'Snacks', 3.25, 18, null, 'Stackable potato crisps in a resealable tube.', 'crispy + salty', 'Images/LAYS STAX.png'],
+    ['pringles', 'Pringles', 'stackable crisps', 'Snacks', 3.5, 20, 'New in', 'The iconic stackable chip in a satisfying tube.', 'crispy + salty', 'Images/PRINGLES.png'],
+    ['mini-krunch', 'Mini Krunch', 'corn puffs', 'Snacks', 2.75, 0, null, 'Bite-sized crunchy corn snacks, light and airy.', 'light + crunchy', 'Images/MINI KRUNCH.png'],
+    ['caramel-popcorn', 'Caramel Popcorn', 'buttery caramel', 'Snacks', 4.25, 11, null, 'Popcorn glazed in a buttery caramel coating.', 'sweet + buttery', 'Images/CARAMEL POPCORN.png'],
+    ['nachos', 'Nachos', 'corn chips', 'Snacks', 3.95, 13, null, 'Crunchy corn chips ready for cheese, salsa, or both.', 'crunchy + salty', 'Images/NACHOS.png'],
+    ['chicharon', 'Chicharon', 'pork rinds', 'Snacks', 2.95, 9, null, 'Crispy fried pork rinds with a salty crunch.', 'crispy + salty', 'Images/CHICHARON.png']
+  ];
+
+  var state = {
+    staffEmail: null,
+    products: [],
+    orders: [],
+    activeTab: 'overview',
+    inventorySearch: '',
+    inventoryCategory: 'All',
+    inventoryStockFilter: 'all',
+    ordersStatusFilter: 'all'
+  };
+  var unsubscribeProducts = null, unsubscribeOrders = null;
+
+  function showToast(message) {
+    var el = document.createElement('div');
+    el.className = 'toast';
+    el.textContent = message;
+    document.getElementById('toast-root').appendChild(el);
+    setTimeout(function () { el.remove(); }, 2600);
+  }
+
+  // ================================================================
+  // CSV EXPORT — turns an array of rows into a downloadable .csv file.
+  // ================================================================
+  function csvEscape(value) {
+    var s = value === null || value === undefined ? '' : String(value);
+    if (/[",\n]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  }
+  function downloadCSV(filename, headerRow, rows) {
+    var lines = [headerRow].concat(rows).map(function (row) {
+      return row.map(csvEscape).join(',');
+    });
+    var csvContent = lines.join('\r\n');
+    var blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' }); // BOM so Excel shows PHP peso/accents correctly
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    showToast('Downloaded ' + filename);
+  }
+  function csvDate(field) {
+    if (!field) return '';
+    var d = field.toDate ? field.toDate() : new Date(field);
+    return isNaN(d.getTime()) ? '' : d.toLocaleString();
+  }
+
+  document.getElementById('orders-export-csv').addEventListener('click', function () {
+    var rows = state.orders.filter(function (o) {
+      return state.ordersStatusFilter === 'all' || o.status === state.ordersStatusFilter;
+    });
+    if (!rows.length) { showToast('No orders to export for this filter.'); return; }
+    var header = ['Order #', 'Customer', 'Contact', 'Items', 'Total', 'Fulfillment', 'Address', 'Pickup date', 'Pickup time', 'Status', 'Placed at', 'Completed at'];
+    var csvRows = rows.map(function (o) {
+      var itemsSummary = (o.items || []).map(function (it) { return it.quantity + 'x ' + it.name; }).join('; ');
+      return [
+        o.orderNumber || o.id,
+        o.customerName || 'Guest',
+        o.customerContact || '',
+        itemsSummary,
+        Number(o.total || 0).toFixed(2),
+        o.fulfillment || '',
+        o.fulfillment === 'delivery' ? (o.deliveryAddress || '') : '',
+        o.pickupDate || '',
+        o.pickupTime || '',
+        o.status || '',
+        csvDate(o.createdAt),
+        csvDate(o.completedAt)
+      ];
+    });
+    downloadCSV('mimicart-orders-' + new Date().toISOString().slice(0, 10) + '.csv', header, csvRows);
+  });
+
+  document.getElementById('inventory-export-csv').addEventListener('click', function () {
+    if (!state.products.length) { showToast('No products to export.'); return; }
+    var header = ['Product', 'Category', 'Price', 'Stock', 'Product ID'];
+    var csvRows = state.products.map(function (p) {
+      return [p.name || '', p.category || '', Number(p.price || 0).toFixed(2), p.stock != null ? p.stock : '', p.id];
+    });
+    downloadCSV('mimicart-inventory-' + new Date().toISOString().slice(0, 10) + '.csv', header, csvRows);
+  });
+
+  // ================================================================
+  // BASIC SECURITY HELPERS (mirrors the storefront's implementation)
+  // Client-side lockout + login log + idle timeout. See the honesty
+  // note in mimicart-storefront2_working.html — this is a UX-level
+  // deterrent, not a replacement for server-side rate limiting.
+  // ================================================================
+  var MAX_LOGIN_ATTEMPTS = 5;
+  var LOCKOUT_MS = 5 * 60 * 1000;      // 5 minutes
+  var IDLE_LIMIT_MS = 10 * 60 * 1000;  // 10 minutes
+  var IDLE_GRACE_MS = 60 * 1000;       // 60s to respond to "are you still there?"
+
+  function normalizeEmail(email) { return (email || '').trim().toLowerCase(); }
+  function attemptsKey(email) { return 'mimicart-admin:login-attempts:' + normalizeEmail(email); }
+  function getAttemptRecord(email) {
+    try {
+      var raw = localStorage.getItem(attemptsKey(email));
+      return raw ? JSON.parse(raw) : { count: 0, lockUntil: 0 };
+    } catch (e) { return { count: 0, lockUntil: 0 }; }
+  }
+  function setAttemptRecord(email, record) {
+    try { localStorage.setItem(attemptsKey(email), JSON.stringify(record)); } catch (e) { /* ignore */ }
+  }
+  function lockoutMsRemaining(email) {
+    var record = getAttemptRecord(email);
+    var remaining = record.lockUntil - Date.now();
+    return remaining > 0 ? remaining : 0;
+  }
+  function recordFailedLogin(email) {
+    var record = getAttemptRecord(email);
+    if (record.lockUntil && record.lockUntil > Date.now()) return record;
+    record.count = (record.count || 0) + 1;
+    if (record.count >= MAX_LOGIN_ATTEMPTS) {
+      record.lockUntil = Date.now() + LOCKOUT_MS;
+      record.count = 0;
+    }
+    setAttemptRecord(email, record);
+    return record;
+  }
+  function resetLoginAttempts(email) { setAttemptRecord(email, { count: 0, lockUntil: 0 }); }
+  function formatCountdown(ms) {
+    var totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+    var m = Math.floor(totalSeconds / 60);
+    var s = totalSeconds % 60;
+    return m + ':' + (s < 10 ? '0' : '') + s;
+  }
+  var lockoutCountdownTimer = null;
+  function startLockoutCountdown(email) {
+    clearInterval(lockoutCountdownTimer);
+    function tick() {
+      var remaining = lockoutMsRemaining(email);
+      var el = document.getElementById('lockout-countdown');
+      if (remaining <= 0) {
+        clearInterval(lockoutCountdownTimer);
+        loginMessage.classList.add('hidden');
+        document.getElementById('login-submit').disabled = !firebaseConfigured;
+        return;
+      }
+      if (el) el.textContent = formatCountdown(remaining);
+    }
+    tick();
+    lockoutCountdownTimer = setInterval(tick, 1000);
+  }
+
+  // ---- device fingerprint shown in the login log (best-effort, from the User-Agent) ----
+  function detectDevice() {
+    var ua = navigator.userAgent || '';
+    var os = 'Unknown device';
+    if (/iPhone/.test(ua)) os = 'iPhone';
+    else if (/iPad/.test(ua)) os = 'iPad';
+    else if (/Android/.test(ua)) os = /Mobile/.test(ua) ? 'Android phone' : 'Android tablet';
+    else if (/Macintosh/.test(ua)) os = 'Mac';
+    else if (/Windows/.test(ua)) os = 'Windows PC';
+    else if (/Linux/.test(ua)) os = 'Linux';
+    var browser = 'browser';
+    if (/Edg\//.test(ua)) browser = 'Edge';
+    else if (/OPR\//.test(ua) || /Opera/.test(ua)) browser = 'Opera';
+    else if (/Chrome\//.test(ua) && !/Chromium/.test(ua)) browser = 'Chrome';
+    else if (/CriOS\//.test(ua)) browser = 'Chrome';
+    else if (/Firefox\//.test(ua)) browser = 'Firefox';
+    else if (/Safari\//.test(ua)) browser = 'Safari';
+    return os + ' \u2022 ' + browser;
+  }
+
+  function loginLogKey(email) { return 'mimicart-admin:login-logs:' + normalizeEmail(email); }
+  function getLoginLogs(email) {
+    try {
+      var raw = localStorage.getItem(loginLogKey(email));
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) { return []; }
+  }
+  function logLoginEvent(email, status) {
+    if (!email) return;
+    var logs = getLoginLogs(email);
+    logs.unshift({ time: Date.now(), status: status, device: detectDevice() });
+    logs = logs.slice(0, 20);
+    try { localStorage.setItem(loginLogKey(email), JSON.stringify(logs)); } catch (e) { /* ignore */ }
+  }
+  function formatLogTime(ts) {
+    var d = new Date(ts);
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' \u2022 ' +
+      d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  }
+  function renderSettingsLoginLogs() {
+    var listEl = document.getElementById('settings-log-list');
+    var emailEl = document.getElementById('settings-log-email');
+    if (!listEl || !state.staffEmail) return;
+    if (emailEl) emailEl.textContent = state.staffEmail;
+    var logs = getLoginLogs(state.staffEmail);
+    listEl.innerHTML = logs.length
+      ? logs.map(function (entry) {
+          var statusClass = entry.status === 'success' ? 'log-success' : (entry.status === 'locked' ? 'log-locked' : 'log-failed');
+          var statusLabel = entry.status === 'success' ? '\u2713 Signed in' : (entry.status === 'locked' ? '\u23f1 Locked out' : '\u2717 Failed attempt');
+          var deviceLabel = entry.device ? entry.device + ' \u2022 ' : '';
+          return '<li class="login-log-row ' + statusClass + '"><span class="log-status">' + statusLabel + '</span><span class="log-meta">' + deviceLabel + formatLogTime(entry.time) + '</span></li>';
+        }).join('')
+      : '<li class="login-log-row"><span class="log-meta">No sign-in activity recorded yet on this device.</span></li>';
+  }
+
+  // ---- idle timeout: "are you still there?" ----
+  var lastActivityAt = Date.now();
+  var idleGraceTimer = null;
+  var idlePromptShown = false;
+  ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'].forEach(function (evt) {
+    window.addEventListener(evt, function () {
+      lastActivityAt = Date.now();
+      if (idlePromptShown) dismissIdlePrompt(true);
+    }, { passive: true });
+  });
+  function showIdlePrompt() {
+    if (idlePromptShown || !state.staffEmail) return;
+    idlePromptShown = true;
+    var overlay = document.createElement('div');
+    overlay.className = 'idle-overlay';
+    overlay.id = 'idle-overlay';
+    overlay.innerHTML =
+      '<div class="idle-dialog" role="alertdialog" aria-modal="true" aria-labelledby="idle-title">' +
+        '<h2 id="idle-title" class="font-display">Still there?</h2>' +
+        '<p>You\u2019ve been idle for a while. For your security, we\u2019ll sign you out in <strong id="idle-seconds">60</strong>s unless you confirm you\u2019re still here.</p>' +
+        '<button type="button" class="primary-button full-width focus-ring" id="idle-stay-button">I\u2019m still here</button>' +
+      '</div>';
+    document.body.appendChild(overlay);
+    document.getElementById('idle-stay-button').addEventListener('click', function () { dismissIdlePrompt(true); });
+
+    var secondsLeft = Math.floor(IDLE_GRACE_MS / 1000);
+    var secondsEl = document.getElementById('idle-seconds');
+    var countdown = setInterval(function () {
+      secondsLeft -= 1;
+      if (secondsEl) secondsEl.textContent = String(Math.max(0, secondsLeft));
+      if (secondsLeft <= 0) clearInterval(countdown);
+    }, 1000);
+
+    idleGraceTimer = setTimeout(function () {
+      clearInterval(countdown);
+      dismissIdlePrompt(false);
+      if (state.staffEmail) {
+        showToast('Signed out after being idle.');
+        if (firebaseAuth) firebaseAuth.signOut();
+      }
+    }, IDLE_GRACE_MS);
+  }
+  function dismissIdlePrompt(stillHere) {
+    idlePromptShown = false;
+    clearTimeout(idleGraceTimer);
+    var overlay = document.getElementById('idle-overlay');
+    if (overlay) overlay.remove();
+    if (stillHere) lastActivityAt = Date.now();
+  }
+  setInterval(function () {
+    if (!state.staffEmail || idlePromptShown) return;
+    if (Date.now() - lastActivityAt >= IDLE_LIMIT_MS) showIdlePrompt();
+  }, 15000);
+
+  // ---------------- AUTH ----------------
+  var loginForm = document.getElementById('login-form');
+  var loginMessage = document.getElementById('login-message');
+  var otpForm = document.getElementById('otp-form');
+  var otpMessage = document.getElementById('otp-message');
+  var otpResendBtn = document.getElementById('otp-resend');
+  var otpCancelBtn = document.getElementById('otp-cancel');
+
+  // Holds the code we generated for the current sign-in attempt. Nothing
+  // here is persisted to disk — it only lives in memory for this tab.
+  var pendingOtp = { code: null, email: null, expiresAt: 0 };
+  var otpResendCooldownTimer = null;
+
+  loginForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!firebaseConfigured) return;
+    var email = document.getElementById('login-email').value.trim();
+    var password = document.getElementById('login-password').value;
+
+    // ---- client-side lockout: 5 failed attempts = 5 minute cooldown ----
+    var remaining = lockoutMsRemaining(email);
+    if (remaining > 0) {
+      loginMessage.classList.remove('hidden');
+      loginMessage.innerHTML = 'Too many failed attempts. Try again in <strong id="lockout-countdown">' + formatCountdown(remaining) + '</strong>.';
+      document.getElementById('login-submit').disabled = true;
+      startLockoutCountdown(email);
+      return;
+    }
+
+    document.getElementById('login-submit').disabled = true;
+    loginMessage.classList.add('hidden');
+    firebaseAuth.signInWithEmailAndPassword(email, password).then(function () {
+      resetLoginAttempts(email);
+      // logLoginEvent('success') is recorded once the staff allow-list
+      // check passes, in onAuthStateChanged below.
+    }).catch(function (err) {
+      document.getElementById('login-submit').disabled = false;
+      logLoginEvent(email, 'failed');
+      var record = recordFailedLogin(email);
+      if (record.lockUntil && record.lockUntil > Date.now()) {
+        loginMessage.classList.remove('hidden');
+        loginMessage.innerHTML = 'Too many failed attempts. Try again in <strong id="lockout-countdown">' + formatCountdown(lockoutMsRemaining(email)) + '</strong>.';
+        document.getElementById('login-submit').disabled = true;
+        startLockoutCountdown(email);
+        return;
+      }
+      var attemptsLeft = MAX_LOGIN_ATTEMPTS - record.count;
+      var attemptsNote = attemptsLeft <= 2 ? ' (' + attemptsLeft + ' attempt' + (attemptsLeft === 1 ? '' : 's') + ' left before a 5-minute lockout)' : '';
+      loginMessage.classList.remove('hidden');
+      loginMessage.textContent = ((err && err.code === 'auth/invalid-credential')
+        ? 'That email or password isn\u2019t right.'
+        : ((err && err.message) || 'Couldn\u2019t sign you in. Please try again.')) + attemptsNote;
+    });
+  });
+
+  document.getElementById('sign-out-button').addEventListener('click', function () {
+    if (firebaseAuth) firebaseAuth.signOut();
+  });
+
+  function showLogin() {
+    document.getElementById('login-screen').classList.remove('hidden');
+    document.getElementById('otp-screen').classList.add('hidden');
+    document.getElementById('dashboard').classList.add('hidden');
+    document.getElementById('login-submit').disabled = !firebaseConfigured;
+    loginForm.reset();
+    pendingOtp = { code: null, email: null, expiresAt: 0 };
+    clearInterval(otpResendCooldownTimer);
+  }
+
+  function showDashboard(email) {
+    var justArrived = state.staffEmail !== email;
+    state.staffEmail = email;
+    document.getElementById('dash-user-email').textContent = email;
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('otp-screen').classList.add('hidden');
+    document.getElementById('dashboard').classList.remove('hidden');
+    pendingOtp = { code: null, email: null, expiresAt: 0 };
+    clearInterval(otpResendCooldownTimer);
+    subscribeData();
+    if (justArrived) showToast('m Welcome back, ' + email.split('@')[0] + '!');
+  }
+
+  // ---- OTP step: shown after password sign-in, before the dashboard ----
+  function generateOtpCode() {
+    return String(Math.floor(100000 + Math.random() * 900000)); // always 6 digits
+  }
+
+  function sendOtpEmail(email) {
+    var code = generateOtpCode();
+    pendingOtp = { code: code, email: email, expiresAt: Date.now() + 5 * 60 * 1000 }; // valid 5 min
+
+    if (!emailjsConfigured) {
+      // Lets you finish building the flow before EmailJS is wired up.
+      console.warn('EmailJS isn\u2019t configured yet \u2014 your OTP code is:', code);
+      return Promise.resolve();
+    }
+    return emailjs.send(EMAILJS_CONFIG.serviceId, EMAILJS_CONFIG.templateId, {
+      to_email: email,
+      passcode: code
+    });
+  }
+
+  function startOtpResendCooldown(seconds) {
+    var remaining = seconds;
+    otpResendBtn.disabled = true;
+    otpResendBtn.textContent = 'Resend code (' + remaining + 's)';
+    clearInterval(otpResendCooldownTimer);
+    otpResendCooldownTimer = setInterval(function () {
+      remaining -= 1;
+      if (remaining <= 0) {
+        clearInterval(otpResendCooldownTimer);
+        otpResendBtn.disabled = false;
+        otpResendBtn.textContent = 'Resend code';
+      } else {
+        otpResendBtn.textContent = 'Resend code (' + remaining + 's)';
+      }
+    }, 1000);
+  }
+
+  function showOtpScreen(email) {
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('dashboard').classList.add('hidden');
+    document.getElementById('otp-screen').classList.remove('hidden');
+    document.getElementById('otp-target-email').textContent = email;
+    otpMessage.classList.add('hidden');
+    otpForm.reset();
+
+    otpMessage.classList.remove('hidden');
+    otpMessage.textContent = 'Sending your code\u2026';
+    sendOtpEmail(email).then(function () {
+      otpMessage.classList.remove('hidden');
+      otpMessage.classList.add('good');
+      otpMessage.textContent = 'Code sent! Check ' + email + '.';
+    }).catch(function (err) {
+      console.error('MimiCart admin: OTP email failed', err);
+      otpMessage.classList.remove('good');
+      otpMessage.classList.remove('hidden');
+      otpMessage.textContent = 'Couldn\u2019t send the code email. Try resending, or check the EmailJS setup notes below.';
+    });
+    startOtpResendCooldown(30);
+  }
+
+  otpForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var entered = document.getElementById('otp-code').value.trim();
+    otpMessage.classList.remove('good');
+    otpMessage.classList.remove('hidden');
+
+    if (!pendingOtp.code || Date.now() > pendingOtp.expiresAt) {
+      otpMessage.textContent = 'That code expired. Tap "Resend code" for a new one.';
+      return;
+    }
+    if (entered !== pendingOtp.code) {
+      otpMessage.textContent = 'That code isn\u2019t right. Please try again.';
+      document.getElementById('otp-code').value = '';
+      document.getElementById('otp-code').focus();
+      return;
+    }
+    showDashboard(pendingOtp.email);
+  });
+
+  otpResendBtn.addEventListener('click', function () {
+    if (!pendingOtp.email || otpResendBtn.disabled) return;
+    showOtpScreen(pendingOtp.email);
+  });
+
+  otpCancelBtn.addEventListener('click', function () {
+    if (firebaseAuth) firebaseAuth.signOut();
+    showLogin();
+  });
+
+  if (firebaseConfigured) {
+    firebaseAuth.onAuthStateChanged(function (user) {
+      if (unsubscribeProducts) { unsubscribeProducts(); unsubscribeProducts = null; }
+      if (unsubscribeOrders) { unsubscribeOrders(); unsubscribeOrders = null; }
+      if (!user) { showLogin(); return; }
+      // Staff allow-list check: a doc at staff/{lowercased email} must exist.
+      var staffDocId = user.email.toLowerCase();
+      firebaseDb.collection('staff').doc(staffDocId).get().then(function (doc) {
+        if (doc.exists) {
+          logLoginEvent(user.email, 'success');
+          resetLoginAttempts(user.email);
+          if (REQUIRE_OTP) { showOtpScreen(user.email); } else { showDashboard(user.email); }
+        } else {
+          loginMessage.classList.remove('hidden');
+          loginMessage.textContent = 'That account isn\u2019t on the staff list yet. Ask an admin to add it in Firestore.';
+          firebaseAuth.signOut();
+        }
+      }).catch(function (err) {
+        console.error('MimiCart admin: staff check failed', err);
+        loginMessage.classList.remove('hidden');
+        loginMessage.textContent = 'Couldn\u2019t verify staff access. Please try again.';
+        firebaseAuth.signOut();
+      });
+    });
+  } else {
+    showLogin();
+  }
+
+  // ---------------- TABS ----------------
+  document.querySelectorAll('.tab-button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      state.activeTab = btn.getAttribute('data-tab');
+      document.querySelectorAll('.tab-button').forEach(function (b) { b.classList.toggle('active', b === btn); });
+      document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.toggle('active', p.id === 'panel-' + state.activeTab); });
+    });
+  });
+
+  // ---------------- DATA SUBSCRIPTIONS ----------------
+  function subscribeData() {
+    unsubscribeProducts = firebaseDb.collection('products').onSnapshot(function (snap) {
+      state.products = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
+      document.getElementById('seed-banner').classList.toggle('hidden', !snap.empty);
+      renderInventoryFilters();
+      renderInventory();
+    }, function (err) { console.error('MimiCart admin: products listener failed', err); });
+
+    unsubscribeOrders = firebaseDb.collection('orders').orderBy('createdAt', 'asc').limit(500).onSnapshot(function (snap) {
+      state.orders = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
+      renderRevenue();
+      renderOrders();
+    }, function (err) { console.error('MimiCart admin: orders listener failed', err); });
+  }
+
+  // ---- One-time patch: adds/updates just the "image" field on products
+  // that already exist in Firestore (from a previous seed), without
+  // touching stock, price, or anything else already set. Safe to click
+  // any time you update the RAW_PRODUCTS image filenames above. ----
+  document.getElementById('backfill-images-button').addEventListener('click', function () {
+    if (!confirm('Add the image filename to every existing product? This only sets the image field — stock and everything else stays untouched.')) return;
+    var batch = firebaseDb.batch();
+    RAW_PRODUCTS.forEach(function (row) {
+      var ref = firebaseDb.collection('products').doc(row[0]);
+      batch.update(ref, { image: row[9] || null });
+    });
+    batch.commit().then(function () {
+      showToast('Product photos linked — refresh to see them.');
+    }).catch(function (err) {
+      console.error(err);
+      showToast('Couldn\u2019t update images. Make sure the catalog is already seeded.');
+    });
+  });
+
+  // ---------------- SEEDING ----------------
+  document.getElementById('seed-button').addEventListener('click', function () {
+    if (!confirm('Seed the starter catalog into Firestore? Only do this once.')) return;
+    var batch = firebaseDb.batch();
+    RAW_PRODUCTS.forEach(function (row, index) {
+      var colors = PALETTE[index % PALETTE.length];
+      var ref = firebaseDb.collection('products').doc(row[0]);
+      batch.set(ref, {
+        name: row[1], korean: row[2], category: row[3], price: row[4], stock: row[5],
+        badge: row[6] || null, description: row[7], flavor: row[8], image: row[9] || null,
+        tone: colors[0], accent: colors[1], pattern: PATTERNS[index % PATTERNS.length]
+      });
+    });
+    batch.commit().then(function () {
+      showToast('Starter catalog seeded — the storefront now reads live stock.');
+    }).catch(function (err) {
+      console.error(err);
+      showToast('Couldn\u2019t seed the catalog. Check the console for details.');
+    });
+  });
+
+  // ---------------- INVENTORY ----------------
+  function renderInventoryFilters() {
+    var select = document.getElementById('inventory-category');
+    var categories = Array.from(new Set(state.products.map(function (p) { return p.category; }))).sort();
+    var current = select.value || 'All';
+    select.innerHTML = '<option value="All">All categories</option>' + categories.map(function (c) {
+      return '<option value="' + c + '"' + (c === current ? ' selected' : '') + '>' + c + '</option>';
+    }).join('');
+  }
+
+  function stockPill(stock) {
+    if (stock <= 0) return '<span class="stock-pill stock-out">Out of stock</span>';
+    if (stock <= 5) return '<span class="stock-pill stock-low">' + stock + ' left \u2014 low</span>';
+    return '<span class="stock-pill stock-ok">' + stock + ' in stock</span>';
+  }
+
+  function renderInventory() {
+    var body = document.getElementById('inventory-body');
+    var search = state.inventorySearch.toLowerCase();
+    var rows = state.products.filter(function (p) {
+      if (state.inventoryCategory !== 'All' && p.category !== state.inventoryCategory) return false;
+      if (state.inventoryStockFilter === 'low' && !(p.stock > 0 && p.stock <= 5)) return false;
+      if (state.inventoryStockFilter === 'out' && p.stock > 0) return false;
+      if (search && p.name.toLowerCase().indexOf(search) === -1) return false;
+      return true;
+    }).sort(function (a, b) { return a.name.localeCompare(b.name); });
+
+    document.getElementById('inventory-empty').classList.toggle('hidden', rows.length > 0 || state.products.length === 0);
+
+    body.innerHTML = rows.map(function (p) {
+      return (
+        '<tr data-row="' + p.id + '">' +
+          '<td>' + (p.image ? '<img src="' + p.image + '" alt="" style="width:38px;height:38px;object-fit:cover;border-radius:8px;vertical-align:middle;margin-right:8px;" onerror="this.style.display=\'none\'" />' : '') + '<span class="prod-name">' + p.name + '</span><span class="prod-sub">' + (p.korean || '') + '</span>' + (p.image ? '<span class="prod-sub font-mono">' + p.image + '</span>' : '') + '</td>' +
+          '<td>' + p.category + '</td>' +
+          '<td>$' + Number(p.price).toFixed(2) + '</td>' +
+          '<td>' + stockPill(p.stock) +
+            '<div class="stock-editor" style="margin-top:6px;">' +
+              '<button type="button" data-stock-dec="' + p.id + '" aria-label="Decrease stock">\u2212</button>' +
+              '<input type="number" min="0" value="' + p.stock + '" data-stock-input="' + p.id + '" />' +
+              '<button type="button" data-stock-inc="' + p.id + '" aria-label="Increase stock">+</button>' +
+            '</div>' +
+          '</td>' +
+          '<td>' +
+            '<div class="restock-row">' +
+              '<button type="button" class="tiny-button" data-restock="' + p.id + ':10">+10</button>' +
+              '<button type="button" class="tiny-button" data-restock="' + p.id + ':25">+25</button>' +
+              '<button type="button" class="tiny-button" data-restock="' + p.id + ':50">+50</button>' +
+            '</div>' +
+          '</td>' +
+        '</tr>'
+      );
+    }).join('');
+
+    body.querySelectorAll('[data-stock-inc]').forEach(function (b) { b.addEventListener('click', function () { nudgeStock(b.getAttribute('data-stock-inc'), 1); }); });
+    body.querySelectorAll('[data-stock-dec]').forEach(function (b) { b.addEventListener('click', function () { nudgeStock(b.getAttribute('data-stock-dec'), -1); }); });
+    body.querySelectorAll('[data-stock-input]').forEach(function (input) {
+      input.addEventListener('change', function () {
+        var id = input.getAttribute('data-stock-input');
+        var value = Math.max(0, parseInt(input.value, 10) || 0);
+        setStock(id, value);
+      });
+    });
+    body.querySelectorAll('[data-restock]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var parts = b.getAttribute('data-restock').split(':');
+        restockBy(parts[0], parseInt(parts[1], 10));
+      });
+    });
+  }
+
+  function productLocal(id) { return state.products.filter(function (p) { return p.id === id; })[0]; }
+
+  function setStock(id, value) {
+    firebaseDb.collection('products').doc(id).update({ stock: value }).then(function () {
+      showToast('Stock updated.');
+    }).catch(function (err) { console.error(err); showToast('Couldn\u2019t update stock.'); });
+  }
+
+  function nudgeStock(id, delta) {
+    var p = productLocal(id);
+    if (!p) return;
+    setStock(id, Math.max(0, p.stock + delta));
+  }
+
+  function restockBy(id, amount) {
+    firebaseDb.collection('products').doc(id).update({
+      stock: firebase.firestore.FieldValue.increment(amount)
+    }).then(function () {
+      showToast('Restocked +' + amount + '.');
+    }).catch(function (err) { console.error(err); showToast('Couldn\u2019t restock.'); });
+  }
+
+  document.getElementById('inventory-search').addEventListener('input', function (e) { state.inventorySearch = e.target.value; renderInventory(); });
+  document.getElementById('inventory-category').addEventListener('change', function (e) { state.inventoryCategory = e.target.value; renderInventory(); });
+  document.getElementById('inventory-stock-filter').addEventListener('change', function (e) { state.inventoryStockFilter = e.target.value; renderInventory(); });
+
+  // ---------------- ORDERS (tiktok-style shipment stages) ----------------
+  // Each order moves through a fixed set of stages depending on how it's
+  // being fulfilled. Staff tap "Mark as \u2026" to push an order to the next
+  // stage \u2014 the customer sees the same stages update live on their end.
+  var ORDER_STAGES = {
+    pickup: ['pending', 'processing', 'ready', 'completed'],
+    delivery: ['pending', 'processing', 'out_for_delivery', 'completed']
+  };
+  function stagesFor(order) { return ORDER_STAGES[order.fulfillment === 'delivery' ? 'delivery' : 'pickup']; }
+  function stageLabel(key, order) {
+    switch (key) {
+      case 'pending': return 'Order placed';
+      case 'processing': return 'Preparing order';
+      case 'ready': return 'Ready for pickup';
+      case 'out_for_delivery': return 'Out for delivery';
+      case 'completed': return order.fulfillment === 'delivery' ? 'Delivered' : 'Picked up';
+      case 'cancelled': return 'Cancelled';
+      default: return key;
+    }
+  }
+  function nextStageKey(order) {
+    if (order.status === 'completed' || order.status === 'cancelled') return null;
+    var stages = stagesFor(order);
+    var idx = stages.indexOf(order.status);
+    if (idx === -1 || idx === stages.length - 1) return null;
+    return stages[idx + 1];
+  }
+  var STAGE_TIMESTAMP_FIELD = {
+    processing: 'processingAt',
+    ready: 'readyAt',
+    out_for_delivery: 'outForDeliveryAt',
+    completed: 'completedAt'
+  };
+
+  function orderDateObj(order, useCompleted) {
+    var field = useCompleted ? order.completedAt : order.createdAt;
+    if (!field) field = order.createdAt;
+    if (!field) return null;
+    return field.toDate ? field.toDate() : new Date(field);
+  }
+
+  function stageTrackHTML(order) {
+    if (order.status === 'cancelled') return '<span class="status-badge status-cancelled">cancelled</span>';
+    var stages = stagesFor(order);
+    var currentIdx = stages.indexOf(order.status);
+    var dots = stages.map(function (key, i) {
+      var cls = i < currentIdx ? 'is-done' : (i === currentIdx ? 'is-current' : '');
+      var dot = '<span class="stage-dot ' + cls + '" title="' + stageLabel(key, order) + '"></span>';
+      var line = i < stages.length - 1 ? '<span class="stage-line ' + (i < currentIdx ? 'is-done' : '') + '"></span>' : '';
+      return dot + line;
+    }).join('');
+    return '<span class="status-badge status-' + order.status + '">' + stageLabel(order.status, order) + '</span><div class="stage-track">' + dots + '</div>';
+  }
+
+  function renderOrders() {
+    var body = document.getElementById('orders-body');
+    var rows = state.orders.filter(function (o) {
+      return state.ordersStatusFilter === 'all' || o.status === state.ordersStatusFilter;
+    });
+    document.getElementById('orders-empty').classList.toggle('hidden', rows.length > 0);
+
+    body.innerHTML = rows.map(function (o) {
+      var placed = orderDateObj(o, false);
+      var itemsSummary = (o.items || []).map(function (it) { return it.quantity + '\u00d7 ' + it.name; }).join(', ');
+      var next = nextStageKey(o);
+      var actions = '';
+      if (o.status !== 'completed' && o.status !== 'cancelled') {
+        actions = '<div class="stage-actions">';
+        if (next) actions += '<button type="button" class="tiny-button" data-advance="' + o.id + '">Mark as: ' + stageLabel(next, o) + '</button>';
+        actions += '<button type="button" class="tiny-button" data-cancel="' + o.id + '">Cancel</button></div>';
+      }
+      return (
+        '<tr>' +
+          '<td><strong>' + (o.customerName || 'Guest') + '</strong><div class="order-items">#' + (o.orderNumber || o.id) + ' \u2022 ' + (o.customerContact || '') + '</div></td>' +
+          '<td><div class="order-items">' + itemsSummary + '</div></td>' +
+          '<td>$' + Number(o.total || 0).toFixed(2) + '</td>' +
+          '<td>' + (o.fulfillment === 'delivery'
+            ? '<strong>Delivery</strong><br /><span class="prod-sub">' + (o.deliveryAddress || '\u2014') + (o.deliveryNotes ? '<br />' + o.deliveryNotes : '') + '</span>'
+            : '<strong>Pickup</strong><br /><span class="prod-sub">' + (o.pickupDate || '\u2014') + ' ' + (o.pickupTime || '') + '</span>') + '</td>' +
+          '<td>' + stageTrackHTML(o) + '</td>' +
+          '<td>' + (placed ? placed.toLocaleDateString() : '\u2014') + '</td>' +
+          '<td>' + actions + '</td>' +
+        '</tr>'
+      );
+    }).join('');
+
+    body.querySelectorAll('[data-advance]').forEach(function (b) { b.addEventListener('click', function () { advanceOrder(b.getAttribute('data-advance')); }); });
+    body.querySelectorAll('[data-cancel]').forEach(function (b) { b.addEventListener('click', function () { cancelOrder(b.getAttribute('data-cancel')); }); });
+  }
+
+  // Pushes an order to the next stage in its shipment track (like tapping
+  // "Preparing \u2192 Out for delivery \u2192 Delivered" on a courier app).
+  // The customer's storefront listens for this same Firestore doc, so the
+  // moment staff tap the button, the shopper's tracker + notification fire.
+  function advanceOrder(id) {
+    var order = state.orders.filter(function (o) { return o.id === id; })[0];
+    if (!order) return;
+    var next = nextStageKey(order);
+    if (!next) return;
+    var update = { status: next };
+    var tsField = STAGE_TIMESTAMP_FIELD[next];
+    if (tsField) update[tsField] = firebase.firestore.FieldValue.serverTimestamp();
+    firebaseDb.collection('orders').doc(id).update(update).then(function () {
+      showToast('Order marked: ' + stageLabel(next, order) + '.');
+    }).catch(function (err) { console.error(err); showToast('Couldn\u2019t update the order.'); });
+  }
+
+  function cancelOrder(id) {
+    var order = state.orders.filter(function (o) { return o.id === id; })[0];
+    if (!order) return;
+    if (!confirm('Cancel this reservation and return the items to stock?')) return;
+    var batch = firebaseDb.batch();
+    batch.update(firebaseDb.collection('orders').doc(id), { status: 'cancelled' });
+    (order.items || []).forEach(function (item) {
+      batch.update(firebaseDb.collection('products').doc(item.productId), {
+        stock: firebase.firestore.FieldValue.increment(item.quantity)
+      });
+    });
+    batch.commit().then(function () { showToast('Order cancelled and stock restored.'); })
+      .catch(function (err) { console.error(err); showToast('Couldn\u2019t cancel the order.'); });
+  }
+
+  document.getElementById('orders-status-filter').addEventListener('change', function (e) { state.ordersStatusFilter = e.target.value; renderOrders(); });
+
+  // ---------------- REVENUE ----------------
+  function dateKey(d) { return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+  function isSameDay(a, b) { return dateKey(a) === dateKey(b); }
+  function isSameMonth(a, b) { return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth(); }
+  function isSameYear(a, b) { return a.getFullYear() === b.getFullYear(); }
+  function startOfWeek(d) { var x = new Date(d); var day = x.getDay(); var diff = (day === 0 ? -6 : 1) - day; x.setDate(x.getDate() + diff); x.setHours(0,0,0,0); return x; }
+
+  function renderRevenue() {
+    var completed = state.orders.filter(function (o) { return o.status === 'completed'; }).map(function (o) {
+      return { total: Number(o.total || 0), date: orderDateObj(o, true) };
+    }).filter(function (o) { return o.date; });
+
+    var now = new Date();
+    var weekStart = startOfWeek(now);
+
+    var today = 0, week = 0, month = 0, year = 0;
+    completed.forEach(function (o) {
+      if (isSameDay(o.date, now)) today += o.total;
+      if (o.date >= weekStart) week += o.total;
+      if (isSameMonth(o.date, now)) month += o.total;
+      if (isSameYear(o.date, now)) year += o.total;
+    });
+
+    var stats = [
+      { label: 'Today', value: today },
+      { label: 'This week', value: week, note: 'since Monday' },
+      { label: 'This month', value: month },
+      { label: 'This year', value: year }
+    ];
+    document.getElementById('revenue-stats').innerHTML = stats.map(function (s) {
+      return '<div class="stat-card"><span>' + s.label + '</span><strong>$' + s.value.toFixed(2) + '</strong>' + (s.note ? '<small>' + s.note + '</small>' : '') + '</div>';
+    }).join('');
+
+    // last 14 days bar chart
+    var days = [];
+    for (var i = 13; i >= 0; i--) {
+      var d = new Date(now);
+      d.setDate(d.getDate() - i);
+      days.push({ date: d, total: 0 });
+    }
+    completed.forEach(function (o) {
+      var match = days.filter(function (d) { return isSameDay(d.date, o.date); })[0];
+      if (match) match.total += o.total;
+    });
+    var max = Math.max.apply(null, days.map(function (d) { return d.total; }).concat([1]));
+    document.getElementById('revenue-chart').innerHTML = days.map(function (d) {
+      var pct = Math.round((d.total / max) * 100);
+      return (
+        '<div class="bar-col" title="' + d.date.toLocaleDateString() + ': $' + d.total.toFixed(2) + '">' +
+          '<div class="bar-fill" style="height:' + Math.max(pct, d.total > 0 ? 4 : 0) + '%"></div>' +
+          '<span class="bar-label">' + d.date.getDate() + '</span>' +
+        '</div>'
+      );
+    }).join('');
+
+    // recent completed list
+    var recent = state.orders.filter(function (o) { return o.status === 'completed'; }).slice(0, 6);
+    var recentEl = document.getElementById('recent-completed');
+    if (!recent.length) {
+      recentEl.innerHTML = '<div class="empty-state">No completed orders yet.</div>';
+    } else {
+      recentEl.innerHTML = '<table class="data-table"><thead><tr><th>Customer</th><th>Items</th><th>Total</th><th>Completed</th></tr></thead><tbody>' +
+        recent.map(function (o) {
+          var d = orderDateObj(o, true);
+          var itemsSummary = (o.items || []).map(function (it) { return it.quantity + '\u00d7 ' + it.name; }).join(', ');
+          return '<tr><td>' + (o.customerName || 'Guest') + '</td><td><div class="order-items">' + itemsSummary + '</div></td><td>$' + Number(o.total || 0).toFixed(2) + '</td><td>' + (d ? d.toLocaleDateString() : '\u2014') + '</td></tr>';
+        }).join('') + '</tbody></table>';
+    }
+  }
+})();
+</script>
+</body>
+</html>
