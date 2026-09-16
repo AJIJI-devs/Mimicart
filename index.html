@@ -417,6 +417,36 @@
     .welcome-toast-copy { min-width: 0; }
     .welcome-toast-copy strong { overflow-wrap: anywhere; }
   }
+  /* ---- opening intro: a solid red wave rises from the bottom ---- */
+  html.mimi-intro-active, html.mimi-intro-active body { overflow: hidden; }
+  .mimi-intro { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; overflow: hidden; background: hsl(var(--background)); opacity: 1; transition: opacity .55s ease; }
+  .mimi-intro.is-flooded { background: hsl(var(--primary)); }
+  .mimi-intro.is-out { opacity: 0; pointer-events: none; }
+  .mimi-intro-water { position: absolute; z-index: 0; right: 0; bottom: 0; left: 0; height: 0; background: hsl(var(--primary)); overflow: visible; transition: height 2.5s cubic-bezier(.22,1,.36,1); }
+  .mimi-intro-wave { position: absolute; right: 0; bottom: calc(100% - 1px); left: 0; width: 200%; height: 54px; overflow: visible; fill: hsl(var(--primary)); animation: mimi-wave-sweep 2.2s linear infinite; }
+  .mimi-intro.is-flooding .mimi-intro-water { height: 100%; }
+  .mimi-intro.is-flooded .mimi-intro-wave { opacity: 0; transition: opacity .25s ease; }
+  @keyframes mimi-wave-sweep { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  .mimi-intro-brand { position: relative; display: grid; justify-items: center; text-align: center; }
+  .mimi-intro-mark { width: 88px; height: 88px; display: grid; place-items: center; border-radius: 30px 30px 30px 10px; background: hsl(var(--primary-foreground)); color: hsl(var(--primary)); font: 800 62px/1 var(--app-font-serif); opacity: 0; transform: rotate(-24deg) scale(.3); }
+  .mimi-intro-word { margin-top: 18px; font: 800 38px/1 var(--app-font-serif); letter-spacing: -.04em; color: hsl(var(--primary-foreground)); opacity: 0; }
+  .mimi-intro-word span { color: hsl(var(--accent)); }
+  .mimi-intro-sub { margin-top: 8px; font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: hsl(var(--primary-foreground) / .72); opacity: 0; }
+  .mimi-intro.is-branded .mimi-intro-mark { animation: mimi-intro-pop .7s cubic-bezier(.34,1.56,.64,1) both; }
+  .mimi-intro.is-branded .mimi-intro-word { animation: mimi-intro-rise .55s .16s cubic-bezier(.22,1,.36,1) both; }
+  .mimi-intro.is-branded .mimi-intro-sub { animation: mimi-intro-rise .55s .3s cubic-bezier(.22,1,.36,1) both; }
+  @keyframes mimi-intro-pop { from { opacity: 0; transform: rotate(-24deg) scale(.3); } to { opacity: 1; transform: rotate(-7deg) scale(1); } }
+  @keyframes mimi-intro-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  .mimi-intro-skip { position: absolute; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 3; padding: 8px 14px; border: 0; border-radius: 999px; background: hsl(var(--foreground) / .08); color: hsl(var(--muted-foreground)); font: 700 10px var(--app-font-mono); letter-spacing: .1em; text-transform: uppercase; transition: background .4s ease, color .4s ease; }
+  .mimi-intro.is-flooded .mimi-intro-skip { background: hsl(var(--primary-foreground) / .18); color: hsl(var(--primary-foreground)); }
+  @media (max-width: 480px) {
+    .mimi-intro-mark { width: 70px; height: 70px; border-radius: 24px 24px 24px 8px; font-size: 50px; }
+    .mimi-intro-word { margin-top: 14px; font-size: 29px; }
+    .mimi-intro-sub { font-size: 9px; letter-spacing: .14em; }
+    .mimi-intro-skip { right: 12px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .mimi-intro { display: none; } }
+
   /* ---- tiktok-style shipment stage tracker (customer order tracking) ---- */
   .orders-dialog { width: min(560px, 100%); max-height: 86vh; overflow-y: auto; padding: 30px 26px; border-radius: 24px; background: hsl(var(--card)); border: 1px solid hsl(var(--border)); box-shadow: var(--shadow-card); position: relative; }
   .orders-list { display: flex; flex-direction: column; gap: 16px; margin-top: 18px; }
@@ -608,6 +638,75 @@
 </style>
 </head>
 <body>
+
+<!-- ===== opening intro: a solid red wave rises until it fills the screen ===== -->
+<div class="mimi-intro" id="mimi-intro" role="presentation" aria-hidden="true">
+  <div class="mimi-intro-water" id="mimi-intro-water" aria-hidden="true">
+    <svg class="mimi-intro-wave" viewBox="0 0 1600 90" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+      <path d="M0 45 C100 0 100 0 200 45 C300 90 300 90 400 45 C500 0 500 0 600 45 C700 90 700 90 800 45 C900 0 900 0 1000 45 C1100 90 1100 90 1200 45 C1300 0 1300 0 1400 45 C1500 90 1500 90 1600 45 V90 H0 Z"></path>
+    </svg>
+  </div>
+  <div class="mimi-intro-brand">
+    <span class="mimi-intro-mark">m</span>
+    <span class="mimi-intro-word">Mimi<span>Cart</span></span>
+    <span class="mimi-intro-sub">Mimi&apos;s Sweets &amp; Korean Mart</span>
+  </div>
+  <button class="mimi-intro-skip" id="mimi-intro-skip" type="button">Skip</button>
+</div>
+<script>
+(function () {
+  var intro = document.getElementById('mimi-intro');
+  if (!intro) return;
+
+  var root = document.documentElement;
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var finished = false;
+
+  // Other scripts check this so nothing (e.g. the welcome toast) fires behind the curtain.
+  window.mimicartIntroActive = true;
+
+  function finish() {
+    if (finished) return;
+    finished = true;
+    intro.classList.add('is-out');
+    root.classList.remove('mimi-intro-active');
+    setTimeout(function () {
+      if (intro.parentNode) intro.parentNode.removeChild(intro);
+      window.mimicartIntroActive = false;
+      try { document.dispatchEvent(new CustomEvent('mimicart:intro-done')); } catch (e) { /* older browsers just skip the hand-off */ }
+    }, 560);
+  }
+
+  if (reduce) { intro.parentNode.removeChild(intro); window.mimicartIntroActive = false; return; }
+  setTimeout(finish, 9000); // never trap the visitor behind the overlay
+
+  try {
+    var FLOOD = 2500;
+
+    function startFlood() {
+      // A single solid rectangle rises from the bottom while its top edge
+      // sweeps continuously like a wave.
+      intro.classList.add('is-flooding');
+      setTimeout(function() {
+        intro.classList.add('is-flooded');
+      }, FLOOD);
+      setTimeout(function() {
+        intro.classList.add('is-branded');
+      }, FLOOD + 100);
+      setTimeout(finish, FLOOD + 1700);
+    }
+
+    root.classList.add('mimi-intro-active');
+    requestAnimationFrame(startFlood);
+
+    document.getElementById('mimi-intro-skip').addEventListener('click', finish);
+    intro.addEventListener('click', finish);
+  } catch (err) {
+    finish();
+  }
+})();
+</script>
+
 <div class="app-shell noise" id="app-shell">
 
   <header class="site-header">
@@ -2374,6 +2473,12 @@ next.push({
   var welcomeToastTimer = null;
   function showWelcomeToast(user) {
     if (!user) return;
+    // The opening intro covers the whole screen — hold the toast until it clears
+    // so a returning shopper actually sees it.
+    if (window.mimicartIntroActive) {
+      document.addEventListener('mimicart:intro-done', function () { showWelcomeToast(user); }, { once: true });
+      return;
+    }
     var existing = document.getElementById('mimicart-toast');
     if (existing) existing.remove();
     if (mimicartToastTimer) clearTimeout(mimicartToastTimer);
