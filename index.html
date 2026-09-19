@@ -427,11 +427,137 @@
   .mimi-intro.is-flooding .mimi-intro-water { height: 100%; }
   .mimi-intro.is-flooded .mimi-intro-wave { opacity: 0; transition: opacity .25s ease; }
   @keyframes mimi-wave-sweep { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-  .mimi-theme-wave-transition { position: fixed; z-index: 199; right: 0; bottom: 0; left: 0; height: 0; background: hsl(var(--primary)); overflow: visible; pointer-events: none; transition: height 1.45s cubic-bezier(.22,1,.36,1), opacity .4s ease; }
+  .mimi-theme-wave-transition { position: fixed; z-index: 199; right: 0; bottom: 0; left: 0; height: 0; background: hsl(var(--primary)); overflow: visible; pointer-events: none; transition: height 2.5s cubic-bezier(.22,1,.36,1), opacity .4s ease; }
   .mimi-theme-wave-transition.is-active { height: 100%; }
   .mimi-theme-wave-transition.is-done { opacity: 0; }
   .mimi-theme-wave { position: absolute; right: 0; bottom: calc(100% - 1px); left: 0; width: 200%; height: 54px; overflow: visible; fill: hsl(var(--primary)); animation: mimi-wave-sweep 2.2s linear infinite; }
+  /* ---- photo stop-motion montage inside the opening wave ---- */
+  .mimi-intro-photos, .mimi-theme-photos { position: absolute; z-index: 1; inset: 0; pointer-events: none; }
+  .mimi-intro-photo, .mimi-theme-photo {
+    --photo-size: clamp(112px, 16vw, 220px);
+    position: absolute;
+    left: var(--photo-x);
+    top: var(--photo-y);
+    width: var(--photo-size);
+    aspect-ratio: 1;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    filter: drop-shadow(0 0 0 hsl(40 67% 98%)) drop-shadow(0 14px 16px hsl(348 25% 18% / .28));
+    opacity: 0;
+    transform: translate(-50%, 0) rotate(var(--photo-end)) scale(1);
+    animation-play-state: paused;
+  }
+  .mimi-intro-photo img, .mimi-theme-photo img { position: relative; z-index: 1; display: block; width: 100%; height: 100%; border-radius: 0; object-fit: contain; }
+  .mimi-intro-photo::before, .mimi-theme-photo::before {
+    content: "";
+    position: absolute;
+    z-index: 2;
+    inset: 0;
+    border-radius: 0;
+    pointer-events: none;
+    background-image: radial-gradient(circle, hsl(348 25% 18% / .58) 0 1.5px, transparent 1.7px);
+    background-size: 9px 9px;
+    -webkit-mask-image: var(--photo-mask);
+    mask-image: var(--photo-mask);
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    mix-blend-mode: multiply;
+    opacity: .58;
+  }
+  .mimi-intro-photo::after, .mimi-theme-photo::after {
+    content: "";
+    position: absolute;
+    z-index: 0;
+    inset: -4%;
+    background: hsl(40 67% 98%);
+    -webkit-mask-image: var(--photo-mask);
+    mask-image: var(--photo-mask);
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    border: 0;
+    border-radius: 0;
+    pointer-events: none;
+  }
+  .mimi-intro.is-flooding .mimi-intro-photo, .mimi-theme-wave-transition.is-active .mimi-theme-photo {
+    opacity: 0;
+    animation: mimi-photo-reveal .08s var(--photo-hit) steps(1, end) both;
+  }
+  .mimi-intro.is-flooding .mimi-intro-photo img, .mimi-theme-wave-transition.is-active .mimi-theme-photo img { animation: mimi-photo-tilt 1.7s steps(1, end) infinite; }
+  @keyframes mimi-photo-reveal {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes mimi-photo-tilt {
+    0%, 100% { transform: rotate(-2deg); }
+    8% { transform: rotate(4deg); }
+    13% { transform: rotate(1deg); }
+    24% { transform: rotate(-5deg); }
+    30% { transform: rotate(-1deg); }
+    43% { transform: rotate(3deg); }
+    49% { transform: rotate(5deg); }
+    63% { transform: rotate(-3deg); }
+    70% { transform: rotate(1deg); }
+    82% { transform: rotate(-4deg); }
+    89% { transform: rotate(2deg); }
+  }
+  .mimi-intro-photo:nth-child(1), .mimi-theme-photo:nth-child(1) { --photo-mask: url("images/1.png"); --photo-end: -9deg; }
+  .mimi-intro-photo:nth-child(2), .mimi-theme-photo:nth-child(2) { --photo-mask: url("images/2.png"); --photo-end: 6deg; }
+  .mimi-intro-photo:nth-child(3), .mimi-theme-photo:nth-child(3) { --photo-mask: url("images/3.png"); --photo-end: -4deg; }
+  .mimi-intro-photo:nth-child(4), .mimi-theme-photo:nth-child(4) { --photo-mask: url("images/4.png"); --photo-end: 9deg; }
+  .mimi-intro-photo:nth-child(5), .mimi-theme-photo:nth-child(5) { --photo-mask: url("images/5.png"); --photo-end: -7deg; }
+  .mimi-intro-photo:nth-child(6), .mimi-theme-photo:nth-child(6) { --photo-mask: url("images/6.png"); --photo-end: 8deg; }
+  .mimi-intro-photo:nth-child(7), .mimi-theme-photo:nth-child(7) { --photo-mask: url("images/7.png"); --photo-end: -5deg; }
+  .mimi-intro-photo:nth-child(8), .mimi-theme-photo:nth-child(8) { --photo-mask: url("images/8.png"); --photo-end: 7deg; }
+  .mimi-intro-photo:nth-child(9), .mimi-theme-photo:nth-child(9) { --photo-mask: url("images/9.png"); --photo-end: -8deg; }
+  .mimi-intro-photo:nth-child(10), .mimi-theme-photo:nth-child(10) { --photo-mask: url("images/10.png"); --photo-end: 5deg; }
+  .mimi-intro-photo:nth-child(11), .mimi-theme-photo:nth-child(11) { --photo-mask: url("images/1.png"); --photo-end: 5deg; }
+  .mimi-intro-photo:nth-child(12), .mimi-theme-photo:nth-child(12) { --photo-mask: url("images/2.png"); --photo-end: -6deg; }
+  .mimi-intro-photo:nth-child(13), .mimi-theme-photo:nth-child(13) { --photo-mask: url("images/3.png"); --photo-end: 8deg; }
+  .mimi-intro-photo:nth-child(14), .mimi-theme-photo:nth-child(14) { --photo-mask: url("images/4.png"); --photo-end: -5deg; }
+  .mimi-intro-photo:nth-child(15), .mimi-theme-photo:nth-child(15) { --photo-mask: url("images/5.png"); --photo-end: 6deg; }
+  .mimi-intro-photo:nth-child(16), .mimi-theme-photo:nth-child(16) { --photo-mask: url("images/6.png"); --photo-end: -7deg; }
+  .mimi-intro-photo:nth-child(17), .mimi-theme-photo:nth-child(17) { --photo-mask: url("images/7.png"); --photo-end: 4deg; }
+  .mimi-intro-photo:nth-child(18), .mimi-theme-photo:nth-child(18) { --photo-mask: url("images/8.png"); --photo-end: -8deg; }
+  .mimi-intro-photo:nth-child(19), .mimi-theme-photo:nth-child(19) { --photo-mask: url("images/9.png"); --photo-end: 7deg; }
+  .mimi-intro-photo:nth-child(20), .mimi-theme-photo:nth-child(20) { --photo-mask: url("images/10.png"); --photo-end: -6deg; }
+  /* Evenly-spread 5x4 grid (with light jitter so it doesn't look mechanical) covering the
+     whole screen instead of clustering. --photo-hit is calculated to match the *actual* rise
+     curve of the wave (cubic-bezier(.22,1,.36,1) over 2.5s, see .mimi-intro-water/.mimi-theme-wave-transition
+     transition-timing-function below) rather than a plain linear guess, so each sticker pops in
+     at the exact instant the rising wave reaches its vertical position. */
+  .mimi-intro-photo, .mimi-theme-photo { --photo-size: clamp(94px, 13vw, 184px); }
+  .mimi-intro-photo:nth-child(1), .mimi-theme-photo:nth-child(1) { --photo-x: 6%; --photo-y: 9%; --photo-hit: .972s; z-index: 4; }
+  .mimi-intro-photo:nth-child(2), .mimi-theme-photo:nth-child(2) { --photo-x: 32%; --photo-y: 6%; --photo-hit: 1.109s; z-index: 2; }
+  .mimi-intro-photo:nth-child(3), .mimi-theme-photo:nth-child(3) { --photo-x: 47%; --photo-y: 10%; --photo-hit: .935s; z-index: 6; }
+  .mimi-intro-photo:nth-child(4), .mimi-theme-photo:nth-child(4) { --photo-x: 73%; --photo-y: 7%; --photo-hit: 1.057s; z-index: 3; }
+  .mimi-intro-photo:nth-child(5), .mimi-theme-photo:nth-child(5) { --photo-x: 92%; --photo-y: 10%; --photo-hit: .935s; z-index: 5; }
+  .mimi-intro-photo:nth-child(6), .mimi-theme-photo:nth-child(6) { --photo-x: 11%; --photo-y: 31%; --photo-hit: .52s; z-index: 7; }
+  .mimi-intro-photo:nth-child(7), .mimi-theme-photo:nth-child(7) { --photo-x: 27%; --photo-y: 34%; --photo-hit: .484s; z-index: 4; }
+  .mimi-intro-photo:nth-child(8), .mimi-theme-photo:nth-child(8) { --photo-x: 52%; --photo-y: 31%; --photo-hit: .52s; z-index: 8; }
+  .mimi-intro-photo:nth-child(9), .mimi-theme-photo:nth-child(9) { --photo-x: 68%; --photo-y: 35%; --photo-hit: .472s; z-index: 3; }
+  .mimi-intro-photo:nth-child(10), .mimi-theme-photo:nth-child(10) { --photo-x: 93%; --photo-y: 32%; --photo-hit: .507s; z-index: 5; }
+  .mimi-intro-photo:nth-child(11), .mimi-theme-photo:nth-child(11) { --photo-x: 7%; --photo-y: 59%; --photo-hit: .257s; z-index: 2; }
+  .mimi-intro-photo:nth-child(12), .mimi-theme-photo:nth-child(12) { --photo-x: 31%; --photo-y: 56%; --photo-hit: .279s; z-index: 6; }
+  .mimi-intro-photo:nth-child(13), .mimi-theme-photo:nth-child(13) { --photo-x: 47%; --photo-y: 60%; --photo-hit: .249s; z-index: 9; }
+  .mimi-intro-photo:nth-child(14), .mimi-theme-photo:nth-child(14) { --photo-x: 74%; --photo-y: 57%; --photo-hit: .272s; z-index: 4; }
+  .mimi-intro-photo:nth-child(15), .mimi-theme-photo:nth-child(15) { --photo-x: 90%; --photo-y: 56%; --photo-hit: .279s; z-index: 7; }
+  .mimi-intro-photo:nth-child(16), .mimi-theme-photo:nth-child(16) { --photo-x: 9%; --photo-y: 82%; --photo-hit: .104s; z-index: 5; }
+  .mimi-intro-photo:nth-child(17), .mimi-theme-photo:nth-child(17) { --photo-x: 27%; --photo-y: 79%; --photo-hit: .122s; z-index: 3; }
+  .mimi-intro-photo:nth-child(18), .mimi-theme-photo:nth-child(18) { --photo-x: 53%; --photo-y: 81%; --photo-hit: .11s; z-index: 8; }
+  .mimi-intro-photo:nth-child(19), .mimi-theme-photo:nth-child(19) { --photo-x: 70%; --photo-y: 78%; --photo-hit: .128s; z-index: 2; }
+  .mimi-intro-photo:nth-child(20), .mimi-theme-photo:nth-child(20) { --photo-x: 94%; --photo-y: 81%; --photo-hit: .11s; z-index: 6; }
   .mimi-intro-brand { position: relative; display: grid; justify-items: center; text-align: center; }
+  .mimi-intro-brand { z-index: 4; }
   .mimi-intro-mark { width: 88px; height: 88px; display: grid; place-items: center; border-radius: 30px 30px 30px 10px; background: hsl(var(--primary-foreground)); color: hsl(var(--primary)); font: 800 62px/1 var(--app-font-serif); opacity: 0; transform: rotate(-24deg) scale(.3); }
   .mimi-intro-word { margin-top: 18px; font: 800 38px/1 var(--app-font-serif); letter-spacing: -.04em; color: hsl(var(--primary-foreground)); opacity: 0; }
   .mimi-intro-word span { color: hsl(var(--accent)); }
@@ -448,8 +574,33 @@
     .mimi-intro-word { margin-top: 14px; font-size: 29px; }
     .mimi-intro-sub { font-size: 9px; letter-spacing: .14em; }
     .mimi-intro-skip { right: 12px; }
+    /* Portrait phones: 4x5 grid instead of 5x4, so the spread uses the taller viewport well. */
+    .mimi-intro-photo, .mimi-theme-photo { --photo-size: clamp(70px, 21vw, 116px); }
+    .mimi-intro-photo:nth-child(1), .mimi-theme-photo:nth-child(1) { --photo-x: 11%; --photo-y: 7%; --photo-hit: 1.057s; }
+    .mimi-intro-photo:nth-child(2), .mimi-theme-photo:nth-child(2) { --photo-x: 40%; --photo-y: 5%; --photo-hit: 1.168s; }
+    .mimi-intro-photo:nth-child(3), .mimi-theme-photo:nth-child(3) { --photo-x: 62%; --photo-y: 7%; --photo-hit: 1.057s; }
+    .mimi-intro-photo:nth-child(4), .mimi-theme-photo:nth-child(4) { --photo-x: 91%; --photo-y: 5%; --photo-hit: 1.168s; }
+    .mimi-intro-photo:nth-child(5), .mimi-theme-photo:nth-child(5) { --photo-x: 14%; --photo-y: 25%; --photo-hit: .602s; }
+    .mimi-intro-photo:nth-child(6), .mimi-theme-photo:nth-child(6) { --photo-x: 37%; --photo-y: 27%; --photo-hit: .573s; }
+    .mimi-intro-photo:nth-child(7), .mimi-theme-photo:nth-child(7) { --photo-x: 65%; --photo-y: 25%; --photo-hit: .602s; }
+    .mimi-intro-photo:nth-child(8), .mimi-theme-photo:nth-child(8) { --photo-x: 88%; --photo-y: 27%; --photo-hit: .573s; }
+    .mimi-intro-photo:nth-child(9), .mimi-theme-photo:nth-child(9) { --photo-x: 11%; --photo-y: 47%; --photo-hit: .353s; }
+    .mimi-intro-photo:nth-child(10), .mimi-theme-photo:nth-child(10) { --photo-x: 40%; --photo-y: 45%; --photo-hit: .371s; }
+    .mimi-intro-photo:nth-child(11), .mimi-theme-photo:nth-child(11) { --photo-x: 62%; --photo-y: 47%; --photo-hit: .353s; }
+    .mimi-intro-photo:nth-child(12), .mimi-theme-photo:nth-child(12) { --photo-x: 91%; --photo-y: 45%; --photo-hit: .371s; }
+    .mimi-intro-photo:nth-child(13), .mimi-theme-photo:nth-child(13) { --photo-x: 13%; --photo-y: 65%; --photo-hit: .213s; }
+    .mimi-intro-photo:nth-child(14), .mimi-theme-photo:nth-child(14) { --photo-x: 36%; --photo-y: 67%; --photo-hit: .2s; }
+    .mimi-intro-photo:nth-child(15), .mimi-theme-photo:nth-child(15) { --photo-x: 66%; --photo-y: 65%; --photo-hit: .213s; }
+    .mimi-intro-photo:nth-child(16), .mimi-theme-photo:nth-child(16) { --photo-x: 89%; --photo-y: 67%; --photo-hit: .2s; }
+    .mimi-intro-photo:nth-child(17), .mimi-theme-photo:nth-child(17) { --photo-x: 10%; --photo-y: 85%; --photo-hit: .086s; }
+    .mimi-intro-photo:nth-child(18), .mimi-theme-photo:nth-child(18) { --photo-x: 39%; --photo-y: 83%; --photo-hit: .098s; }
+    .mimi-intro-photo:nth-child(19), .mimi-theme-photo:nth-child(19) { --photo-x: 63%; --photo-y: 85%; --photo-hit: .086s; }
+    .mimi-intro-photo:nth-child(20), .mimi-theme-photo:nth-child(20) { --photo-x: 92%; --photo-y: 83%; --photo-hit: .098s; }
   }
-  @media (prefers-reduced-motion: reduce) { .mimi-intro { display: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    .mimi-intro { display: none; }
+    .mimi-intro-photo, .mimi-theme-photo { animation: none !important; opacity: 0 !important; }
+  }
 
   /* ---- tiktok-style shipment stage tracker (customer order tracking) ---- */
   .orders-dialog { width: min(560px, 100%); max-height: 86vh; overflow-y: auto; padding: 30px 26px; border-radius: 24px; background: hsl(var(--card)); border: 1px solid hsl(var(--border)); box-shadow: var(--shadow-card); position: relative; }
@@ -652,6 +803,28 @@
     <svg class="mimi-intro-wave" viewBox="0 0 1600 90" preserveAspectRatio="none" aria-hidden="true" focusable="false">
       <path d="M0 45 C100 0 100 0 200 45 C300 90 300 90 400 45 C500 0 500 0 600 45 C700 90 700 90 800 45 C900 0 900 0 1000 45 C1100 90 1100 90 1200 45 C1300 0 1300 0 1400 45 C1500 90 1500 90 1600 45 V90 H0 Z"></path>
     </svg>
+  </div>
+  <div class="mimi-intro-photos" aria-hidden="true">
+    <figure class="mimi-intro-photo"><img src="images/1.png" alt="" /></figure>
+    <figure class="mimi-intro-photo"><img src="images/2.png" alt="" /></figure>
+    <figure class="mimi-intro-photo"><img src="images/3.png" alt="" /></figure>
+    <figure class="mimi-intro-photo"><img src="images/4.png" alt="" /></figure>
+    <figure class="mimi-intro-photo"><img src="images/5.png" alt="" /></figure>
+    <figure class="mimi-intro-photo"><img src="images/6.png" alt="" /></figure>
+    <figure class="mimi-intro-photo"><img src="images/7.png" alt="" /></figure>
+    <figure class="mimi-intro-photo"><img src="images/8.png" alt="" /></figure>
+    <figure class="mimi-intro-photo"><img src="images/9.png" alt="" /></figure>
+    <figure class="mimi-intro-photo"><img src="images/10.png" alt="" /></figure>
+    <figure class="mimi-intro-photo"><img src="images/1.png" alt="" /></figure>
+    <figure class="mimi-intro-photo"><img src="images/2.png" alt="" /></figure>
+    <figure class="mimi-intro-photo"><img src="images/3.png" alt="" /></figure>
+    <figure class="mimi-intro-photo"><img src="images/4.png" alt="" /></figure>
+    <figure class="mimi-intro-photo"><img src="images/5.png" alt="" /></figure>
+    <figure class="mimi-intro-photo"><img src="images/6.png" alt="" /></figure>
+    <figure class="mimi-intro-photo"><img src="images/7.png" alt="" /></figure>
+    <figure class="mimi-intro-photo"><img src="images/8.png" alt="" /></figure>
+    <figure class="mimi-intro-photo"><img src="images/9.png" alt="" /></figure>
+    <figure class="mimi-intro-photo"><img src="images/10.png" alt="" /></figure>
   </div>
   <div class="mimi-intro-brand">
     <span class="mimi-intro-mark">m</span>
@@ -899,7 +1072,13 @@
 
       var transition = document.createElement('div');
       transition.className = 'mimi-theme-wave-transition';
+      var themePhotos = '';
+      for (var photoNumber = 1; photoNumber <= 20; photoNumber += 1) {
+        var sourceNumber = ((photoNumber - 1) % 10) + 1;
+        themePhotos += '<figure class="mimi-theme-photo"><img src="images/' + sourceNumber + '.png" alt="" /></figure>';
+      }
       transition.innerHTML =
+        '<div class="mimi-theme-photos" aria-hidden="true">' + themePhotos + '</div>' +
         '<svg class="mimi-theme-wave" viewBox="0 0 1600 90" preserveAspectRatio="none" aria-hidden="true">' +
           '<path d="M0 45 C100 0 100 0 200 45 C300 90 300 90 400 45 C500 0 500 0 600 45 C700 90 700 90 800 45 C900 0 900 0 1000 45 C1100 90 1100 90 1200 45 C1300 0 1300 0 1400 45 C1500 90 1500 90 1600 45 V90 H0 Z"></path>' +
         '</svg>';
@@ -913,7 +1092,7 @@
         setTimeout(function () {
           if (transition.parentNode) transition.parentNode.removeChild(transition);
         }, 450);
-      }, 1500);
+      }, 3600);
     }
     function applyTheme(theme) {
       if (allowed.indexOf(theme) === -1) theme = 'light';
@@ -1007,7 +1186,7 @@ var EMAILJS_CONFIG = {
 // trial. Set back to true whenever you want the extra verification step
 // again. Keep this the same as the admin dashboard's REQUIRE_OTP if you
 // want both to behave the same way.
-var REQUIRE_OTP = true;
+var REQUIRE_OTP = false;
 
   // ---- contact country codes (phone contact method) ----
   var COUNTRY_CODES = [
@@ -1841,14 +2020,19 @@ next.push({
   // stock on each product doc, so the admin dashboard sees it immediately
   // and inventory stays accurate. Falls back to a local-only simulation
   // (no persistence) if Firestore isn't reachable, so the demo still works.
-  // Human-readable order number used as the actual Firestore document ID
-  // (instead of an auto-generated id) so orders are easy to spot in the
-  // Firestore console and easy to reference with the customer, e.g. on the
-  // phone: "MC-250915-7QQ2".
-  // Order document ID = just the customer's name (e.g. "axel"), so it's
-  // easy to spot in the Firestore console. Note: if the same name places a
-  // second order, it will OVERWRITE the first order's document under that
-  // same name — there's no uniqueness suffix, exactly as requested.
+  // ---------------- ORDERS: Firestore layout ----------------
+  // orders/{autoId}   every order lives here, for its whole lifecycle.
+  // The "to be delivered" / "to be picked up" / "completed" / "cancelled"
+  // views in the admin dashboard are just client-side filters over this
+  // one collection (by `fulfillment` + `status`) — orders are never
+  // physically moved between collections, so there's nothing for
+  // Firestore Security Rules to separately allow beyond this one path,
+  // and nothing that can silently fail to sync between "views".
+  //
+  // A human-readable orderNumber (e.g. "axel-pickup-7q2x") is still
+  // stored as a plain FIELD for display/reference, but it is never used
+  // as the document ID — two orders from the same customer with the same
+  // fulfillment option must never overwrite each other.
   function slugifyName(name) {
     var slug = (name || 'guest').toLowerCase().trim()
       .replace(/[^a-z0-9]+/g, '-')
@@ -1856,10 +2040,12 @@ next.push({
       .slice(0, 40);
     return slug || 'guest';
   }
-  function generateOrderNumber(customerName) {
-    // Use only the name entered in the cart as the Firestore document ID.
-    // Example: "sample" -> document ID "sample".
-    return slugifyName(customerName);
+  function generateOrderNumber(customerName, fulfillment) {
+    // Example: "sample", "pickup" -> "sample-pickup-7q2x". The random
+    // suffix keeps repeat orders from the same customer/option distinct.
+    var fulfillmentLabel = fulfillment === 'delivery' ? 'delivery' : 'pickup';
+    var suffix = Math.random().toString(36).slice(2, 6);
+    return slugifyName(customerName) + '-' + fulfillmentLabel + '-' + suffix;
   }
 
   function submitReservation() {
@@ -1912,8 +2098,12 @@ next.push({
     }
 
     var batch = firebaseDb.batch();
-    var orderNumber = generateOrderNumber(order.customerName);
-    var orderRef = firebaseDb.collection('orders').doc(orderNumber);
+    var orderNumber = generateOrderNumber(order.customerName, order.fulfillment);
+    // Every order — pickup or delivery, new or finished — lives in the
+    // single top-level "orders" collection, with an auto-generated
+    // document id. The admin dashboard's "to be delivered" / "to be
+    // picked up" groupings are just filters over this one collection.
+    var orderRef = firebaseDb.collection('orders').doc();
     batch.set(orderRef, Object.assign({}, order, { orderNumber: orderNumber, createdAt: firebase.firestore.FieldValue.serverTimestamp() }));
     lineItems.forEach(function (item) {
       var productRef = firebaseDb.collection('products').doc(item.productId);
@@ -2056,41 +2246,44 @@ next.push({
 
   function subscribeToCustomerOrders() {
     if (!firebaseConfigured || !firebaseDb || !state.user) return;
-    if (unsubscribeCustomerOrders) unsubscribeCustomerOrders();
+    unsubscribeFromCustomerOrders();
     state.notifications = loadNotifications(state.user.email);
     updateNotifBadge();
     if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
       Notification.requestPermission(); // best-effort; toast + bell notifications work either way
     }
-    unsubscribeCustomerOrders = firebaseDb.collection('orders')
-      .where('customerEmail', '==', state.user.email)
-      .onSnapshot(function (snap) {
-        var next = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
-        next.sort(function (a, b) {
-          var da = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate().getTime() : 0;
-          var db_ = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate().getTime() : 0;
-          return db_ - da;
-        });
 
-        next.forEach(function (order) {
-          var prev = previousOrderStatuses[order.id];
-          if (prev && prev !== order.status) {
-            if (order.status === 'ready') {
-              notifyOrderUpdate('Pickup ready! \uD83C\uDFEA', 'Your MimiCart order is ready for pickup \u2014 see you soon!', 'ready');
-            } else if (order.status === 'out_for_delivery') {
-              notifyOrderUpdate('Out for delivery! \uD83D\uDE9A', 'Your MimiCart order is out for delivery and on its way.', 'delivery');
-            } else if (order.status === 'completed') {
-              notifyOrderUpdate('Order complete \u2705', (order.fulfillment === 'delivery' ? 'Delivered! ' : 'Picked up! ') + 'Thanks for shopping with MimiCart.', 'done');
-            } else if (order.status === 'processing') {
-              notifyOrderUpdate('Order update \uD83D\uDCE6', 'Mimi\u2019s is preparing your order now.', 'info');
-            }
+    function handleUpdate(snap) {
+      var next = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
+      next.sort(function (a, b) {
+        var da = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate().getTime() : 0;
+        var db_ = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate().getTime() : 0;
+        return db_ - da;
+      });
+
+      next.forEach(function (order) {
+        var prev = previousOrderStatuses[order.id];
+        if (prev && prev !== order.status) {
+          if (order.status === 'ready') {
+            notifyOrderUpdate('Pickup ready! \uD83C\uDFEA', 'Your MimiCart order is ready for pickup \u2014 see you soon!', 'ready');
+          } else if (order.status === 'out_for_delivery') {
+            notifyOrderUpdate('Out for delivery! \uD83D\uDE9A', 'Your MimiCart order is out for delivery and on its way.', 'delivery');
+          } else if (order.status === 'completed') {
+            notifyOrderUpdate('Order complete \u2705', (order.fulfillment === 'delivery' ? 'Delivered! ' : 'Picked up! ') + 'Thanks for shopping with MimiCart.', 'done');
+          } else if (order.status === 'processing') {
+            notifyOrderUpdate('Order update \uD83D\uDCE6', 'Mimi\u2019s is preparing your order now.', 'info');
           }
-          previousOrderStatuses[order.id] = order.status;
-        });
+        }
+        previousOrderStatuses[order.id] = order.status;
+      });
 
-        state.customerOrders = next;
-        if (state.ordersOpen) renderOverlays();
-      }, function (err) { console.error('MimiCart: could not load your orders', err); });
+      state.customerOrders = next;
+      if (state.ordersOpen) renderOverlays();
+    }
+
+    var emailFilter = state.user.email;
+    unsubscribeCustomerOrders = firebaseDb.collection('orders').where('customerEmail', '==', emailFilter)
+      .onSnapshot(handleUpdate, function (err) { console.error('MimiCart: could not load your orders', err); });
   }
 
   function unsubscribeFromCustomerOrders() {
