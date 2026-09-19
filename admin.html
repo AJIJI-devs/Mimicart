@@ -132,6 +132,22 @@
   .status-processing { background: hsl(210 80% 60% / .18); color: hsl(212 60% 42%); }
   .status-ready { background: hsl(268 60% 60% / .18); color: hsl(268 45% 45%); }
   .status-out_for_delivery { background: hsl(268 60% 60% / .18); color: hsl(268 45% 45%); }
+  .fulfillment-chip { display: inline-block; margin-left: 6px; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; vertical-align: middle; }
+  .fulfillment-chip-pickup { background: hsl(210 60% 55% / .16); color: hsl(210 55% 40%); }
+  .fulfillment-chip-delivery { background: hsl(268 60% 60% / .16); color: hsl(268 45% 45%); }
+  .order-quick-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .quick-filter-pill { border: 1px solid hsl(var(--border)); background: hsl(var(--card)); color: hsl(var(--foreground)); font: 700 12px var(--app-font-mono); padding: 9px 16px; border-radius: 999px; cursor: pointer; }
+  .quick-filter-pill.active { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); border-color: hsl(var(--primary)); }
+  .order-group { scroll-margin-top: 90px; }
+  .order-group h2 { display: flex; align-items: center; gap: 9px; }
+  .order-group-count { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 7px; border-radius: 999px; background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); font: 700 11px var(--app-font-mono); }
+  .order-group[data-group="to_be_delivered"] .order-group-count { background: hsl(268 60% 60% / .16); color: hsl(268 45% 45%); }
+  .order-group[data-group="to_be_picked_up"] .order-group-count { background: hsl(210 60% 55% / .16); color: hsl(210 55% 40%); }
+  .order-group[data-group="completed"] .order-group-count { background: hsl(var(--good) / .16); color: hsl(var(--good)); }
+  .order-group[data-group="cancelled"] .order-group-count { background: hsl(var(--bad) / .16); color: hsl(var(--bad)); }
+  .hint-text { margin: 10px 0 0; font-size: 12px; color: hsl(var(--muted-foreground)); }
+  .hint-text.good { color: hsl(142 60% 35%); }
+  .hint-text.bad { color: hsl(0 65% 50%); }
   .status-completed { background: hsl(var(--good) / .12); color: hsl(var(--good)); }
   .status-cancelled { background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); }
   .order-items { font-size: 11px; color: hsl(var(--muted-foreground)); max-width: 220px; }
@@ -267,8 +283,9 @@
 
   <nav class="tabs">
     <button type="button" class="tab-button active" data-tab="overview">Overview</button>
-    <button type="button" class="tab-button" data-tab="inventory">Inventory</button>
+    <button type="button" class="tab-button" data-tab="inventory">Products</button>
     <button type="button" class="tab-button" data-tab="orders">Orders</button>
+    <button type="button" class="tab-button" data-tab="staff">Staff</button>
     <button type="button" class="tab-button" data-tab="settings">Settings</button>
   </nav>
 
@@ -323,21 +340,76 @@
         <option value="out_for_delivery">Out for delivery</option>
         <option value="completed">Completed</option>
         <option value="cancelled">Cancelled</option>
-        <optgroup label="By fulfillment">
-          <option value="picked_up">Picked up orders</option>
-          <option value="delivered">Delivered orders</option>
-          <option value="to_be_picked_up">To be picked up</option>
-          <option value="to_be_delivered">To be delivered</option>
-        </optgroup>
       </select>
       <button type="button" class="secondary-button focus-ring" id="orders-export-csv">⬇️ Export CSV</button>
     </div>
+
+    <div class="panel-block order-group" data-group="to_be_delivered">
+      <h2>🚚 To be delivered <span class="order-group-count" id="orders-count-to_be_delivered">0</span></h2>
+      <p class="panel-sub">Delivery orders that haven't been dropped off yet.</p>
+      <div style="overflow-x:auto;">
+        <table class="data-table">
+          <thead><tr><th>Customer</th><th>Items</th><th>Total</th><th>Delivery</th><th>Status</th><th>Placed</th><th></th></tr></thead>
+          <tbody id="orders-body-to_be_delivered"></tbody>
+        </table>
+        <div class="empty-state hidden" id="orders-empty-to_be_delivered">Nothing waiting on delivery.</div>
+      </div>
+    </div>
+
+    <div class="panel-block order-group" data-group="to_be_picked_up">
+      <h2>🏪 To be picked up <span class="order-group-count" id="orders-count-to_be_picked_up">0</span></h2>
+      <p class="panel-sub">Pickup orders that haven't been collected yet.</p>
+      <div style="overflow-x:auto;">
+        <table class="data-table">
+          <thead><tr><th>Customer</th><th>Items</th><th>Total</th><th>Pickup</th><th>Status</th><th>Placed</th><th></th></tr></thead>
+          <tbody id="orders-body-to_be_picked_up"></tbody>
+        </table>
+        <div class="empty-state hidden" id="orders-empty-to_be_picked_up">Nothing waiting on pickup.</div>
+      </div>
+    </div>
+
+    <div class="panel-block order-group" data-group="completed">
+      <h2>✅ Completed <span class="order-group-count" id="orders-count-completed">0</span></h2>
+      <p class="panel-sub">Delivered and picked-up orders.</p>
+      <div style="overflow-x:auto;">
+        <table class="data-table">
+          <thead><tr><th>Customer</th><th>Items</th><th>Total</th><th>Fulfillment</th><th>Status</th><th>Placed</th><th></th></tr></thead>
+          <tbody id="orders-body-completed"></tbody>
+        </table>
+        <div class="empty-state hidden" id="orders-empty-completed">No completed orders yet.</div>
+      </div>
+    </div>
+
+    <div class="panel-block order-group" data-group="cancelled">
+      <h2>🚫 Cancelled <span class="order-group-count" id="orders-count-cancelled">0</span></h2>
+      <p class="panel-sub">Orders that were cancelled and restocked.</p>
+      <div style="overflow-x:auto;">
+        <table class="data-table">
+          <thead><tr><th>Customer</th><th>Items</th><th>Total</th><th>Fulfillment</th><th>Status</th><th>Placed</th><th></th></tr></thead>
+          <tbody id="orders-body-cancelled"></tbody>
+        </table>
+        <div class="empty-state hidden" id="orders-empty-cancelled">No cancelled orders.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------------- STAFF ---------------- -->
+  <section class="tab-panel" id="panel-staff">
+    <div class="panel-block">
+      <h2 class="font-display">Staff allow-list</h2>
+      <p class="panel-sub">Only the emails listed here can sign in to this dashboard. Add an email, then have that person sign in (or sign up) with it on this page.</p>
+      <form id="staff-add-form" class="toolbar-row" style="margin-top:14px;">
+        <input class="search-input focus-ring" id="staff-add-email" type="email" placeholder="staffmember@email.com" required style="flex:1;" />
+        <button type="submit" class="primary-button focus-ring">+ Add staff</button>
+      </form>
+      <p class="hint-text hidden" id="staff-add-message"></p>
+    </div>
     <div class="panel-block" style="overflow-x:auto;">
       <table class="data-table">
-        <thead><tr><th>Customer</th><th>Items</th><th>Total</th><th>Pickup</th><th>Status</th><th>Placed</th><th></th></tr></thead>
-        <tbody id="orders-body"></tbody>
+        <thead><tr><th>Email</th><th>Added</th><th></th></tr></thead>
+        <tbody id="staff-body"></tbody>
       </table>
-      <div class="empty-state hidden" id="orders-empty">No orders yet.</div>
+      <div class="empty-state hidden" id="staff-empty">No staff accounts yet — add one above.</div>
     </div>
   </section>
 
@@ -539,7 +611,7 @@ var REQUIRE_OTP = false;
     inventoryStockFilter: 'all',
     ordersStatusFilter: 'all'
   };
-  var unsubscribeProducts = null, unsubscribeOrders = null;
+  var unsubscribeProducts = null, unsubscribeOrdersDelivered = null, unsubscribeOrdersPickedUp = null, unsubscribeOrdersCompleted = null;
 
   function showToast(message) {
     var el = document.createElement('div');
@@ -968,7 +1040,10 @@ var REQUIRE_OTP = false;
   if (firebaseConfigured) {
     firebaseAuth.onAuthStateChanged(function (user) {
       if (unsubscribeProducts) { unsubscribeProducts(); unsubscribeProducts = null; }
-      if (unsubscribeOrders) { unsubscribeOrders(); unsubscribeOrders = null; }
+      if (unsubscribeOrdersDelivered) { unsubscribeOrdersDelivered(); unsubscribeOrdersDelivered = null; }
+      if (unsubscribeOrdersPickedUp) { unsubscribeOrdersPickedUp(); unsubscribeOrdersPickedUp = null; }
+      if (unsubscribeOrdersCompleted) { unsubscribeOrdersCompleted(); unsubscribeOrdersCompleted = null; }
+      orderCaches = { tobedelivered: {}, tobepickedup: {}, orders: {} };
       if (!user) { showLogin(); return; }
       // Staff allow-list check: a doc at staff/{lowercased email} must exist.
       var staffDocId = user.email.toLowerCase();
@@ -1002,7 +1077,45 @@ var REQUIRE_OTP = false;
     });
   });
 
+  // ---------------- ORDERS: Firestore layout ----------------
+  // orders/active                      anchor doc (just holds the two subcollections below)
+  // orders/active/tobedelivered/{id}   delivery orders not yet delivered
+  // orders/active/tobepickedup/{id}    pickup orders not yet picked up
+  // orders/{id}                        orders once delivered, picked up, or cancelled
+  function ordersActiveDoc() { return firebaseDb.collection('orders').doc('active'); }
+  function tobedeliveredCol() { return ordersActiveDoc().collection('tobedelivered'); }
+  function tobepickedupCol() { return ordersActiveDoc().collection('tobepickedup'); }
+  function orderDocRef(order) {
+    if (order._source === 'tobedelivered') return tobedeliveredCol().doc(order.id);
+    if (order._source === 'tobepickedup') return tobepickedupCol().doc(order.id);
+    return firebaseDb.collection('orders').doc(order.id);
+  }
+
   // ---------------- DATA SUBSCRIPTIONS ----------------
+  var orderCaches = { tobedelivered: {}, tobepickedup: {}, orders: {} };
+  function recombineOrders() {
+    var combined = [];
+    ['tobedelivered', 'tobepickedup', 'orders'].forEach(function (source) {
+      Object.keys(orderCaches[source]).forEach(function (id) { combined.push(orderCaches[source][id]); });
+    });
+    combined.sort(function (a, b) {
+      var ad = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate().getTime() : Number(a.createdAt || 0);
+      var bd = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate().getTime() : Number(b.createdAt || 0);
+      return bd - ad;
+    });
+    state.orders = combined;
+    renderRevenue();
+    renderOrders();
+  }
+  function watchOrderSource(source, query) {
+    return query.onSnapshot(function (snap) {
+      var map = {};
+      snap.docs.forEach(function (d) { map[d.id] = Object.assign({ id: d.id, _source: source }, d.data()); });
+      orderCaches[source] = map;
+      recombineOrders();
+    }, function (err) { console.error('MimiCart admin: ' + source + ' orders listener failed', err); });
+  }
+
   function subscribeData() {
     unsubscribeProducts = firebaseDb.collection('products').onSnapshot(function (snap) {
       state.products = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
@@ -1012,17 +1125,12 @@ var REQUIRE_OTP = false;
     }, function (err) { console.error('MimiCart admin: products listener failed', err); });
 
     // Newest orders first, so staff see the latest activity at the top
-    // instead of having to scroll past old ones.
-    unsubscribeOrders = firebaseDb.collection('orders').orderBy('createdAt', 'desc').limit(500).onSnapshot(function (snap) {
-      state.orders = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
-      state.orders.sort(function (a, b) {
-        var ad = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate().getTime() : Number(a.createdAt || 0);
-        var bd = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate().getTime() : Number(b.createdAt || 0);
-        return bd - ad;
-      });
-      renderRevenue();
-      renderOrders();
-    }, function (err) { console.error('MimiCart admin: orders listener failed', err); });
+    // instead of having to scroll past old ones. Active orders live in
+    // the two "to be ___" subcollections; delivered/picked-up/cancelled
+    // orders land back in the top-level "orders" collection.
+    unsubscribeOrdersDelivered = watchOrderSource('tobedelivered', tobedeliveredCol().orderBy('createdAt', 'desc').limit(500));
+    unsubscribeOrdersPickedUp = watchOrderSource('tobepickedup', tobepickedupCol().orderBy('createdAt', 'desc').limit(500));
+    unsubscribeOrdersCompleted = watchOrderSource('orders', firebaseDb.collection('orders').orderBy('createdAt', 'desc').limit(500));
   }
 
   // ---------------- SEEDING ----------------
@@ -1234,48 +1342,72 @@ var REQUIRE_OTP = false;
       // "To be picked up" / "To be delivered" = still in progress, split by fulfillment.
       case 'to_be_picked_up': return o.fulfillment !== 'delivery' && o.status !== 'completed' && o.status !== 'cancelled';
       case 'to_be_delivered': return o.fulfillment === 'delivery' && o.status !== 'completed' && o.status !== 'cancelled';
+      case 'completed': return o.status === 'completed';
+      case 'cancelled': return o.status === 'cancelled';
       default: return o.status === filter;
     }
   }
 
-  function renderOrders() {
-    var body = document.getElementById('orders-body');
-    var rows = state.orders.filter(function (o) { return orderMatchesFilter(o, state.ordersStatusFilter); });
-    document.getElementById('orders-empty').classList.toggle('hidden', rows.length > 0);
+  // The Orders tab always shows these four groups stacked on one page,
+  // narrowed further by the "All statuses" dropdown when it isn't "all".
+  var ORDER_GROUPS = ['to_be_delivered', 'to_be_picked_up', 'completed', 'cancelled'];
 
-    body.innerHTML = rows.map(function (o) {
-      var placed = orderDateObj(o, false);
-      var itemsSummary = (o.items || []).map(function (it) { return escapeHtml(it.quantity) + '\u00d7 ' + escapeHtml(it.name); }).join(', ');
-      var next = nextStageKey(o);
-      var actions = '';
-      if (o.status !== 'completed' && o.status !== 'cancelled') {
-        actions = '<div class="stage-actions">';
-        if (next) actions += '<button type="button" class="tiny-button" data-advance="' + o.id + '">Mark as: ' + stageLabel(next, o) + '</button>';
-        actions += '<button type="button" class="tiny-button" data-cancel="' + o.id + '">Cancel</button></div>';
-      }
-      return (
-        '<tr>' +
-          '<td><strong>' + escapeHtml(o.customerName || 'Guest') + '</strong><div class="order-items">#' + escapeHtml(o.orderNumber || o.id) + ' \u2022 ' + escapeHtml(o.customerContact || '') + '</div></td>' +
-          '<td><div class="order-items">' + itemsSummary + '</div></td>' +
-          '<td>₱' + Number(o.total || 0).toFixed(2) + '</td>' +
-          '<td>' + (o.fulfillment === 'delivery'
-            ? '<strong>Delivery</strong><br /><span class="prod-sub">' + escapeHtml(o.deliveryAddress || '\u2014') + (o.deliveryNotes ? '<br />' + escapeHtml(o.deliveryNotes) : '') + '</span>'
-            : '<strong>Pickup</strong><br /><span class="prod-sub">' + escapeHtml(o.pickupDate || '\u2014') + ' ' + escapeHtml(o.pickupTime || '') + '</span>') + '</td>' +
-          '<td>' + stageTrackHTML(o) + '</td>' +
-          '<td>' + (placed ? placed.toLocaleDateString() : '\u2014') + '</td>' +
-          '<td>' + actions + '</td>' +
-        '</tr>'
-      );
-    }).join('');
-
-    body.querySelectorAll('[data-advance]').forEach(function (b) { b.addEventListener('click', function () { advanceOrder(b.getAttribute('data-advance')); }); });
-    body.querySelectorAll('[data-cancel]').forEach(function (b) { b.addEventListener('click', function () { cancelOrder(b.getAttribute('data-cancel')); }); });
+  function orderRowHTML(o) {
+    var placed = orderDateObj(o, false);
+    var itemsSummary = (o.items || []).map(function (it) { return escapeHtml(it.quantity) + '\u00d7 ' + escapeHtml(it.name); }).join(', ');
+    var next = nextStageKey(o);
+    var actions = '';
+    if (o.status !== 'completed' && o.status !== 'cancelled') {
+      actions = '<div class="stage-actions">';
+      if (next) actions += '<button type="button" class="tiny-button" data-advance="' + o.id + '">Mark as: ' + stageLabel(next, o) + '</button>';
+      actions += '<button type="button" class="tiny-button" data-cancel="' + o.id + '">Cancel</button></div>';
+    }
+    return (
+      '<tr>' +
+        '<td><strong>' + escapeHtml(o.customerName || 'Guest') + '</strong> <span class="fulfillment-chip fulfillment-chip-' + (o.fulfillment === 'delivery' ? 'delivery' : 'pickup') + '">' + (o.fulfillment === 'delivery' ? 'Delivery' : 'Picked up') + '</span><div class="order-items">#' + escapeHtml(o.orderNumber || o.id) + ' \u2022 ' + escapeHtml(o.customerContact || '') + '</div></td>' +
+        '<td><div class="order-items">' + itemsSummary + '</div></td>' +
+        '<td>₱' + Number(o.total || 0).toFixed(2) + '</td>' +
+        '<td>' + (o.fulfillment === 'delivery'
+          ? '<strong>Delivery</strong><br /><span class="prod-sub">' + escapeHtml(o.deliveryAddress || '\u2014') + (o.deliveryNotes ? '<br />' + escapeHtml(o.deliveryNotes) : '') + '</span>'
+          : '<strong>Pickup</strong><br /><span class="prod-sub">' + escapeHtml(o.pickupDate || '\u2014') + ' ' + escapeHtml(o.pickupTime || '') + '</span>') + '</td>' +
+        '<td>' + stageTrackHTML(o) + '</td>' +
+        '<td>' + (placed ? placed.toLocaleDateString() : '\u2014') + '</td>' +
+        '<td>' + actions + '</td>' +
+      '</tr>'
+    );
   }
+
+  function renderOrders() {
+    ORDER_GROUPS.forEach(function (group) {
+      var rows = state.orders.filter(function (o) {
+        if (!orderMatchesFilter(o, group)) return false;
+        return state.ordersStatusFilter === 'all' || o.status === state.ordersStatusFilter;
+      });
+      var body = document.getElementById('orders-body-' + group);
+      var empty = document.getElementById('orders-empty-' + group);
+      var count = document.getElementById('orders-count-' + group);
+      if (count) count.textContent = rows.length;
+      if (empty) empty.classList.toggle('hidden', rows.length > 0);
+      if (body) body.innerHTML = rows.map(orderRowHTML).join('');
+    });
+  }
+
+  // Event delegation on the whole Orders panel, so buttons work no matter
+  // which group's table they were rendered into (and survive re-renders).
+  document.getElementById('panel-orders').addEventListener('click', function (e) {
+    var advanceBtn = e.target.closest('[data-advance]');
+    if (advanceBtn) { advanceOrder(advanceBtn.getAttribute('data-advance')); return; }
+    var cancelBtn = e.target.closest('[data-cancel]');
+    if (cancelBtn) { cancelOrder(cancelBtn.getAttribute('data-cancel')); return; }
+  });
 
   // Pushes an order to the next stage in its shipment track (like tapping
   // "Preparing \u2192 Out for delivery \u2192 Delivered" on a courier app).
-  // The customer's storefront listens for this same Firestore doc, so the
-  // moment staff tap the button, the shopper's tracker + notification fire.
+  // The customer's storefront listens for this same order (via its id), so
+  // the moment staff tap the button, the shopper's tracker + notification
+  // fire. Once the order reaches "completed" it also moves out of its
+  // "to be delivered" / "to be picked up" subcollection and into the
+  // top-level "orders" collection, since it's no longer active.
   function advanceOrder(id) {
     var order = state.orders.filter(function (o) { return o.id === id; })[0];
     if (!order) return;
@@ -1284,7 +1416,22 @@ var REQUIRE_OTP = false;
     var update = { status: next };
     var tsField = STAGE_TIMESTAMP_FIELD[next];
     if (tsField) update[tsField] = firebase.firestore.FieldValue.serverTimestamp();
-    firebaseDb.collection('orders').doc(id).update(update).then(function () {
+
+    var sourceRef = orderDocRef(order);
+    if (next === 'completed' && order._source !== 'orders') {
+      var finalData = Object.assign({}, order, update);
+      delete finalData.id;
+      delete finalData._source;
+      var batch = firebaseDb.batch();
+      batch.set(firebaseDb.collection('orders').doc(id), finalData);
+      batch.delete(sourceRef);
+      batch.commit().then(function () {
+        showToast('Order marked: ' + stageLabel(next, order) + '.');
+      }).catch(function (err) { console.error(err); showToast('Couldn\u2019t update the order.'); });
+      return;
+    }
+
+    sourceRef.update(update).then(function () {
       showToast('Order marked: ' + stageLabel(next, order) + '.');
     }).catch(function (err) { console.error(err); showToast('Couldn\u2019t update the order.'); });
   }
@@ -1294,7 +1441,18 @@ var REQUIRE_OTP = false;
     if (!order) return;
     if (!confirm('Cancel this reservation and return the items to stock?')) return;
     var batch = firebaseDb.batch();
-    batch.update(firebaseDb.collection('orders').doc(id), { status: 'cancelled' });
+    var sourceRef = orderDocRef(order);
+    if (order._source !== 'orders') {
+      // Cancelled orders also leave the "to be ___" subcollections and
+      // land in the main orders collection, same as completed ones.
+      var finalData = Object.assign({}, order, { status: 'cancelled' });
+      delete finalData.id;
+      delete finalData._source;
+      batch.set(firebaseDb.collection('orders').doc(id), finalData);
+      batch.delete(sourceRef);
+    } else {
+      batch.update(sourceRef, { status: 'cancelled' });
+    }
     (order.items || []).forEach(function (item) {
       batch.update(firebaseDb.collection('products').doc(item.productId), {
         stock: firebase.firestore.FieldValue.increment(item.quantity)
@@ -1304,7 +1462,67 @@ var REQUIRE_OTP = false;
       .catch(function (err) { console.error(err); showToast('Couldn\u2019t cancel the order.'); });
   }
 
-  document.getElementById('orders-status-filter').addEventListener('change', function (e) { state.ordersStatusFilter = e.target.value; renderOrders(); });
+  document.getElementById('orders-status-filter').addEventListener('change', function (e) {
+    state.ordersStatusFilter = e.target.value;
+    renderOrders();
+  });
+
+  // ---------------- STAFF ----------------
+  function renderStaff() {
+    var body = document.getElementById('staff-body');
+    var list = (state.staff || []).slice().sort(function (a, b) { return a.id < b.id ? -1 : 1; });
+    document.getElementById('staff-empty').classList.toggle('hidden', list.length > 0);
+    body.innerHTML = list.map(function (s) {
+      var added = s.addedAt && s.addedAt.toDate ? s.addedAt.toDate().toLocaleDateString() : '\u2014';
+      return (
+        '<tr>' +
+          '<td>' + escapeHtml(s.id) + (s.id === (state.staffEmail || '').toLowerCase() ? ' <span class="fulfillment-chip fulfillment-chip-pickup">You</span>' : '') + '</td>' +
+          '<td>' + added + '</td>' +
+          '<td><button type="button" class="tiny-button" data-remove-staff="' + escapeHtml(s.id) + '">Remove</button></td>' +
+        '</tr>'
+      );
+    }).join('');
+    body.querySelectorAll('[data-remove-staff]').forEach(function (b) {
+      b.addEventListener('click', function () { removeStaff(b.getAttribute('data-remove-staff')); });
+    });
+  }
+
+  function showStaffMessage(text, kind) {
+    var el = document.getElementById('staff-add-message');
+    el.textContent = text;
+    el.classList.remove('hidden', 'good', 'bad');
+    if (kind) el.classList.add(kind);
+  }
+
+  document.getElementById('staff-add-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var input = document.getElementById('staff-add-email');
+    var email = input.value.trim().toLowerCase();
+    if (!email) return;
+    firebaseDb.collection('staff').doc(email).set({ addedAt: firebase.firestore.FieldValue.serverTimestamp(), addedBy: state.staffEmail || null }).then(function () {
+      showStaffMessage('Added ' + email + '. They can now sign in with that email.', 'good');
+      input.value = '';
+    }).catch(function (err) {
+      console.error('MimiCart admin: add staff failed', err);
+      showStaffMessage('Couldn\u2019t add that email. (' + ((err && err.message) || 'Please try again.') + ')', 'bad');
+    });
+  });
+
+  function removeStaff(email) {
+    if (email === (state.staffEmail || '').toLowerCase()) {
+      if (!confirm('This removes your own staff access and signs you out. Continue?')) return;
+    } else if (!confirm('Remove ' + email + ' from the staff list?')) {
+      return;
+    }
+    firebaseDb.collection('staff').doc(email).delete().then(function () {
+      showToast('Removed ' + email + ' from staff.');
+      if (email === (state.staffEmail || '').toLowerCase()) { firebaseAuth.signOut(); }
+    }).catch(function (err) {
+      console.error('MimiCart admin: remove staff failed', err);
+      showToast('Couldn\u2019t remove that staff account.');
+    });
+  }
+
 
   // ---------------- REVENUE ----------------
   function dateKey(d) { return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
