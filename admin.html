@@ -611,7 +611,7 @@ var REQUIRE_OTP = false;
     inventoryStockFilter: 'all',
     ordersStatusFilter: 'all'
   };
-  var unsubscribeProducts = null, unsubscribeOrdersDelivered = null, unsubscribeOrdersPickedUp = null, unsubscribeOrdersCompleted = null;
+  var unsubscribeProducts = null, unsubscribeOrders = null;
 
   function showToast(message) {
     var el = document.createElement('div');
@@ -1040,10 +1040,7 @@ var REQUIRE_OTP = false;
   if (firebaseConfigured) {
     firebaseAuth.onAuthStateChanged(function (user) {
       if (unsubscribeProducts) { unsubscribeProducts(); unsubscribeProducts = null; }
-      if (unsubscribeOrdersDelivered) { unsubscribeOrdersDelivered(); unsubscribeOrdersDelivered = null; }
-      if (unsubscribeOrdersPickedUp) { unsubscribeOrdersPickedUp(); unsubscribeOrdersPickedUp = null; }
-      if (unsubscribeOrdersCompleted) { unsubscribeOrdersCompleted(); unsubscribeOrdersCompleted = null; }
-      orderCaches = { tobedelivered: {}, tobepickedup: {}, orders: {} };
+      if (unsubscribeOrders) { unsubscribeOrders(); unsubscribeOrders = null; }
       if (!user) { showLogin(); return; }
       // Staff allow-list check: a doc at staff/{lowercased email} must exist.
       var staffDocId = user.email.toLowerCase();
@@ -1077,44 +1074,15 @@ var REQUIRE_OTP = false;
     });
   });
 
-  // ---------------- ORDERS: Firestore layout ----------------
-  // orders/active                      anchor doc (just holds the two subcollections below)
-  // orders/active/tobedelivered/{id}   delivery orders not yet delivered
-  // orders/active/tobepickedup/{id}    pickup orders not yet picked up
-  // orders/{id}                        orders once delivered, picked up, or cancelled
-  function ordersActiveDoc() { return firebaseDb.collection('orders').doc('active'); }
-  function tobedeliveredCol() { return ordersActiveDoc().collection('tobedelivered'); }
-  function tobepickedupCol() { return ordersActiveDoc().collection('tobepickedup'); }
-  function orderDocRef(order) {
-    if (order._source === 'tobedelivered') return tobedeliveredCol().doc(order.id);
-    if (order._source === 'tobepickedup') return tobepickedupCol().doc(order.id);
-    return firebaseDb.collection('orders').doc(order.id);
-  }
-
   // ---------------- DATA SUBSCRIPTIONS ----------------
-  var orderCaches = { tobedelivered: {}, tobepickedup: {}, orders: {} };
-  function recombineOrders() {
-    var combined = [];
-    ['tobedelivered', 'tobepickedup', 'orders'].forEach(function (source) {
-      Object.keys(orderCaches[source]).forEach(function (id) { combined.push(orderCaches[source][id]); });
-    });
-    combined.sort(function (a, b) {
-      var ad = a.createdAt && a.createdAt.toDate ? a.createdAt.toDate().getTime() : Number(a.createdAt || 0);
-      var bd = b.createdAt && b.createdAt.toDate ? b.createdAt.toDate().getTime() : Number(b.createdAt || 0);
-      return bd - ad;
-    });
-    state.orders = combined;
-    renderRevenue();
-    renderOrders();
-  }
-  function watchOrderSource(source, query) {
-    return query.onSnapshot(function (snap) {
-      var map = {};
-      snap.docs.forEach(function (d) { map[d.id] = Object.assign({ id: d.id, _source: source }, d.data()); });
-      orderCaches[source] = map;
-      recombineOrders();
-    }, function (err) { console.error('MimiCart admin: ' + source + ' orders listener failed', err); });
-  }
+  // Every order lives permanently in the single top-level "orders"
+  // collection — see the matching note in index.html. The "to be
+  // delivered" / "to be picked up" / "completed" / "cancelled" sections
+  // below are just client-side filters over this one collection
+  // (renderOrders()), so nothing ever needs to be moved between
+  // Firestore locations, and there's only one collection's worth of
+  // Security Rules to keep in sync.
+  function orderDocRef(order) { return firebaseDb.collection('orders').doc(order.id); }
 
   function subscribeData() {
     unsubscribeProducts = firebaseDb.collection('products').onSnapshot(function (snap) {
@@ -1125,12 +1093,12 @@ var REQUIRE_OTP = false;
     }, function (err) { console.error('MimiCart admin: products listener failed', err); });
 
     // Newest orders first, so staff see the latest activity at the top
-    // instead of having to scroll past old ones. Active orders live in
-    // the two "to be ___" subcollections; delivered/picked-up/cancelled
-    // orders land back in the top-level "orders" collection.
-    unsubscribeOrdersDelivered = watchOrderSource('tobedelivered', tobedeliveredCol().orderBy('createdAt', 'desc').limit(500));
-    unsubscribeOrdersPickedUp = watchOrderSource('tobepickedup', tobepickedupCol().orderBy('createdAt', 'desc').limit(500));
-    unsubscribeOrdersCompleted = watchOrderSource('orders', firebaseDb.collection('orders').orderBy('createdAt', 'desc').limit(500));
+    // instead of having to scroll past old ones.
+    unsubscribeOrders = firebaseDb.collection('orders').orderBy('createdAt', 'desc').limit(500).onSnapshot(function (snap) {
+      state.orders = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
+      renderRevenue();
+      renderOrders();
+    }, function (err) { console.error('MimiCart admin: orders listener failed', err); });
   }
 
   // ---------------- SEEDING ----------------
@@ -1405,9 +1373,9 @@ var REQUIRE_OTP = false;
   // "Preparing \u2192 Out for delivery \u2192 Delivered" on a courier app).
   // The customer's storefront listens for this same order (via its id), so
   // the moment staff tap the button, the shopper's tracker + notification
-  // fire. Once the order reaches "completed" it also moves out of its
-  // "to be delivered" / "to be picked up" subcollection and into the
-  // top-level "orders" collection, since it's no longer active.
+  // fire. The order stays in the same "orders" doc the whole time — only
+  // its status field changes, so it just re-sorts into the "Completed"
+  // group on screen.
   function advanceOrder(id) {
     var order = state.orders.filter(function (o) { return o.id === id; })[0];
     if (!order) return;
@@ -1417,23 +1385,9 @@ var REQUIRE_OTP = false;
     var tsField = STAGE_TIMESTAMP_FIELD[next];
     if (tsField) update[tsField] = firebase.firestore.FieldValue.serverTimestamp();
 
-    var sourceRef = orderDocRef(order);
-    if (next === 'completed' && order._source !== 'orders') {
-      var finalData = Object.assign({}, order, update);
-      delete finalData.id;
-      delete finalData._source;
-      var batch = firebaseDb.batch();
-      batch.set(firebaseDb.collection('orders').doc(id), finalData);
-      batch.delete(sourceRef);
-      batch.commit().then(function () {
-        showToast('Order marked: ' + stageLabel(next, order) + '.');
-      }).catch(function (err) { console.error(err); showToast('Couldn\u2019t update the order.'); });
-      return;
-    }
-
-    sourceRef.update(update).then(function () {
+    orderDocRef(order).update(update).then(function () {
       showToast('Order marked: ' + stageLabel(next, order) + '.');
-    }).catch(function (err) { console.error(err); showToast('Couldn\u2019t update the order.'); });
+    }).catch(function (err) { console.error(err); showToast('Couldn\u2019t update the order. (' + ((err && err.message) || 'unknown error') + ')'); });
   }
 
   function cancelOrder(id) {
@@ -1441,26 +1395,16 @@ var REQUIRE_OTP = false;
     if (!order) return;
     if (!confirm('Cancel this reservation and return the items to stock?')) return;
     var batch = firebaseDb.batch();
-    var sourceRef = orderDocRef(order);
-    if (order._source !== 'orders') {
-      // Cancelled orders also leave the "to be ___" subcollections and
-      // land in the main orders collection, same as completed ones.
-      var finalData = Object.assign({}, order, { status: 'cancelled' });
-      delete finalData.id;
-      delete finalData._source;
-      batch.set(firebaseDb.collection('orders').doc(id), finalData);
-      batch.delete(sourceRef);
-    } else {
-      batch.update(sourceRef, { status: 'cancelled' });
-    }
+    batch.update(orderDocRef(order), { status: 'cancelled' });
     (order.items || []).forEach(function (item) {
       batch.update(firebaseDb.collection('products').doc(item.productId), {
         stock: firebase.firestore.FieldValue.increment(item.quantity)
       });
     });
     batch.commit().then(function () { showToast('Order cancelled and stock restored.'); })
-      .catch(function (err) { console.error(err); showToast('Couldn\u2019t cancel the order.'); });
+      .catch(function (err) { console.error(err); showToast('Couldn\u2019t cancel the order. (' + ((err && err.message) || 'unknown error') + ')'); });
   }
+
 
   document.getElementById('orders-status-filter').addEventListener('change', function (e) {
     state.ordersStatusFilter = e.target.value;
