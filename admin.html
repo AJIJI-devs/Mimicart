@@ -611,7 +611,7 @@ var REQUIRE_OTP = false;
     inventoryStockFilter: 'all',
     ordersStatusFilter: 'all'
   };
-  var unsubscribeProducts = null, unsubscribeOrders = null;
+  var unsubscribeProducts = null, unsubscribeOrders = [];
 
   function showToast(message) {
     var el = document.createElement('div');
@@ -1040,7 +1040,8 @@ var REQUIRE_OTP = false;
   if (firebaseConfigured) {
     firebaseAuth.onAuthStateChanged(function (user) {
       if (unsubscribeProducts) { unsubscribeProducts(); unsubscribeProducts = null; }
-      if (unsubscribeOrders) { unsubscribeOrders(); unsubscribeOrders = null; }
+      unsubscribeOrders.forEach(function (fn) { if (fn) fn(); });
+      unsubscribeOrders = [];
       if (!user) { showLogin(); return; }
       // Staff allow-list check: a doc at staff/{lowercased email} must exist.
       var staffDocId = user.email.toLowerCase();
@@ -1075,14 +1076,29 @@ var REQUIRE_OTP = false;
   });
 
   // ---------------- DATA SUBSCRIPTIONS ----------------
-  // Every order lives permanently in the single top-level "orders"
-  // collection — see the matching note in index.html. The "to be
-  // delivered" / "to be picked up" / "completed" / "cancelled" sections
-  // below are just client-side filters over this one collection
-  // (renderOrders()), so nothing ever needs to be moved between
-  // Firestore locations, and there's only one collection's worth of
-  // Security Rules to keep in sync.
-  function orderDocRef(order) { return firebaseDb.collection('orders').doc(order.id); }
+  // Orders now live in FOUR real top-level Firestore collections, one per
+  // stage: "to_be_picked_up", "to_be_delivered", "completed", "cancelled"
+  // (plus "products" and "staff", unchanged). A doc's collection IS its
+  // status group now — there's no more client-side filtering of one big
+  // "orders" collection. When staff finish an order (or cancel it), the
+  // doc is physically MOVED: written into the "completed" / "cancelled"
+  // collection with the same document id, then deleted from wherever it
+  // came from (see moveOrderToCollection() below). Each order kept in
+  // state.orders carries a client-only `_collection` field recording
+  // which of the four collections it currently lives in, so the rest of
+  // the dashboard knows where to read/write/delete it. Firestore
+  // Security Rules need matching rules for all four collections now
+  // (instead of just one "orders" path).
+  var ORDER_COLLECTIONS = ['to_be_picked_up', 'to_be_delivered', 'completed', 'cancelled'];
+  var ordersByCollection = { to_be_picked_up: [], to_be_delivered: [], completed: [], cancelled: [] };
+
+  function orderDocRef(order) { return firebaseDb.collection(order._collection).doc(order.id); }
+
+  function mergeOrdersAndRender() {
+    state.orders = ORDER_COLLECTIONS.reduce(function (all, group) { return all.concat(ordersByCollection[group]); }, []);
+    renderRevenue();
+    renderOrders();
+  }
 
   function subscribeData() {
     unsubscribeProducts = firebaseDb.collection('products').onSnapshot(function (snap) {
@@ -1092,13 +1108,15 @@ var REQUIRE_OTP = false;
       renderInventory();
     }, function (err) { console.error('MimiCart admin: products listener failed', err); });
 
-    // Newest orders first, so staff see the latest activity at the top
-    // instead of having to scroll past old ones.
-    unsubscribeOrders = firebaseDb.collection('orders').orderBy('createdAt', 'desc').limit(500).onSnapshot(function (snap) {
-      state.orders = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
-      renderRevenue();
-      renderOrders();
-    }, function (err) { console.error('MimiCart admin: orders listener failed', err); });
+    // One listener per order collection. Newest first within each, so
+    // staff see the latest activity at the top instead of having to
+    // scroll past old ones.
+    unsubscribeOrders = ORDER_COLLECTIONS.map(function (group) {
+      return firebaseDb.collection(group).orderBy('createdAt', 'desc').limit(500).onSnapshot(function (snap) {
+        ordersByCollection[group] = snap.docs.map(function (d) { return Object.assign({ id: d.id, _collection: group }, d.data()); });
+        mergeOrdersAndRender();
+      }, function (err) { console.error('MimiCart admin: "' + group + '" listener failed', err); });
+    });
   }
 
   // ---------------- SEEDING ----------------
@@ -1305,13 +1323,13 @@ var REQUIRE_OTP = false;
     switch (filter) {
       case 'all': return true;
       // "Picked up" / "Delivered" = already completed, split by fulfillment.
-      case 'picked_up': return o.fulfillment !== 'delivery' && o.status === 'completed';
-      case 'delivered': return o.fulfillment === 'delivery' && o.status === 'completed';
-      // "To be picked up" / "To be delivered" = still in progress, split by fulfillment.
-      case 'to_be_picked_up': return o.fulfillment !== 'delivery' && o.status !== 'completed' && o.status !== 'cancelled';
-      case 'to_be_delivered': return o.fulfillment === 'delivery' && o.status !== 'completed' && o.status !== 'cancelled';
-      case 'completed': return o.status === 'completed';
-      case 'cancelled': return o.status === 'cancelled';
+      case 'picked_up': return o._collection === 'completed' && o.fulfillment !== 'delivery';
+      case 'delivered': return o._collection === 'completed' && o.fulfillment === 'delivery';
+      // The four groups below now map straight onto real collections.
+      case 'to_be_picked_up': return o._collection === 'to_be_picked_up';
+      case 'to_be_delivered': return o._collection === 'to_be_delivered';
+      case 'completed': return o._collection === 'completed';
+      case 'cancelled': return o._collection === 'cancelled';
       default: return o.status === filter;
     }
   }
@@ -1325,10 +1343,10 @@ var REQUIRE_OTP = false;
     var itemsSummary = (o.items || []).map(function (it) { return escapeHtml(it.quantity) + '\u00d7 ' + escapeHtml(it.name); }).join(', ');
     var next = nextStageKey(o);
     var actions = '';
-    if (o.status !== 'completed' && o.status !== 'cancelled') {
+    if (o._collection !== 'completed' && o._collection !== 'cancelled') {
       actions = '<div class="stage-actions">';
-      if (next) actions += '<button type="button" class="tiny-button" data-advance="' + o.id + '">Mark as: ' + stageLabel(next, o) + '</button>';
-      actions += '<button type="button" class="tiny-button" data-cancel="' + o.id + '">Cancel</button></div>';
+      if (next) actions += '<button type="button" class="tiny-button" data-advance="' + escapeHtml(o.id) + '">Mark as: ' + stageLabel(next, o) + '</button>';
+      actions += '<button type="button" class="tiny-button" data-cancel="' + escapeHtml(o.id) + '">Cancel</button></div>';
     }
     return (
       '<tr>' +
@@ -1369,23 +1387,65 @@ var REQUIRE_OTP = false;
     if (cancelBtn) { cancelOrder(cancelBtn.getAttribute('data-cancel')); return; }
   });
 
+  // Moves an order doc from its current collection into `targetCollection`,
+  // then deletes it from the old collection — all inside one atomic batch
+  // (plus whatever extra writes `extraOps` adds, e.g. restoring stock on
+  // cancel). This is the one place that physically relocates an order
+  // between the "to_be_picked_up" / "to_be_delivered" / "completed" /
+  // "cancelled" collections. `extraFields` (e.g. { status: 'completed',
+  // completedAt }) is merged into the doc as it's re-written into its new
+  // home.
+  //
+  // Order ids are now readable names like "Guest - pick up", so the same
+  // id can easily recur across unrelated orders over time (a new "Guest -
+  // pick up" order is free to reuse that id once the earlier one moves
+  // out of to_be_picked_up). If THAT id is already sitting in the target
+  // collection (e.g. an earlier "Guest - pick up" that's already
+  // completed), our Security Rules only allow CREATE in completed/
+  // cancelled, never overwrite — so the attempt comes back
+  // "permission-denied" and we retry with "(2)", "(3)", etc. instead of
+  // silently clobbering the earlier order's record.
+  function moveOrderToCollection(order, targetCollection, extraFields, extraOps, attempt) {
+    attempt = attempt || 1;
+    var candidateId = attempt === 1 ? order.id : order.id + ' (' + attempt + ')';
+    var data = Object.assign({}, order, extraFields || {});
+    delete data.id;
+    delete data._collection;
+    var batch = firebaseDb.batch();
+    batch.set(firebaseDb.collection(targetCollection).doc(candidateId), data);
+    batch.delete(orderDocRef(order));
+    if (extraOps) extraOps(batch);
+    return batch.commit().catch(function (err) {
+      if (err && err.code === 'permission-denied' && attempt < 8) {
+        return moveOrderToCollection(order, targetCollection, extraFields, extraOps, attempt + 1);
+      }
+      throw err;
+    });
+  }
+
   // Pushes an order to the next stage in its shipment track (like tapping
   // "Preparing \u2192 Out for delivery \u2192 Delivered" on a courier app).
   // The customer's storefront listens for this same order (via its id), so
   // the moment staff tap the button, the shopper's tracker + notification
-  // fire. The order stays in the same "orders" doc the whole time — only
-  // its status field changes, so it just re-sorts into the "Completed"
-  // group on screen.
+  // fire. Intermediate stages (processing / ready / out_for_delivery) just
+  // update the status field in place. But the final stage — "completed" —
+  // physically MOVES the doc out of "to_be_picked_up" / "to_be_delivered"
+  // and into the real "completed" collection (deleting it from the old
+  // one), so it re-sorts into the "Completed" group on screen.
   function advanceOrder(id) {
     var order = state.orders.filter(function (o) { return o.id === id; })[0];
     if (!order) return;
     var next = nextStageKey(order);
     if (!next) return;
-    var update = { status: next };
     var tsField = STAGE_TIMESTAMP_FIELD[next];
-    if (tsField) update[tsField] = firebase.firestore.FieldValue.serverTimestamp();
+    var extraFields = { status: next };
+    if (tsField) extraFields[tsField] = firebase.firestore.FieldValue.serverTimestamp();
 
-    orderDocRef(order).update(update).then(function () {
+    var promise = next === 'completed'
+      ? moveOrderToCollection(order, 'completed', extraFields)
+      : orderDocRef(order).update(extraFields);
+
+    promise.then(function () {
       showToast('Order marked: ' + stageLabel(next, order) + '.');
     }).catch(function (err) { console.error(err); showToast('Couldn\u2019t update the order. (' + ((err && err.message) || 'unknown error') + ')'); });
   }
@@ -1394,14 +1454,18 @@ var REQUIRE_OTP = false;
     var order = state.orders.filter(function (o) { return o.id === id; })[0];
     if (!order) return;
     if (!confirm('Cancel this reservation and return the items to stock?')) return;
-    var batch = firebaseDb.batch();
-    batch.update(orderDocRef(order), { status: 'cancelled' });
-    (order.items || []).forEach(function (item) {
-      batch.update(firebaseDb.collection('products').doc(item.productId), {
-        stock: firebase.firestore.FieldValue.increment(item.quantity)
+    // Physically move the doc into the real "cancelled" collection,
+    // restoring stock in the same atomic batch.
+    moveOrderToCollection(order, 'cancelled', {
+      status: 'cancelled',
+      cancelledAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, function (batch) {
+      (order.items || []).forEach(function (item) {
+        batch.update(firebaseDb.collection('products').doc(item.productId), {
+          stock: firebase.firestore.FieldValue.increment(item.quantity)
+        });
       });
-    });
-    batch.commit().then(function () { showToast('Order cancelled and stock restored.'); })
+    }).then(function () { showToast('Order cancelled and stock restored.'); })
       .catch(function (err) { console.error(err); showToast('Couldn\u2019t cancel the order. (' + ((err && err.message) || 'unknown error') + ')'); });
   }
 
