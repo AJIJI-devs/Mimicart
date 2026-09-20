@@ -163,13 +163,21 @@
   /* ---- settings tab: security summary + login logs ---- */
   .security-summary { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
   .security-summary li { padding: 11px 13px; border-radius: 10px; background: hsl(var(--muted)); font-size: 12px; line-height: 1.5; }
-  .login-log-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; max-height: 340px; overflow-y: auto; }
-  .login-log-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 10px; background: hsl(var(--muted)); font-size: 12px; }
+  .login-log-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; max-height: 460px; overflow-y: auto; }
+  .login-log-row { display: flex; flex-direction: column; gap: 3px; padding: 10px 12px; border-radius: 10px; background: hsl(var(--muted)); font-size: 12px; }
+  .login-log-row .log-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
   .login-log-row .log-status { font-weight: 700; }
-  .login-log-row .log-meta { color: hsl(var(--muted-foreground)); font-size: 11px; text-align: right; }
+  .login-log-row .log-time { color: hsl(var(--muted-foreground)); font-size: 11px; white-space: nowrap; }
+  .login-log-row .log-sub { color: hsl(var(--muted-foreground)); font-size: 11px; line-height: 1.5; word-break: break-word; }
+  .login-log-row .log-sub strong { color: hsl(var(--foreground)); }
+  .login-log-row .log-badge { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: hsl(var(--secondary) / .15); color: hsl(var(--secondary)); font-size: 10px; font-weight: 700; vertical-align: 1px; }
   .login-log-row.log-success .log-status { color: hsl(var(--secondary)); }
   .login-log-row.log-failed .log-status { color: hsl(var(--primary)); }
   .login-log-row.log-locked .log-status { color: hsl(28 85% 45%); }
+  .log-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 4px; }
+  .log-controls { display: flex; gap: 6px; flex-wrap: wrap; }
+  .log-controls .secondary-button { min-height: 32px; padding: 0 14px; }
+  .log-controls .secondary-button.is-active { border-color: hsl(var(--primary)); color: hsl(var(--primary)); }
   /* ---- idle "are you still there?" prompt ---- */
   .idle-overlay { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 24px; background: hsl(348 25% 12% / .55); backdrop-filter: blur(3px); }
   .idle-dialog { width: min(380px, 100%); text-align: center; padding: 30px 28px; border-radius: 20px; background: hsl(var(--card)); border: 1px solid hsl(var(--border)); box-shadow: var(--shadow-card); }
@@ -227,7 +235,7 @@
     </form>
     <div id="login-message" class="notice-box hidden"></div>
 
-    <a class="back-to-shop" href="mimicart-storefront2.html">&larr; Back to the storefront</a>
+    <a class="back-to-shop" href="index.html">&larr; Back to the storefront</a>
   </div>
 </div>
 
@@ -276,7 +284,7 @@
         <button type="button" class="theme-button" data-theme-choice="winter">Winter</button>
         <button type="button" class="theme-button" data-theme-choice="comet-night">Comet Night</button>
       </div>
-      <a class="ghost-button focus-ring" href="mimicart-storefront2.html" target="_blank">View storefront</a>
+      <a class="ghost-button focus-ring" href="index.html" target="_blank">View storefront</a>
       <button class="secondary-button focus-ring" id="sign-out-button">Sign out</button>
     </div>
   </header>
@@ -319,6 +327,7 @@
         <option value="out">Out of stock</option>
       </select>
       <button type="button" class="secondary-button focus-ring" id="inventory-export-csv">⬇️ Export CSV</button>
+      <button type="button" class="secondary-button focus-ring" id="sync-prices-button">₱ Sync prices from catalog</button>
     </div>
     <div class="panel-block" style="overflow-x:auto;">
       <table class="data-table">
@@ -417,15 +426,25 @@
   <section class="tab-panel" id="panel-settings">
     <div class="panel-block">
       <h2 class="font-display">Sign-in security</h2>
-      <p class="panel-sub">Basic client-side protections active on this dashboard. See the setup notes at the bottom of this page for the real, server-side version of these.</p>
+      <p class="panel-sub">Enforced through Firestore, so these follow the account on every device — not just this browser.</p>
       <ul class="security-summary">
-        <li><strong>Login lockout:</strong> 5 failed password attempts locks that account out for 5 minutes on this device.</li>
-        <li><strong>Idle check:</strong> after 10 minutes of no activity, staff are asked to confirm they\u2019re still there or get signed out automatically.</li>
+        <li><strong>Login lockout:</strong> 5 wrong passwords locks that account for 10 minutes. The countdown is stored on the account, so refreshing, clearing browser data, using a private window or another device does not reset it.</li>
+        <li><strong>Login activity:</strong> every sign-in, failed attempt and lockout is recorded with its date, time, device, IP address and approximate location.</li>
+        <li><strong>Idle check:</strong> after 10 minutes of no activity, staff are asked to confirm they’re still there or get signed out automatically.</li>
       </ul>
     </div>
     <div class="panel-block">
-      <h2 class="font-display">Login activity</h2>
-      <p class="panel-sub">Recent sign-in attempts for <strong id="settings-log-email">this account</strong>, kept on this device.</p>
+      <div class="log-head">
+        <div>
+          <h2 class="font-display">Login activity</h2>
+          <p class="panel-sub" id="settings-log-sub">Recent sign-in activity from all devices.</p>
+        </div>
+        <div class="log-controls">
+          <button type="button" class="secondary-button is-active" id="log-view-mine">My account</button>
+          <button type="button" class="secondary-button" id="log-view-all">All accounts</button>
+          <button type="button" class="secondary-button" id="log-refresh">Refresh</button>
+        </div>
+      </div>
       <ul class="login-log-list" id="settings-log-list"></ul>
     </div>
   </section>
@@ -545,60 +564,60 @@ var REQUIRE_OTP = false;
   var PATTERNS = ['waves', 'dots', 'checks', 'rays'];
   var RAW_PRODUCTS = [
     // Drinks
-    ['soju', 'Soju', '소주', 'Drinks', 5.5, 14, 'Shop favorite', 'Classically clean and crisp — Korea\u2019s most iconic bottle, ready to pour.', 'clean + smooth', 'Images/SOJU.png'],
-    ['pororo', 'Pororo Juice', 'kids\u2019 juice box', 'Drinks', 2.25, 20, null, 'A cheerful juice box with the little blue penguin along for the ride.', 'fruity + fun', 'Images/PORORO.png'],
-    ['sparkling-lemonade', 'Sparkling Lemonade Juice', 'citrus fizz', 'Drinks', 3.25, 12, null, 'Bright, fizzy lemonade with a fruity citrus kick.', 'citrus fizz', 'Images/SPARKLING LEMONADE JUICE.png'],
-    ['pink-peachade', 'Pink Peachade', 'peach soda', 'Drinks', 2.95, 15, null, 'Soft peach soda with a blush-pink sparkle.', 'peachy fizz', 'Images/PINK PEACHADE.png'],
-    ['banana-milk', 'Banana Milk', '바나나맛 우유', 'Drinks', 3.25, 10, 'Nostalgia', 'The iconic little bottle: mellow banana, creamy sweetness, no fuss.', 'soft + creamy', 'Images/BANANA MILK.png'],
-    ['yakult-big', 'Yakult Big', '야쿠르트', 'Drinks', 4.5, 9, 'Family size', 'A jumbo-sized version of the tangy probiotic sipper everyone loves.', 'tangy + sweet', 'Images/YAKULT BIG.png'],
-    ['strawberry-milk', 'Strawberry Milk', '딸기우유', 'Drinks', 2.75, 16, null, 'Pastel-pink milk with real strawberry sweetness.', 'berry + creamy', 'Images/STRAWBERRY MILK.png'],
-    ['oatside', 'Oatside', 'oat milk', 'Drinks', 3.95, 11, null, 'Creamy oat milk, dairy-free and smooth for any time of day.', 'smooth + dairy-free', 'Images/OATSIDE.png'],
-    ['welchs', 'Welch\u2019s', 'grape juice', 'Drinks', 2.5, 18, null, 'Grape juice that tastes like purple candy, in the best way.', 'grape candy', 'Images/WELCHS.png'],
-    ['caffebene', 'Caffe Bene', 'iced caf\u00e9 latte', 'Drinks', 3.75, 8, 'Chill it', 'Korean caf\u00e9-style iced coffee, sweet and smooth.', 'sweet + roasted', 'Images/CAFFEBENE.png'],
+    ['soju', 'Soju', '소주', 'Drinks', 85, 14, 'Shop favorite', 'Classically clean and crisp — Korea\u2019s most iconic bottle, ready to pour.', 'clean + smooth', 'Images/SOJU.png'],
+    ['pororo', 'Pororo Juice', 'kids\u2019 juice box', 'Drinks', 35, 20, null, 'A cheerful juice box with the little blue penguin along for the ride.', 'fruity + fun', 'Images/PORORO.png'],
+    ['sparkling-lemonade', 'Sparkling Lemonade Juice', 'citrus fizz', 'Drinks', 50, 12, null, 'Bright, fizzy lemonade with a fruity citrus kick.', 'citrus fizz', 'Images/SPARKLING LEMONADE JUICE.png'],
+    ['pink-peachade', 'Pink Peachade', 'peach soda', 'Drinks', 46, 15, null, 'Soft peach soda with a blush-pink sparkle.', 'peachy fizz', 'Images/PINK PEACHADE.png'],
+    ['banana-milk', 'Banana Milk', '바나나맛 우유', 'Drinks', 50, 10, 'Nostalgia', 'The iconic little bottle: mellow banana, creamy sweetness, no fuss.', 'soft + creamy', 'Images/BANANA MILK.png'],
+    ['yakult-big', 'Yakult Big', '야쿠르트', 'Drinks', 70, 9, 'Family size', 'A jumbo-sized version of the tangy probiotic sipper everyone loves.', 'tangy + sweet', 'Images/YAKULT BIG.png'],
+    ['strawberry-milk', 'Strawberry Milk', '딸기우유', 'Drinks', 43, 16, null, 'Pastel-pink milk with real strawberry sweetness.', 'berry + creamy', 'Images/STRAWBERRY MILK.png'],
+    ['oatside', 'Oatside', 'oat milk', 'Drinks', 61, 11, null, 'Creamy oat milk, dairy-free and smooth for any time of day.', 'smooth + dairy-free', 'Images/OATSIDE.png'],
+    ['welchs', 'Welch\u2019s', 'grape juice', 'Drinks', 39, 18, null, 'Grape juice that tastes like purple candy, in the best way.', 'grape candy', 'Images/WELCHS.png'],
+    ['caffebene', 'Caffe Bene', 'iced caf\u00e9 latte', 'Drinks', 58, 8, 'Chill it', 'Korean caf\u00e9-style iced coffee, sweet and smooth.', 'sweet + roasted', 'Images/CAFFEBENE.png'],
     // Frozen
-    ['sausage', 'Sausage', 'grill-ready', 'Frozen', 6.5, 10, null, 'Juicy grilled sausages, ready to pan-fry in minutes.', 'smoky + savory', 'Images/SAUSAGE.png'],
-    ['sausage-korea-pork', 'Sausage (Korea Pork)', 'korean pork sausage', 'Frozen', 7.25, 8, null, 'Korean-style pork sausage with a savory, garlicky snap.', 'garlicky + savory', 'Images/SAUSAGE(KOREA PORK).png'],
-    ['samanco', 'Samanco', 'ice cream sandwich', 'Frozen', 3.5, 14, null, 'A soft ice cream sandwich tucked between two crisp wafers.', 'sweet + crisp', 'Images/SAMANCO.png'],
-    ['melona', 'Melona', 'melon ice pop', 'Frozen', 2.75, 20, 'Chill it', 'Melon-flavored ice pop with a soft, milky bite.', 'melon + milky', 'Images/MELONA.png'],
-    ['crab-stick', 'Crab Stick', 'hot pot staple', 'Frozen', 4.25, 12, null, 'Sweet, springy imitation crab for hot pot or salad.', 'sweet + springy', 'Images/CRAB STICK.png'],
-    ['hotpot', 'Hotpot', 'simmer-ready base', 'Frozen', 11.9, 6, 'New in', 'A ready-to-simmer hot pot base with all the fixings.', 'savory broth', 'Images/HOTPOT.png'],
-    ['la-beaute', 'La Beaute', 'rice cake dessert', 'Frozen', 5.5, 0, null, 'Delicate rice cake dessert, light and lightly sweet.', 'light + sweet', 'Images/LA BEAUTE.png'],
-    ['enoki-meat-roll', 'Enoki Meat Roll', 'beef + enoki rolls', 'Frozen', 6.75, 9, null, 'Thin beef wrapped around bundles of enoki mushroom.', 'savory + umami', 'Images/ENOKI MEAT ROLL.png'],
-    ['ice-cream', 'Ice Cream', 'vanilla tub', 'Frozen', 5.25, 13, null, 'A tub of creamy vanilla, ready whenever the craving hits.', 'sweet + creamy', 'Images/ICE CREAM.png'],
-    ['cheese', 'Cheese', 'sliceable + meltable', 'Frozen', 4.95, 15, null, 'Sliceable, meltable cheese for stews, toast, and midnight snacks.', 'rich + melty', 'Images/CHEESE.png'],
+    ['sausage', 'Sausage', 'grill-ready', 'Frozen', 101, 10, null, 'Juicy grilled sausages, ready to pan-fry in minutes.', 'smoky + savory', 'Images/SAUSAGE.png'],
+    ['sausage-korea-pork', 'Sausage (Korea Pork)', 'korean pork sausage', 'Frozen', 112, 8, null, 'Korean-style pork sausage with a savory, garlicky snap.', 'garlicky + savory', 'Images/SAUSAGE(KOREA PORK).png'],
+    ['samanco', 'Samanco', 'ice cream sandwich', 'Frozen', 54, 14, null, 'A soft ice cream sandwich tucked between two crisp wafers.', 'sweet + crisp', 'Images/SAMANCO.png'],
+    ['melona', 'Melona', 'melon ice pop', 'Frozen', 43, 20, 'Chill it', 'Melon-flavored ice pop with a soft, milky bite.', 'melon + milky', 'Images/MELONA.png'],
+    ['crab-stick', 'Crab Stick', 'hot pot staple', 'Frozen', 66, 12, null, 'Sweet, springy imitation crab for hot pot or salad.', 'sweet + springy', 'Images/CRAB STICK.png'],
+    ['hotpot', 'Hotpot', 'simmer-ready base', 'Frozen', 184, 6, 'New in', 'A ready-to-simmer hot pot base with all the fixings.', 'savory broth', 'Images/HOTPOT.png'],
+    ['la-beaute', 'La Beaute', 'rice cake dessert', 'Frozen', 85, 0, null, 'Delicate rice cake dessert, light and lightly sweet.', 'light + sweet', 'Images/LA BEAUTE.png'],
+    ['enoki-meat-roll', 'Enoki Meat Roll', 'beef + enoki rolls', 'Frozen', 105, 9, null, 'Thin beef wrapped around bundles of enoki mushroom.', 'savory + umami', 'Images/ENOKI MEAT ROLL.png'],
+    ['ice-cream', 'Ice Cream', 'vanilla tub', 'Frozen', 81, 13, null, 'A tub of creamy vanilla, ready whenever the craving hits.', 'sweet + creamy', 'Images/ICE CREAM.png'],
+    ['cheese', 'Cheese', 'sliceable + meltable', 'Frozen', 77, 15, null, 'Sliceable, meltable cheese for stews, toast, and midnight snacks.', 'rich + melty', 'Images/CHEESE.png'],
     // Korean Noodles
-    ['buldak-rose', 'Buldak Rose', '불닭로제', 'Korean Noodles', 3.25, 16, null, 'Creamy tomato heat — the ros\u00e9 twist on the fire noodle.', 'spicy + creamy', 'Images/BULDAK ROSE.png'],
-    ['buldak-original', 'Buldak Original', '불닭볶음면', 'Korean Noodles', 3.1, 15, null, 'The one that started it all: fiery, chewy, and endlessly craveable.', 'original spicy', 'Images/BULDAK.png'],
-    ['buldak-swicy', 'Buldak Swicy', 'sweet + spicy', 'Korean Noodles', 3.25, 14, null, 'Sweet meets spicy in this milder fire noodle remix.', 'sweet + spicy', 'Images/BULDAK SWICY.png'],
-    ['cheese-ramen-stir-fry', 'Cheese Ramen Stir Fry', 'cheesy stir-fry', 'Korean Noodles', 3.5, 10, null, 'Stir-fried noodles finished with a blanket of melted cheese.', 'cheesy + savory', 'Images/CHEESE RAMEN STIR FRY.png'],
-    ['shin-ramyun', 'Shin Ramyun', '신라면', 'Korean Noodles', 2.25, 24, 'Mimi pick', 'The classic red bowl: spicy, beefy, and endlessly comforting.', 'spicy + beefy', 'Images/SHIN RAMYUN.png'],
-    ['buldak-carbonara', 'Buldak Carbonara', '불닭까르보나라', 'Korean Noodles', 3.25, 18, 'Best seller', 'Fire noodles gone creamy with a smoky carbonara sauce.', 'spicy + smoky', 'Images/BULDAK CARBONARA.png'],
-    ['quattro-cheese', 'Quattro Cheese', 'four-cheese bowl', 'Korean Noodles', 3.5, 12, null, 'Four cheeses, one bowl, maximum comfort.', 'four-cheese rich', 'Images/QUATTRO CHEESE.png'],
-    ['buldak-cream-carbonara', 'Buldak Cream Carbonara', 'extra-creamy carbonara', 'Korean Noodles', 3.5, 11, null, 'An extra-silky carbonara spin on the original fire noodle.', 'extra creamy heat', 'Images/BULDAK CREAM CARBONARA.png'],
-    ['jin', 'Jin Ramyun', '진라면', 'Korean Noodles', 2.1, 22, null, 'A no-fuss favorite: light broth, soft noodles, done in minutes.', 'light + savory', 'Images/JIN.png'],
-    ['buldak-spicy-2x', 'Buldak (Spicy 2\u00d7)', 'extra-spicy 2\u00d7', 'Korean Noodles', 3.4, 9, null, 'For the heat-seekers: double the spice of the original fire noodle.', 'extra spicy', 'Images/BELDAK.png'],
+    ['buldak-rose', 'Buldak Rose', '불닭로제', 'Korean Noodles', 50, 16, null, 'Creamy tomato heat — the ros\u00e9 twist on the fire noodle.', 'spicy + creamy', 'Images/BULDAK ROSE.png'],
+    ['buldak-original', 'Buldak Original', '불닭볶음면', 'Korean Noodles', 48, 15, null, 'The one that started it all: fiery, chewy, and endlessly craveable.', 'original spicy', 'Images/BULDAK.png'],
+    ['buldak-swicy', 'Buldak Swicy', 'sweet + spicy', 'Korean Noodles', 50, 14, null, 'Sweet meets spicy in this milder fire noodle remix.', 'sweet + spicy', 'Images/BULDAK SWICY.png'],
+    ['cheese-ramen-stir-fry', 'Cheese Ramen Stir Fry', 'cheesy stir-fry', 'Korean Noodles', 54, 10, null, 'Stir-fried noodles finished with a blanket of melted cheese.', 'cheesy + savory', 'Images/CHEESE RAMEN STIR FRY.png'],
+    ['shin-ramyun', 'Shin Ramyun', '신라면', 'Korean Noodles', 35, 24, 'Mimi pick', 'The classic red bowl: spicy, beefy, and endlessly comforting.', 'spicy + beefy', 'Images/SHIN RAMYUN.png'],
+    ['buldak-carbonara', 'Buldak Carbonara', '불닭까르보나라', 'Korean Noodles', 50, 18, 'Best seller', 'Fire noodles gone creamy with a smoky carbonara sauce.', 'spicy + smoky', 'Images/BULDAK CARBONARA.png'],
+    ['quattro-cheese', 'Quattro Cheese', 'four-cheese bowl', 'Korean Noodles', 54, 12, null, 'Four cheeses, one bowl, maximum comfort.', 'four-cheese rich', 'Images/QUATTRO CHEESE.png'],
+    ['buldak-cream-carbonara', 'Buldak Cream Carbonara', 'extra-creamy carbonara', 'Korean Noodles', 54, 11, null, 'An extra-silky carbonara spin on the original fire noodle.', 'extra creamy heat', 'Images/BULDAK CREAM CARBONARA.png'],
+    ['jin', 'Jin Ramyun', '진라면', 'Korean Noodles', 33, 22, null, 'A no-fuss favorite: light broth, soft noodles, done in minutes.', 'light + savory', 'Images/JIN.png'],
+    ['buldak-spicy-2x', 'Buldak (Spicy 2\u00d7)', 'extra-spicy 2\u00d7', 'Korean Noodles', 53, 9, null, 'For the heat-seekers: double the spice of the original fire noodle.', 'extra spicy', 'Images/BELDAK.png'],
     // Sweets
-    ['nerds', 'Nerds', 'crunchy candy', 'Sweets', 2.95, 17, null, 'Tiny, crunchy candy clusters in a rainbow of flavors.', 'tangy + crunchy', 'Images/NERDS.png'],
-    ['mnms', 'M&M\u2019s', 'candy-coated chocolate', 'Sweets', 3.25, 20, null, 'Colorful candy shells around a smooth chocolate center.', 'sweet + crunchy', "Images/MAS.png"],
-    ['maltesers', 'Maltesers', 'malt + chocolate', 'Sweets', 4.25, 12, null, 'Light, crunchy malt balls coated in milk chocolate.', 'malty crunch', 'Images/MALTESERS.png'],
-    ['hershey', 'Hershey', 'milk chocolate', 'Sweets', 2.75, 19, null, 'Classic milk chocolate, simple and familiar.', 'classic chocolate', 'Images/HERSHEY.png'],
-    ['pistachio', 'Pistachio', 'roasted nuts', 'Sweets', 6.5, 8, null, 'Roasted pistachios with a naturally rich, nutty bite.', 'roasted + nutty', 'Images/PISTACHIO.png'],
-    ['macadamia', 'Macadamia', 'roasted nuts', 'Sweets', 7.9, 7, null, 'Buttery macadamia nuts, roasted to a perfect crunch.', 'buttery + nutty', 'Images/MACADAMIA.png'],
-    ['kisses', 'Kisses', 'chocolate drops', 'Sweets', 4.5, 0, null, 'Bite-sized chocolate drops, perfect for sharing (or not).', 'smooth chocolate', 'Images/KISSES.png'],
-    ['bounty', 'Bounty', 'coconut + chocolate', 'Sweets', 2.95, 14, null, 'Coconut filling wrapped in a coat of milk chocolate.', 'coconut + chocolate', 'Images/BOUNTY.png'],
-    ['nutella', 'Nutella', 'hazelnut cocoa spread', 'Sweets', 6.25, 10, 'Shop favorite', 'Smooth hazelnut cocoa spread for toast, spoons, everything.', 'rich hazelnut', 'Images/NUTELLA.png'],
-    ['coco-manisa', 'Coco Manisa', 'chewy coconut candy', 'Sweets', 3.75, 13, null, 'Chewy coconut candy with a soft caramel sweetness.', 'chewy + sweet', 'Images/COCO MANISA.png'],
+    ['nerds', 'Nerds', 'crunchy candy', 'Sweets', 46, 17, null, 'Tiny, crunchy candy clusters in a rainbow of flavors.', 'tangy + crunchy', 'Images/NERDS.png'],
+    ['mnms', 'M&M\u2019s', 'candy-coated chocolate', 'Sweets', 50, 20, null, 'Colorful candy shells around a smooth chocolate center.', 'sweet + crunchy', "Images/MAS.png"],
+    ['maltesers', 'Maltesers', 'malt + chocolate', 'Sweets', 66, 12, null, 'Light, crunchy malt balls coated in milk chocolate.', 'malty crunch', 'Images/MALTESERS.png'],
+    ['hershey', 'Hershey', 'milk chocolate', 'Sweets', 43, 19, null, 'Classic milk chocolate, simple and familiar.', 'classic chocolate', 'Images/HERSHEY.png'],
+    ['pistachio', 'Pistachio', 'roasted nuts', 'Sweets', 101, 8, null, 'Roasted pistachios with a naturally rich, nutty bite.', 'roasted + nutty', 'Images/PISTACHIO.png'],
+    ['macadamia', 'Macadamia', 'roasted nuts', 'Sweets', 122, 7, null, 'Buttery macadamia nuts, roasted to a perfect crunch.', 'buttery + nutty', 'Images/MACADAMIA.png'],
+    ['kisses', 'Kisses', 'chocolate drops', 'Sweets', 70, 0, null, 'Bite-sized chocolate drops, perfect for sharing (or not).', 'smooth chocolate', 'Images/KISSES.png'],
+    ['bounty', 'Bounty', 'coconut + chocolate', 'Sweets', 46, 14, null, 'Coconut filling wrapped in a coat of milk chocolate.', 'coconut + chocolate', 'Images/BOUNTY.png'],
+    ['nutella', 'Nutella', 'hazelnut cocoa spread', 'Sweets', 97, 10, 'Shop favorite', 'Smooth hazelnut cocoa spread for toast, spoons, everything.', 'rich hazelnut', 'Images/NUTELLA.png'],
+    ['coco-manisa', 'Coco Manisa', 'chewy coconut candy', 'Sweets', 58, 13, null, 'Chewy coconut candy with a soft caramel sweetness.', 'chewy + sweet', 'Images/COCO MANISA.png'],
     // Snacks
-    ['pepero', 'Pepero', '빼빼로', 'Snacks', 3.75, 16, 'Best seller', 'Crunchy almond pieces tucked into a chocolate-dipped biscuit stick.', 'chocolate crunch', 'Images/PEPERO.png'],
-    ['energy-bar', 'Energy Bar', 'oats + honey', 'Snacks', 2.25, 21, null, 'A grab-and-go bar with oats, nuts, and a hint of honey.', 'oat + honey', 'Images/ENERGYBAR.png'],
-    ['sunflower-seed', 'Sunflower Seed', 'roasted + salted', 'Snacks', 3.1, 15, null, 'Roasted and salted seeds for a slow, snackable break.', 'roasted + salty', 'Images/SUNFLOWER SEED.png'],
-    ['favo-rocco', 'Favo Rocco', 'wafer rolls', 'Snacks', 3.5, 10, null, 'Crispy wafer rolls with a light hazelnut filling.', 'hazelnut crunch', 'Images/FAVO ROCCO.png'],
-    ['lays-stax', 'Lays Stax', 'stackable crisps', 'Snacks', 3.25, 18, null, 'Stackable potato crisps in a resealable tube.', 'crispy + salty', 'Images/LAYS STAX.png'],
-    ['pringles', 'Pringles', 'stackable crisps', 'Snacks', 3.5, 20, 'New in', 'The iconic stackable chip in a satisfying tube.', 'crispy + salty', 'Images/PRINGLES.png'],
-    ['mini-krunch', 'Mini Krunch', 'corn puffs', 'Snacks', 2.75, 0, null, 'Bite-sized crunchy corn snacks, light and airy.', 'light + crunchy', 'Images/MINI KRUNCH.png'],
-    ['caramel-popcorn', 'Caramel Popcorn', 'buttery caramel', 'Snacks', 4.25, 11, null, 'Popcorn glazed in a buttery caramel coating.', 'sweet + buttery', 'Images/CARAMEL POPCORN.png'],
-    ['nachos', 'Nachos', 'corn chips', 'Snacks', 3.95, 13, null, 'Crunchy corn chips ready for cheese, salsa, or both.', 'crunchy + salty', 'Images/NACHOS.png'],
-    ['chicharon', 'Chicharon', 'pork rinds', 'Snacks', 2.95, 9, null, 'Crispy fried pork rinds with a salty crunch.', 'crispy + salty', 'Images/CHICHARON.png']
+    ['pepero', 'Pepero', '빼빼로', 'Snacks', 58, 16, 'Best seller', 'Crunchy almond pieces tucked into a chocolate-dipped biscuit stick.', 'chocolate crunch', 'Images/PEPERO.png'],
+    ['energy-bar', 'Energy Bar', 'oats + honey', 'Snacks', 35, 21, null, 'A grab-and-go bar with oats, nuts, and a hint of honey.', 'oat + honey', 'Images/ENERGYBAR.png'],
+    ['sunflower-seed', 'Sunflower Seed', 'roasted + salted', 'Snacks', 48, 15, null, 'Roasted and salted seeds for a slow, snackable break.', 'roasted + salty', 'Images/SUNFLOWER SEED.png'],
+    ['favo-rocco', 'Favo Rocco', 'wafer rolls', 'Snacks', 54, 10, null, 'Crispy wafer rolls with a light hazelnut filling.', 'hazelnut crunch', 'Images/FAVO ROCCO.png'],
+    ['lays-stax', 'Lays Stax', 'stackable crisps', 'Snacks', 50, 18, null, 'Stackable potato crisps in a resealable tube.', 'crispy + salty', 'Images/LAYS STAX.png'],
+    ['pringles', 'Pringles', 'stackable crisps', 'Snacks', 54, 20, 'New in', 'The iconic stackable chip in a satisfying tube.', 'crispy + salty', 'Images/PRINGLES.png'],
+    ['mini-krunch', 'Mini Krunch', 'corn puffs', 'Snacks', 43, 0, null, 'Bite-sized crunchy corn snacks, light and airy.', 'light + crunchy', 'Images/MINI KRUNCH.png'],
+    ['caramel-popcorn', 'Caramel Popcorn', 'buttery caramel', 'Snacks', 66, 11, null, 'Popcorn glazed in a buttery caramel coating.', 'sweet + buttery', 'Images/CARAMEL POPCORN.png'],
+    ['nachos', 'Nachos', 'corn chips', 'Snacks', 61, 13, null, 'Crunchy corn chips ready for cheese, salsa, or both.', 'crunchy + salty', 'Images/NACHOS.png'],
+    ['chicharon', 'Chicharon', 'pork rinds', 'Snacks', 46, 9, null, 'Crispy fried pork rinds with a salty crunch.', 'crispy + salty', 'Images/CHICHARON.png']
   ];
 
   var state = {
@@ -696,57 +715,339 @@ var REQUIRE_OTP = false;
 
   // ================================================================
   // BASIC SECURITY HELPERS (mirrors the storefront's implementation)
-  // Client-side lockout + login log + idle timeout. See the honesty
-  // note in mimicart-storefront2_working.html — this is a UX-level
-  // deterrent, not a replacement for server-side rate limiting.
+  // Login lockout + login log (both kept in Firestore, see below) and
+  // the idle timeout.
   // ================================================================
   var MAX_LOGIN_ATTEMPTS = 5;
-  var LOCKOUT_MS = 5 * 60 * 1000;      // 5 minutes
+  var LOCKOUT_MS = 10 * 60 * 1000;     // 10 minutes
   var IDLE_LIMIT_MS = 10 * 60 * 1000;  // 10 minutes
   var IDLE_GRACE_MS = 60 * 1000;       // 60s to respond to "are you still there?"
 
   function normalizeEmail(email) { return (email || '').trim().toLowerCase(); }
-  function attemptsKey(email) { return 'mimicart-admin:login-attempts:' + normalizeEmail(email); }
-  function getAttemptRecord(email) {
-    try {
-      var raw = localStorage.getItem(attemptsKey(email));
-      return raw ? JSON.parse(raw) : { count: 0, lockUntil: 0 };
-    } catch (e) { return { count: 0, lockUntil: 0 }; }
+
+  // ================================================================
+  // SIGN-IN SECURITY — lockout + login activity, stored in FIRESTORE
+  //
+  // Both used to live in this browser's localStorage, which is why a
+  // refresh, a private window, or a second device got a clean slate.
+  // Now:
+  //   * login_lockouts/{email}  holds the failed-password counter and
+  //     the lock. It belongs to the ACCOUNT, so the 10-minute wait
+  //     follows it everywhere. The 5th failed attempt is stamped with
+  //     the SERVER's clock and the Firestore rules refuse further
+  //     attempts until 10 server-minutes have passed — changing this
+  //     computer's clock or clearing storage does not help.
+  //   * login_logs/{id}  gets one row per sign-in / failed attempt /
+  //     lockout, with date+time, device, IP and approximate location,
+  //     so activity from OTHER devices shows up here too.
+  //
+  // Requires the updated firestore.rules (login_lockouts + login_logs).
+  // ================================================================
+  var SECURITY_APP = 'admin';
+  var LOCK_EMAIL_KEY = 'mimicart-admin:lock-email';
+  var DEVICE_ID_KEY = 'mimicart:device-id';
+  var GEO_CACHE_KEY = 'mimicart:geo-cache';
+  var serverOffsetMs = 0;   // (Firestore's clock) minus (this device's clock)
+  var lockedUntilMs = 0;    // when the current lock ends, on the server's clock (0 = not locked)
+
+  function serverNow() { return Date.now() + serverOffsetMs; }
+  function isLockActive() { return lockedUntilMs > serverNow(); }
+  function isPlausibleEmail(email) {
+    var e = normalizeEmail(email);
+    return e.length > 2 && e.length <= 254 && e.indexOf('@') > 0 && e.indexOf('/') === -1;
   }
-  function setAttemptRecord(email, record) {
-    try { localStorage.setItem(attemptsKey(email), JSON.stringify(record)); } catch (e) { /* ignore */ }
-  }
-  function lockoutMsRemaining(email) {
-    var record = getAttemptRecord(email);
-    var remaining = record.lockUntil - Date.now();
-    return remaining > 0 ? remaining : 0;
-  }
-  function recordFailedLogin(email) {
-    var record = getAttemptRecord(email);
-    if (record.lockUntil && record.lockUntil > Date.now()) return record;
-    record.count = (record.count || 0) + 1;
-    if (record.count >= MAX_LOGIN_ATTEMPTS) {
-      record.lockUntil = Date.now() + LOCKOUT_MS;
-      record.count = 0;
-    }
-    setAttemptRecord(email, record);
-    return record;
-  }
-  function resetLoginAttempts(email) { setAttemptRecord(email, { count: 0, lockUntil: 0 }); }
+  function lockRef(email) { return firebaseDb.collection('login_lockouts').doc(normalizeEmail(email)); }
+  function lockedAtMs(data) { return data && data.lockedAt && data.lockedAt.toMillis ? data.lockedAt.toMillis() : 0; }
+
+  // Only a convenience so a refresh can show the countdown straight away —
+  // the lock itself is enforced by Firestore, never by this value.
+  function rememberLockedEmail(email) { try { localStorage.setItem(LOCK_EMAIL_KEY, normalizeEmail(email)); } catch (e) { /* ignore */ } }
+  function forgetLockedEmail() { try { localStorage.removeItem(LOCK_EMAIL_KEY); } catch (e) { /* ignore */ } }
+  function getRememberedLockedEmail() { try { return localStorage.getItem(LOCK_EMAIL_KEY) || ''; } catch (e) { return ''; } }
+
   function formatCountdown(ms) {
     var totalSeconds = Math.max(0, Math.ceil(ms / 1000));
     var m = Math.floor(totalSeconds / 60);
     var s = totalSeconds % 60;
     return m + ':' + (s < 10 ? '0' : '') + s;
   }
+
+  // Read-only: is this account locked right now?
+  function readLockState(email) {
+    if (!firebaseDb || !isPlausibleEmail(email)) return Promise.resolve({ locked: false });
+    return lockRef(email).get().then(function (snap) {
+      var d = snap.exists ? snap.data() : null;
+      if (!d || (d.count || 0) < MAX_LOGIN_ATTEMPTS || !d.lockedAt) return { locked: false };
+      var until = lockedAtMs(d) + LOCKOUT_MS;
+      var remaining = until - serverNow();
+      if (remaining <= 0) return { locked: false };
+      if (remaining > LOCKOUT_MS + 5000) return { locked: true, remainingMs: 0 };   // this device's clock is off
+      lockedUntilMs = until;
+      return { locked: true, remainingMs: remaining };
+    }, function () { return { locked: false }; });
+  }
+
+  // Called BEFORE the password is checked. Counts this attempt on the
+  // account (so refreshing mid-attempt can't dodge the count) or refuses it
+  // if the account is locked.
+  //   -> { ok:false, remainingMs }                    account is locked
+  //   -> { ok:true, count, lockedNow }                go ahead and check the password
+  //   -> rejects                                      couldn't reach the lock (e.g. rules not published)
+  function beginLoginAttempt(email) {
+    if (!firebaseDb || !isPlausibleEmail(email)) return Promise.resolve({ ok: true, count: 0, lockedNow: false });
+    var ref = lockRef(email);
+    return firebaseDb.runTransaction(function (tx) {
+      return tx.get(ref).then(function (snap) {
+        var data = snap.exists ? snap.data() : null;
+        var count = data ? (data.count || 0) : 0;
+        var stamp = firebase.firestore.FieldValue.serverTimestamp();
+        if (count >= MAX_LOGIN_ATTEMPTS) {
+          var until = lockedAtMs(data) + LOCKOUT_MS;
+          var left = until - serverNow();
+          // A lock can never have more than LOCKOUT_MS left; if this device's clock says otherwise, the
+          // clock is off, so don't trust it — let the server (the rules) decide below.
+          if (left > 0 && left <= LOCKOUT_MS + 5000) return { ok: false, until: until };  // still locked — nothing to write
+          tx.set(ref, { count: 1, lockedAt: null, lastAttemptAt: stamp }); // lock has run out — start over
+          return { ok: true, count: 1 };
+        }
+        var next = count + 1;
+        tx.set(ref, { count: next, lockedAt: next >= MAX_LOGIN_ATTEMPTS ? stamp : null, lastAttemptAt: stamp });
+        return { ok: true, count: next };
+      });
+    }).then(function (result) {
+      if (!result.ok) {
+        lockedUntilMs = result.until;
+        rememberLockedEmail(email);
+        return { ok: false, remainingMs: result.until - serverNow() };
+      }
+      if (result.count < MAX_LOGIN_ATTEMPTS) return { ok: true, count: result.count, lockedNow: false };
+      // This was the 5th attempt: read the lock back so the countdown runs on the server's clock.
+      return ref.get().then(function (snap) {
+        var d = snap.exists ? snap.data() : null;
+        if (d && d.lastAttemptAt && d.lastAttemptAt.toMillis) serverOffsetMs = d.lastAttemptAt.toMillis() - Date.now();
+        lockedUntilMs = (lockedAtMs(d) || serverNow()) + LOCKOUT_MS;
+        rememberLockedEmail(email);
+        return { ok: true, count: result.count, lockedNow: true };
+      }, function () {
+        lockedUntilMs = serverNow() + LOCKOUT_MS;
+        rememberLockedEmail(email);
+        return { ok: true, count: result.count, lockedNow: true };
+      });
+    }, function (err) {
+      // Firestore refused the write. Usually that means the server says the
+      // account is locked (this device's clock thought it wasn't). Confirm by reading it.
+      return ref.get().then(function (snap) {
+        var d = snap.exists ? snap.data() : null;
+        if (d && (d.count || 0) >= MAX_LOGIN_ATTEMPTS) {
+          var until = lockedAtMs(d) + LOCKOUT_MS;
+          var left = until - serverNow();
+          rememberLockedEmail(email);
+          if (left > 0 && left <= LOCKOUT_MS + 5000) { lockedUntilMs = until; return { ok: false, remainingMs: left }; }
+          return { ok: false, remainingMs: 0 };   // locked per the server, but this clock can't say for how long
+        }
+        throw err;
+      });
+    });
+  }
+
+  // Called after a SUCCESSFUL password sign-in (the rules only let the
+  // signed-in owner of the account do this).
+  function clearLoginAttempts(email) {
+    lockedUntilMs = 0;
+    forgetLockedEmail();
+    if (!firebaseDb || !isPlausibleEmail(email)) return Promise.resolve();
+    return lockRef(email).set({ count: 0, lockedAt: null, lastAttemptAt: firebase.firestore.FieldValue.serverTimestamp() })
+      .catch(function (err) { console.warn('MimiCart: couldn\u2019t reset the attempt counter', err); });
+  }
+
+  // ---- device + location for the login log ----
+  function detectDeviceParts() {
+    var ua = navigator.userAgent || '';
+    var os = 'Unknown device';
+    if (/iPhone/.test(ua)) os = 'iPhone';
+    else if (/iPad/.test(ua)) os = 'iPad';
+    else if (/Android/.test(ua)) os = /Mobile/.test(ua) ? 'Android phone' : 'Android tablet';
+    else if (/Macintosh/.test(ua)) os = 'Mac';
+    else if (/Windows/.test(ua)) os = 'Windows PC';
+    else if (/CrOS/.test(ua)) os = 'Chromebook';
+    else if (/Linux/.test(ua)) os = 'Linux';
+    var browser = 'browser';
+    if (/Edg\//.test(ua)) browser = 'Edge';
+    else if (/OPR\//.test(ua) || /Opera/.test(ua)) browser = 'Opera';
+    else if (/Chrome\//.test(ua) && !/Chromium/.test(ua)) browser = 'Chrome';
+    else if (/CriOS\//.test(ua)) browser = 'Chrome';
+    else if (/FxiOS\//.test(ua) || /Firefox\//.test(ua)) browser = 'Firefox';
+    else if (/Safari\//.test(ua)) browser = 'Safari';
+    return { os: os, browser: browser };
+  }
+  function detectDevice() {
+    var p = detectDeviceParts();
+    return p.os + ' \u2022 ' + p.browser;
+  }
+  function randomId(n) {
+    var chars = 'abcdefghijklmnopqrstuvwxyz0123456789', out = '', i;
+    var cryptoObj = window.crypto || window.msCrypto;
+    if (cryptoObj && cryptoObj.getRandomValues) {
+      var arr = new Uint8Array(n);
+      cryptoObj.getRandomValues(arr);
+      for (i = 0; i < n; i++) out += chars.charAt(arr[i] % chars.length);
+    } else {
+      for (i = 0; i < n; i++) out += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return out;
+  }
+  // A random id kept in this browser, so a log row can be tagged "This device".
+  function getDeviceId() {
+    try {
+      var id = localStorage.getItem(DEVICE_ID_KEY);
+      if (!id) { id = randomId(16); localStorage.setItem(DEVICE_ID_KEY, id); }
+      return id;
+    } catch (e) { return 'unknown'; }
+  }
+
+  // Approximate location comes from the visitor's IP address (a browser can't
+  // know where it is without asking for GPS permission). City-level at best,
+  // and wrong for VPN users — treat it as a hint, not proof.
+  var GEO_SOURCES = [
+    { url: 'https://ipwho.is/', map: function (d) {
+        if (!d || d.success === false || !d.ip) throw new Error('no result');
+        return { ip: d.ip, city: d.city, region: d.region, country: d.country, timezone: d.timezone && d.timezone.id };
+      } },
+    { url: 'https://ipapi.co/json/', map: function (d) {
+        if (!d || d.error || !d.ip) throw new Error('no result');
+        return { ip: d.ip, city: d.city, region: d.region, country: d.country_name, timezone: d.timezone };
+      } },
+    { url: 'https://get.geojs.io/v1/ip/geo.json', map: function (d) {
+        if (!d || !d.ip) throw new Error('no result');
+        return { ip: d.ip, city: d.city, region: d.region, country: d.country, timezone: d.timezone };
+      } }
+  ];
+  function fetchJsonWithTimeout(url, ms) {
+    var ctrl = window.AbortController ? new AbortController() : null;
+    var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, ms);
+    return fetch(url, ctrl ? { signal: ctrl.signal } : {}).then(function (r) {
+      clearTimeout(timer);
+      if (!r.ok) throw new Error('http ' + r.status);
+      return r.json();
+    }, function (e) { clearTimeout(timer); throw e; });
+  }
+  function tryGeoSource(i) {
+    if (i >= GEO_SOURCES.length) return Promise.resolve({});
+    var src = GEO_SOURCES[i];
+    return fetchJsonWithTimeout(src.url, 4000).then(function (d) { return src.map(d); })
+      .catch(function () { return tryGeoSource(i + 1); });
+  }
+  var geoPromise = null;
+  function lookupLocation() {
+    if (geoPromise) return geoPromise;
+    try {
+      var cached = JSON.parse(sessionStorage.getItem(GEO_CACHE_KEY) || 'null');
+      if (cached && cached.ip) { geoPromise = Promise.resolve(cached); return geoPromise; }
+    } catch (e) { /* ignore */ }
+    geoPromise = tryGeoSource(0).then(function (geo) {
+      if (geo && geo.ip) { try { sessionStorage.setItem(GEO_CACHE_KEY, JSON.stringify(geo)); } catch (e) { /* ignore */ } }
+      else { geoPromise = null; }   // try again next time
+      return geo || {};
+    });
+    return geoPromise;
+  }
+  function buildLocationLabel(geo) {
+    var seen = {}, parts = [];
+    [geo.city, geo.region, geo.country].forEach(function (p) {
+      if (p && !seen[p]) { seen[p] = true; parts.push(p); }
+    });
+    return parts.join(', ') || 'Unknown location';
+  }
+  function clip(v) { return String(v == null ? '' : v).slice(0, 120); }
+
+  // Writes one row to login_logs. Never throws / never blocks a sign-in.
+  function logLoginEvent(email, status, method) {
+    if (!firebaseDb || !isPlausibleEmail(email)) return Promise.resolve();
+    return lookupLocation().then(function (geo) {
+      var parts = detectDeviceParts();
+      // newest-first doc ids -> a plain query returns the latest rows, no index needed
+      var id = String(9999999999999 - Date.now()) + '_' + randomId(8);
+      return firebaseDb.collection('login_logs').doc(id).set({
+        email: normalizeEmail(email),
+        status: status,
+        method: method || 'password',
+        app: SECURITY_APP,
+        device: clip(parts.os + ' \u2022 ' + parts.browser),
+        os: clip(parts.os),
+        browser: clip(parts.browser),
+        deviceId: clip(getDeviceId()),
+        ip: clip(geo.ip),
+        city: clip(geo.city),
+        region: clip(geo.region),
+        country: clip(geo.country),
+        location: clip(buildLocationLabel(geo)),
+        timezone: clip(geo.timezone),
+        time: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }).catch(function (err) {
+      console.warn('MimiCart: couldn\u2019t record sign-in activity (are the latest Firestore rules published?)', err);
+    });
+  }
+
+  function docToLogEntry(doc) {
+    var d = doc.data() || {};
+    return {
+      id: doc.id, email: d.email || '', status: d.status || 'failed', method: d.method || 'password',
+      app: d.app || '', device: d.device || '', deviceId: d.deviceId || '', ip: d.ip || '',
+      location: d.location || '', time: d.time && d.time.toMillis ? d.time.toMillis() : Date.now()
+    };
+  }
+  // One account's activity, from every device, newest first.
+  function fetchLoginLogs(email, limit) {
+    return firebaseDb.collection('login_logs').where('email', '==', normalizeEmail(email)).limit(limit || 30).get()
+      .then(function (snap) { return snap.docs.map(docToLogEntry); });
+  }
+  // Staff only: the latest activity across every account.
+  function fetchAllLoginLogs(limit) {
+    return firebaseDb.collection('login_logs').orderBy(firebase.firestore.FieldPath.documentId()).limit(limit || 100).get()
+      .then(function (snap) { return snap.docs.map(docToLogEntry); });
+  }
+
+  // Log rows contain text that came from a browser (anyone can create a
+  // "failed" row), so everything is escaped before it touches innerHTML.
+  function logEsc(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, function (ch) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+    });
+  }
+  function formatLogTime(ts) {
+    var d = new Date(ts);
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) + ' \u2022 ' +
+      d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  }
+  function loginLogRowHTML(entry, showEmail) {
+    var statusClass = entry.status === 'success' ? 'log-success' : (entry.status === 'locked' ? 'log-locked' : 'log-failed');
+    var statusLabel = entry.status === 'success' ? '\u2713 Signed in' : (entry.status === 'locked' ? '\u23f1 Locked out' : '\u2717 Failed attempt');
+    var badge = entry.deviceId && entry.deviceId === getDeviceId() ? ' <span class="log-badge">This device</span>' : '';
+    var bits = [];
+    if (showEmail && entry.email) bits.push('<strong>' + logEsc(entry.email) + '</strong>');
+    bits.push(logEsc(entry.device || 'Unknown device'));
+    bits.push('Location: ' + logEsc(entry.location && entry.location !== 'Unknown location' ? entry.location : 'unavailable'));
+    if (entry.ip) bits.push('IP ' + logEsc(entry.ip));
+    bits.push(entry.method === 'google' ? 'Google' : 'Email &amp; password');
+    if (showEmail && entry.app) bits.push(entry.app === 'admin' ? 'Staff dashboard' : 'Storefront');
+    return '<li class="login-log-row ' + statusClass + '">' +
+      '<div class="log-top"><span class="log-status">' + statusLabel + badge + '</span><span class="log-time">' + logEsc(formatLogTime(entry.time)) + '</span></div>' +
+      '<div class="log-sub">' + bits.join(' \u2022 ') + '</div>' +
+    '</li>';
+  }
+
+  // ---- lockout countdown on the staff login screen ----
   var lockoutCountdownTimer = null;
-  function startLockoutCountdown(email) {
+  function startLockoutCountdown() {
     clearInterval(lockoutCountdownTimer);
     function tick() {
-      var remaining = lockoutMsRemaining(email);
+      var remaining = lockedUntilMs - serverNow();
       var el = document.getElementById('lockout-countdown');
       if (remaining <= 0) {
         clearInterval(lockoutCountdownTimer);
+        lockedUntilMs = 0;
+        forgetLockedEmail();
         loginMessage.classList.add('hidden');
         document.getElementById('login-submit').disabled = !firebaseConfigured;
         return;
@@ -756,61 +1057,62 @@ var REQUIRE_OTP = false;
     tick();
     lockoutCountdownTimer = setInterval(tick, 1000);
   }
-
-  // ---- device fingerprint shown in the login log (best-effort, from the User-Agent) ----
-  function detectDevice() {
-    var ua = navigator.userAgent || '';
-    var os = 'Unknown device';
-    if (/iPhone/.test(ua)) os = 'iPhone';
-    else if (/iPad/.test(ua)) os = 'iPad';
-    else if (/Android/.test(ua)) os = /Mobile/.test(ua) ? 'Android phone' : 'Android tablet';
-    else if (/Macintosh/.test(ua)) os = 'Mac';
-    else if (/Windows/.test(ua)) os = 'Windows PC';
-    else if (/Linux/.test(ua)) os = 'Linux';
-    var browser = 'browser';
-    if (/Edg\//.test(ua)) browser = 'Edge';
-    else if (/OPR\//.test(ua) || /Opera/.test(ua)) browser = 'Opera';
-    else if (/Chrome\//.test(ua) && !/Chromium/.test(ua)) browser = 'Chrome';
-    else if (/CriOS\//.test(ua)) browser = 'Chrome';
-    else if (/Firefox\//.test(ua)) browser = 'Firefox';
-    else if (/Safari\//.test(ua)) browser = 'Safari';
-    return os + ' \u2022 ' + browser;
+  function showLockedMessage(email, remainingMs) {
+    loginMessage.classList.remove('hidden');
+    if (remainingMs > 0) {
+      loginMessage.innerHTML = 'Too many failed attempts \u2014 this account is locked. Try again in <strong id="lockout-countdown">' + formatCountdown(remainingMs) + '</strong>.';
+      document.getElementById('login-submit').disabled = true;
+      startLockoutCountdown();
+    } else {
+      // The server says it's still locked but this device's clock disagrees.
+      loginMessage.textContent = 'This account may still be locked. Please try again in a few minutes. (If this keeps happening, check that this device\u2019s clock is correct.)';
+      document.getElementById('login-submit').disabled = false;
+    }
+  }
+  // After a refresh: if the last account that got locked out is still locked
+  // (asked of Firestore, not this browser), put the countdown back.
+  function restoreLockNotice() {
+    var remembered = getRememberedLockedEmail();
+    if (!remembered || !firebaseConfigured) return;
+    readLockState(remembered).then(function (s) {
+      if (!s.locked) { forgetLockedEmail(); return; }
+      var emailInput = document.getElementById('login-email');
+      if (emailInput && !emailInput.value) emailInput.value = remembered;
+      showLockedMessage(remembered, s.remainingMs);
+    });
   }
 
-  function loginLogKey(email) { return 'mimicart-admin:login-logs:' + normalizeEmail(email); }
-  function getLoginLogs(email) {
-    try {
-      var raw = localStorage.getItem(loginLogKey(email));
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) { return []; }
-  }
-  function logLoginEvent(email, status) {
-    if (!email) return;
-    var logs = getLoginLogs(email);
-    logs.unshift({ time: Date.now(), status: status, device: detectDevice() });
-    logs = logs.slice(0, 20);
-    try { localStorage.setItem(loginLogKey(email), JSON.stringify(logs)); } catch (e) { /* ignore */ }
-  }
-  function formatLogTime(ts) {
-    var d = new Date(ts);
-    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' \u2022 ' +
-      d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-  }
+  // ---- Settings tab: login activity (this account, or every account) ----
+  var logView = 'mine';
+  var logsRequestId = 0;
   function renderSettingsLoginLogs() {
     var listEl = document.getElementById('settings-log-list');
-    var emailEl = document.getElementById('settings-log-email');
-    if (!listEl || !state.staffEmail) return;
-    if (emailEl) emailEl.textContent = state.staffEmail;
-    var logs = getLoginLogs(state.staffEmail);
-    listEl.innerHTML = logs.length
-      ? logs.map(function (entry) {
-          var statusClass = entry.status === 'success' ? 'log-success' : (entry.status === 'locked' ? 'log-locked' : 'log-failed');
-          var statusLabel = entry.status === 'success' ? '\u2713 Signed in' : (entry.status === 'locked' ? '\u23f1 Locked out' : '\u2717 Failed attempt');
-          var deviceLabel = entry.device ? entry.device + ' \u2022 ' : '';
-          return '<li class="login-log-row ' + statusClass + '"><span class="log-status">' + statusLabel + '</span><span class="log-meta">' + deviceLabel + formatLogTime(entry.time) + '</span></li>';
-        }).join('')
-      : '<li class="login-log-row"><span class="log-meta">No sign-in activity recorded yet on this device.</span></li>';
+    var subEl = document.getElementById('settings-log-sub');
+    if (!listEl || !state.staffEmail || !firebaseDb) return;
+    document.getElementById('log-view-mine').classList.toggle('is-active', logView === 'mine');
+    document.getElementById('log-view-all').classList.toggle('is-active', logView === 'all');
+    if (subEl) {
+      subEl.innerHTML = logView === 'all'
+        ? 'The latest 100 sign-in events across <strong>every account</strong> (staff dashboard and storefront).'
+        : 'Recent sign-in activity for <strong>' + logEsc(state.staffEmail) + '</strong> from <strong>all devices</strong>.';
+    }
+    var reqId = ++logsRequestId;
+    listEl.innerHTML = '<li class="login-log-row"><div class="log-sub">Loading\u2026</div></li>';
+    var request = logView === 'all' ? fetchAllLoginLogs(100) : fetchLoginLogs(state.staffEmail, 50);
+    request.then(function (logs) {
+      if (reqId !== logsRequestId) return;
+      listEl.innerHTML = logs.length
+        ? logs.map(function (entry) { return loginLogRowHTML(entry, logView === 'all'); }).join('')
+        : '<li class="login-log-row"><div class="log-sub">No sign-in activity recorded yet.</div></li>';
+    }).catch(function (err) {
+      if (reqId !== logsRequestId) return;
+      console.error('MimiCart admin: couldn\u2019t load login activity', err);
+      listEl.innerHTML = '<li class="login-log-row log-failed"><div class="log-sub">Couldn\u2019t load login activity. Make sure the latest Firestore rules are published, then press Refresh.</div></li>';
+    });
   }
+  document.getElementById('log-view-mine').addEventListener('click', function () { logView = 'mine'; renderSettingsLoginLogs(); });
+  document.getElementById('log-view-all').addEventListener('click', function () { logView = 'all'; renderSettingsLoginLogs(); });
+  document.getElementById('log-refresh').addEventListener('click', renderSettingsLoginLogs);
 
   // ---- idle timeout: "are you still there?" ----
   var lastActivityAt = Date.now();
@@ -879,47 +1181,59 @@ var REQUIRE_OTP = false;
   var pendingOtp = { code: null, email: null, expiresAt: 0 };
   var otpResendCooldownTimer = null;
 
+  // true from the moment somebody presses "Sign in" until the result is known,
+  // so a session Firebase merely RESTORES on page load isn't logged as a new sign-in.
+  var explicitLoginInProgress = false;
+
   loginForm.addEventListener('submit', function (e) {
     e.preventDefault();
     if (!firebaseConfigured) return;
     var email = document.getElementById('login-email').value.trim();
     var password = document.getElementById('login-password').value;
+    var submitBtn = document.getElementById('login-submit');
 
-    // ---- client-side lockout: 5 failed attempts = 5 minute cooldown ----
-    var remaining = lockoutMsRemaining(email);
-    if (remaining > 0) {
-      loginMessage.classList.remove('hidden');
-      loginMessage.innerHTML = 'Too many failed attempts. Try again in <strong id="lockout-countdown">' + formatCountdown(remaining) + '</strong>.';
-      document.getElementById('login-submit').disabled = true;
-      startLockoutCountdown(email);
-      return;
-    }
-
-    document.getElementById('login-submit').disabled = true;
+    submitBtn.disabled = true;
     loginMessage.classList.add('hidden');
-    firebaseAuth.signInWithEmailAndPassword(email, password).then(function () {
-      resetLoginAttempts(email);
-      // logLoginEvent('success') is recorded once the staff allow-list
-      // check passes, in onAuthStateChanged below.
-    }).catch(function (err) {
-      document.getElementById('login-submit').disabled = false;
-      logLoginEvent(email, 'failed');
-      var record = recordFailedLogin(email);
-      if (record.lockUntil && record.lockUntil > Date.now()) {
-        loginMessage.classList.remove('hidden');
-        loginMessage.innerHTML = 'Too many failed attempts. Try again in <strong id="lockout-countdown">' + formatCountdown(lockoutMsRemaining(email)) + '</strong>.';
-        document.getElementById('login-submit').disabled = true;
-        startLockoutCountdown(email);
+
+    // Count this attempt on the ACCOUNT (Firestore) — or refuse it if the
+    // account is locked. Works the same after a refresh or on another device.
+    beginLoginAttempt(email).then(function (gate) {
+      if (!gate.ok) {
+        showLockedMessage(email, gate.remainingMs);
+        logLoginEvent(email, 'locked', 'password');
         return;
       }
-      var attemptsLeft = MAX_LOGIN_ATTEMPTS - record.count;
-      var attemptsNote = attemptsLeft <= 2 ? ' (' + attemptsLeft + ' attempt' + (attemptsLeft === 1 ? '' : 's') + ' left before a 5-minute lockout)' : '';
+      explicitLoginInProgress = true;
+      return firebaseAuth.signInWithEmailAndPassword(email, password).then(function () {
+        clearLoginAttempts(email);
+        // logLoginEvent('success') is recorded once the staff allow-list
+        // check passes, in onAuthStateChanged below.
+      }, function (err) {
+        explicitLoginInProgress = false;
+        logLoginEvent(email, 'failed', 'password');
+        if (gate.lockedNow) {
+          logLoginEvent(email, 'locked', 'password');
+          showLockedMessage(email, lockedUntilMs - serverNow());
+          return;
+        }
+        submitBtn.disabled = false;
+        var attemptsLeft = MAX_LOGIN_ATTEMPTS - gate.count;
+        var attemptsNote = attemptsLeft <= 2 ? ' (' + attemptsLeft + ' attempt' + (attemptsLeft === 1 ? '' : 's') + ' left before a 10-minute lockout)' : '';
+        loginMessage.classList.remove('hidden');
+        loginMessage.textContent = ((err && err.code === 'auth/invalid-credential')
+          ? 'That email or password isn\u2019t right.'
+          : ((err && err.message) || 'Couldn\u2019t sign you in. Please try again.')) + attemptsNote;
+      });
+    }, function (err) {
+      console.error('MimiCart admin: sign-in protection check failed', err);
+      submitBtn.disabled = false;
       loginMessage.classList.remove('hidden');
-      loginMessage.textContent = ((err && err.code === 'auth/invalid-credential')
-        ? 'That email or password isn\u2019t right.'
-        : ((err && err.message) || 'Couldn\u2019t sign you in. Please try again.')) + attemptsNote;
+      loginMessage.textContent = 'Couldn\u2019t check the sign-in protection right now, so sign-in is paused. Check your connection and that the latest Firestore rules are published, then try again.';
     });
   });
+
+  // Warm up the (approximate) location lookup so the login log row is written instantly.
+  document.getElementById('login-email').addEventListener('focus', function () { lookupLocation(); });
 
   document.getElementById('sign-out-button').addEventListener('click', function () {
     if (firebaseAuth) firebaseAuth.signOut();
@@ -933,6 +1247,7 @@ var REQUIRE_OTP = false;
     loginForm.reset();
     pendingOtp = { code: null, email: null, expiresAt: 0 };
     clearInterval(otpResendCooldownTimer);
+    restoreLockNotice();
   }
 
   function showDashboard(email) {
@@ -1047,10 +1362,13 @@ var REQUIRE_OTP = false;
       var staffDocId = user.email.toLowerCase();
       firebaseDb.collection('staff').doc(staffDocId).get().then(function (doc) {
         if (doc.exists) {
-          logLoginEvent(user.email, 'success');
-          resetLoginAttempts(user.email);
-          if (REQUIRE_OTP && explicitLoginInProgress) { showOtpScreen(user.email); } else { showDashboard(user.email); }
+          var wasExplicit = explicitLoginInProgress;
+          explicitLoginInProgress = false;
+          // Only a real sign-in gets logged — not a session Firebase restored on refresh.
+          if (wasExplicit) logLoginEvent(user.email, 'success', 'password');
+          if (REQUIRE_OTP && wasExplicit) { showOtpScreen(user.email); } else { showDashboard(user.email); }
         } else {
+          explicitLoginInProgress = false;
           loginMessage.classList.remove('hidden');
           loginMessage.textContent = 'That account isn\u2019t on the staff list yet. Ask an admin to add it in Firestore.';
           firebaseAuth.signOut();
@@ -1072,6 +1390,7 @@ var REQUIRE_OTP = false;
       state.activeTab = btn.getAttribute('data-tab');
       document.querySelectorAll('.tab-button').forEach(function (b) { b.classList.toggle('active', b === btn); });
       document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.toggle('active', p.id === 'panel-' + state.activeTab); });
+      if (state.activeTab === 'settings') renderSettingsLoginLogs();
     });
   });
 
@@ -1166,6 +1485,34 @@ var REQUIRE_OTP = false;
     }).catch(function (err) {
       console.error('MimiCart: image repair failed', err);
       showToast('Could not repair product images. Check the console for details.');
+    });
+  });
+
+  // ---------------- PRICE SYNC ----------------
+  // Pushes the prices from RAW_PRODUCTS (above) into the live Firestore
+  // products. Updates ONLY the `price` field, so stock, names, and
+  // everything else stay exactly as they are.
+  document.getElementById('sync-prices-button').addEventListener('click', function () {
+    if (!confirm('Update every product price in Firestore to match the catalog list in this file? Stock and all other fields stay unchanged.')) return;
+
+    var priceMap = {};
+    RAW_PRODUCTS.forEach(function (row) { priceMap[row[0]] = row[4]; });
+
+    firebaseDb.collection('products').get().then(function (snap) {
+      var batch = firebaseDb.batch();
+      var changed = 0;
+      snap.forEach(function (doc) {
+        if (priceMap[doc.id] != null && Number(doc.data().price) !== priceMap[doc.id]) {
+          batch.update(doc.ref, { price: priceMap[doc.id] });
+          changed++;
+        }
+      });
+      return changed ? batch.commit().then(function () { return changed; }) : 0;
+    }).then(function (changed) {
+      showToast(changed ? ('Updated prices for ' + changed + ' product(s).') : 'All prices already match.');
+    }).catch(function (err) {
+      console.error('MimiCart: price sync failed', err);
+      showToast('Could not sync prices. Check the console for details.');
     });
   });
 
