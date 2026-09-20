@@ -373,9 +373,12 @@
 
   /* ---- settings / login activity log ---- */
   .login-log-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; max-height: 320px; overflow-y: auto; }
-  .login-log-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 10px; background: hsl(var(--muted)); font-size: 11px; }
+  .login-log-row { display: flex; flex-direction: column; gap: 3px; padding: 10px 12px; border-radius: 10px; background: hsl(var(--muted)); font-size: 11px; }
+  .login-log-row .log-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
   .login-log-row .log-status { font-weight: 700; }
-  .login-log-row .log-meta { color: hsl(var(--muted-foreground)); font-size: 10px; text-align: right; }
+  .login-log-row .log-time { color: hsl(var(--muted-foreground)); font-size: 10px; white-space: nowrap; }
+  .login-log-row .log-sub { color: hsl(var(--muted-foreground)); font-size: 10px; line-height: 1.5; word-break: break-word; }
+  .login-log-row .log-badge { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: hsl(var(--secondary) / .15); color: hsl(var(--secondary)); font-size: 9px; font-weight: 700; vertical-align: 1px; }
   .login-log-row.log-success .log-status { color: hsl(var(--secondary)); }
   .login-log-row.log-failed .log-status { color: hsl(var(--primary)); }
   .login-log-row.log-locked .log-status { color: hsl(28 85% 45%); }
@@ -478,6 +481,9 @@
   .tiktok-step:first-child .tiktok-step-connector { display: none; }
   @keyframes pulse-ring { 0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / .35); } 50% { box-shadow: 0 0 0 6px hsl(var(--primary) / 0); } }
   .order-reminder-note { margin: 10px 0 0; padding: 9px 11px; border-radius: 10px; background: hsl(var(--accent) / .25); color: hsl(30 70% 30%); font-size: 11px; line-height: 1.5; }
+  .order-track-actions { margin-top: 12px; padding-top: 12px; border-top: 1px dashed hsl(var(--border)); display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+  .order-track-actions .secondary-button { min-height: 36px; padding: 0 16px; font-size: 11px; }
+  .order-cancel-hint { margin: 0; color: hsl(var(--muted-foreground)); font-size: 10.5px; }
   .orders-empty-note { margin-top: 14px; color: hsl(var(--muted-foreground)); font-size: 12px; text-align: center; padding: 30px 10px; }
   /* ---- notification bell dropdown ---- */
   .notif-panel { position: fixed; z-index: 91; width: min(360px, 92vw); max-height: 70vh; overflow-y: auto; border-radius: 18px; background: hsl(var(--card)); border: 1px solid hsl(var(--border)); box-shadow: var(--shadow-card); padding: 8px; }
@@ -1012,6 +1018,16 @@ var EMAILJS_CONFIG = {
 // want both to behave the same way.
 var REQUIRE_OTP = false;
 
+// Checkout: when a customer picks "Email" as their contact method they must
+// confirm that address with a 6-digit code before they can place the order.
+// Uses the same EmailJS template as the login code above.
+var REQUIRE_CHECKOUT_EMAIL_OTP = true;
+
+// Live Philippine address lists (region > province > city > barangay).
+// Tried in order; if none respond, the form falls back to typing the city
+// and barangay by hand so checkout never gets stuck.
+var PSGC_API_BASES = ['https://psgc.gitlab.io/api', 'https://psgc.cloud/api'];
+
   // ---- contact country codes (phone contact method) ----
   var COUNTRY_CODES = [
     { code: '+63', label: '\uD83C\uDDF5\uD83C\uDDED +63 Philippines' },
@@ -1025,6 +1041,84 @@ var REQUIRE_OTP = false;
     { code: '+81', label: '\uD83C\uDDEF\uD83C\uDDF5 +81 Japan' },
     { code: '+82', label: '\uD83C\uDDF0\uD83C\uDDF7 +82 South Korea' }
   ];
+  // How many digits a mobile number actually has for a given country code
+  // (Philippine mobile numbers are always 10 digits after the leading 0,
+  // e.g. "9XX XXX XXXX") — everything else falls back to a generic
+  // international range so we're not guessing every country's exact length.
+  function maxPhoneDigits(countryCode) { return countryCode === '+63' ? 10 : 15; }
+  // Keeps digits and spaces (so "9XX XXX XXXX" still reads naturally as
+  // they type) but stops accepting more digits once the country's mobile
+  // number length is reached — this is what actually enforces the limit,
+  // both while typing and when the country code is switched afterward.
+  function sanitizePhoneInput(raw, countryCode) {
+    var maxDigits = maxPhoneDigits(countryCode);
+    var cleaned = (raw || '').replace(/[^\d\s]/g, '');
+    var digitCount = 0, result = '';
+    for (var i = 0; i < cleaned.length; i++) {
+      var ch = cleaned.charAt(i);
+      if (/\d/.test(ch)) {
+        if (digitCount >= maxDigits) continue;
+        digitCount++;
+      }
+      result += ch;
+    }
+    return result;
+  }
+  // Store hours drive the pickup windows shown at checkout — 7:00 AM open,
+  // 10:00 PM close, in 2-hour blocks (the last block is shorter if the
+  // close time doesn't land on an even 2-hour mark). Change these two
+  // numbers if the shop's actual hours change; the windows below rebuild
+  // themselves from them.
+  var STORE_OPEN_HOUR = 7;    // 7:00 AM
+  var STORE_CLOSE_HOUR = 22;  // 10:00 PM
+  var PICKUP_WINDOW_HOURS = 2;
+
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+  // Today's date as "YYYY-MM-DD" in the shopper's own LOCAL calendar —
+  // deliberately NOT toISOString() (which returns the UTC date). Using
+  // UTC here caused a real bug: someone in a timezone behind UTC could
+  // still be on "today" locally while UTC had already rolled to
+  // tomorrow (or vice versa for timezones ahead of UTC), so "today" and
+  // "now" silently disagreed and every pickup window looked already
+  // past even mid-afternoon. This keeps every date/time comparison on
+  // this page anchored to the same clock the shopper is actually seeing.
+  function localDateStr(d) {
+    d = d || new Date();
+    return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+  }
+  // 24-hour number -> "7:00 AM" / "2:00 PM" (never military time).
+  function hourTo12Label(h) {
+    var period = h >= 12 ? 'PM' : 'AM';
+    var h12 = h % 12; if (h12 === 0) h12 = 12;
+    return h12 + ':00 ' + period;
+  }
+  // Builds the pickup windows across the whole store-open range, e.g.
+  // "7:00 AM \u2013 9:00 AM", "9:00 AM \u2013 11:00 AM", ... up to closing. The
+  // VALUE stays 24-hour ("07:00\u201309:00") since that's what gets parsed
+  // elsewhere (pickup reminders); only the LABEL shown to the shopper is
+  // plain 12-hour clock time.
+  var PICKUP_WINDOWS = (function () {
+    var windows = [];
+    for (var h = STORE_OPEN_HOUR; h < STORE_CLOSE_HOUR; h += PICKUP_WINDOW_HOURS) {
+      var end = Math.min(h + PICKUP_WINDOW_HOURS, STORE_CLOSE_HOUR);
+      windows.push({
+        value: pad2(h) + ':00\u2013' + pad2(end) + ':00',
+        label: hourTo12Label(h) + ' \u2013 ' + hourTo12Label(end)
+      });
+    }
+    return windows;
+  })();
+  // A pickup window can only be chosen if it hasn't ENDED yet — so at
+  // 7:00 PM, a window that already finished (e.g. 5:00\u20137:00 PM if it's
+  // past 7) is gone, but the window currently underway (e.g. 7:00\u20139:00
+  // PM) still shows, right up until it closes.
+  function isPickupWindowPast(windowValue, dateStr) {
+    var todayStr = localDateStr();
+    if (!dateStr || dateStr !== todayStr) return false;
+    var endPart = windowValue.split(/[\u2013-]/)[1];
+    var end = new Date(dateStr + 'T' + endPart + ':00');
+    return end.getTime() <= Date.now();
+  }
 
   // ---- PH regions \u2192 provinces (for the structured delivery address) ----
   var PH_REGIONS = [
@@ -1083,60 +1177,60 @@ var REQUIRE_OTP = false;
   // swap its illustrated packaging for a real photo once one is uploaded.
   var RAW_PRODUCTS = [
     // Drinks
-    ['soju', 'Soju', '소주', 'Drinks', 5.5, 14, 'Shop favorite', 'Classically clean and crisp — Korea\u2019s most iconic bottle, ready to pour.', 'clean + smooth'],
-    ['pororo', 'Pororo Juice', 'kids\u2019 juice box', 'Drinks', 2.25, 20, null, 'A cheerful juice box with the little blue penguin along for the ride.', 'fruity + fun'],
-    ['sparkling-lemonade', 'Sparkling Lemonade Juice', 'citrus fizz', 'Drinks', 3.25, 12, null, 'Bright, fizzy lemonade with a fruity citrus kick.', 'citrus fizz'],
-    ['pink-peachade', 'Pink Peachade', 'peach soda', 'Drinks', 2.95, 15, null, 'Soft peach soda with a blush-pink sparkle.', 'peachy fizz'],
-    ['banana-milk', 'Banana Milk', '바나나맛 우유', 'Drinks', 3.25, 10, 'Nostalgia', 'The iconic little bottle: mellow banana, creamy sweetness, no fuss.', 'soft + creamy'],
-    ['yakult-big', 'Yakult Big', '야쿠르트', 'Drinks', 4.5, 9, 'Family size', 'A jumbo-sized version of the tangy probiotic sipper everyone loves.', 'tangy + sweet'],
-    ['strawberry-milk', 'Strawberry Milk', '딸기우유', 'Drinks', 2.75, 16, null, 'Pastel-pink milk with real strawberry sweetness.', 'berry + creamy'],
-    ['oatside', 'Oatside', 'oat milk', 'Drinks', 3.95, 11, null, 'Creamy oat milk, dairy-free and smooth for any time of day.', 'smooth + dairy-free'],
-    ['welchs', 'Welch\u2019s', 'grape juice', 'Drinks', 2.5, 18, null, 'Grape juice that tastes like purple candy, in the best way.', 'grape candy'],
-    ['caffebene', 'Caffe Bene', 'iced caf\u00e9 latte', 'Drinks', 3.75, 8, 'Chill it', 'Korean caf\u00e9-style iced coffee, sweet and smooth.', 'sweet + roasted'],
+    ['soju', 'Soju', '소주', 'Drinks', 85, 14, 'Shop favorite', 'Classically clean and crisp — Korea\u2019s most iconic bottle, ready to pour.', 'clean + smooth'],
+    ['pororo', 'Pororo Juice', 'kids\u2019 juice box', 'Drinks', 35, 20, null, 'A cheerful juice box with the little blue penguin along for the ride.', 'fruity + fun'],
+    ['sparkling-lemonade', 'Sparkling Lemonade Juice', 'citrus fizz', 'Drinks', 50, 12, null, 'Bright, fizzy lemonade with a fruity citrus kick.', 'citrus fizz'],
+    ['pink-peachade', 'Pink Peachade', 'peach soda', 'Drinks', 46, 15, null, 'Soft peach soda with a blush-pink sparkle.', 'peachy fizz'],
+    ['banana-milk', 'Banana Milk', '바나나맛 우유', 'Drinks', 50, 10, 'Nostalgia', 'The iconic little bottle: mellow banana, creamy sweetness, no fuss.', 'soft + creamy'],
+    ['yakult-big', 'Yakult Big', '야쿠르트', 'Drinks', 70, 9, 'Family size', 'A jumbo-sized version of the tangy probiotic sipper everyone loves.', 'tangy + sweet'],
+    ['strawberry-milk', 'Strawberry Milk', '딸기우유', 'Drinks', 43, 16, null, 'Pastel-pink milk with real strawberry sweetness.', 'berry + creamy'],
+    ['oatside', 'Oatside', 'oat milk', 'Drinks', 61, 11, null, 'Creamy oat milk, dairy-free and smooth for any time of day.', 'smooth + dairy-free'],
+    ['welchs', 'Welch\u2019s', 'grape juice', 'Drinks', 39, 18, null, 'Grape juice that tastes like purple candy, in the best way.', 'grape candy'],
+    ['caffebene', 'Caffe Bene', 'iced caf\u00e9 latte', 'Drinks', 58, 8, 'Chill it', 'Korean caf\u00e9-style iced coffee, sweet and smooth.', 'sweet + roasted'],
     // Frozen
-    ['sausage', 'Sausage', 'grill-ready', 'Frozen', 6.5, 10, null, 'Juicy grilled sausages, ready to pan-fry in minutes.', 'smoky + savory'],
-    ['sausage-korea-pork', 'Sausage (Korea Pork)', 'korean pork sausage', 'Frozen', 7.25, 8, null, 'Korean-style pork sausage with a savory, garlicky snap.', 'garlicky + savory'],
-    ['samanco', 'Samanco', 'ice cream sandwich', 'Frozen', 3.5, 14, null, 'A soft ice cream sandwich tucked between two crisp wafers.', 'sweet + crisp'],
-    ['melona', 'Melona', 'melon ice pop', 'Frozen', 2.75, 20, 'Chill it', 'Melon-flavored ice pop with a soft, milky bite.', 'melon + milky'],
-    ['crab-stick', 'Crab Stick', 'hot pot staple', 'Frozen', 4.25, 12, null, 'Sweet, springy imitation crab for hot pot or salad.', 'sweet + springy'],
-    ['hotpot', 'Hotpot', 'simmer-ready base', 'Frozen', 11.9, 6, 'New in', 'A ready-to-simmer hot pot base with all the fixings.', 'savory broth'],
-    ['la-beaute', 'La Beaute', 'rice cake dessert', 'Frozen', 5.5, 0, null, 'Delicate rice cake dessert, light and lightly sweet.', 'light + sweet'],
-    ['enoki-meat-roll', 'Enoki Meat Roll', 'beef + enoki rolls', 'Frozen', 6.75, 9, null, 'Thin beef wrapped around bundles of enoki mushroom.', 'savory + umami'],
-    ['ice-cream', 'Ice Cream', 'vanilla tub', 'Frozen', 5.25, 13, null, 'A tub of creamy vanilla, ready whenever the craving hits.', 'sweet + creamy'],
-    ['cheese', 'Cheese', 'sliceable + meltable', 'Frozen', 4.95, 15, null, 'Sliceable, meltable cheese for stews, toast, and midnight snacks.', 'rich + melty'],
+    ['sausage', 'Sausage', 'grill-ready', 'Frozen', 101, 10, null, 'Juicy grilled sausages, ready to pan-fry in minutes.', 'smoky + savory'],
+    ['sausage-korea-pork', 'Sausage (Korea Pork)', 'korean pork sausage', 'Frozen', 112, 8, null, 'Korean-style pork sausage with a savory, garlicky snap.', 'garlicky + savory'],
+    ['samanco', 'Samanco', 'ice cream sandwich', 'Frozen', 54, 14, null, 'A soft ice cream sandwich tucked between two crisp wafers.', 'sweet + crisp'],
+    ['melona', 'Melona', 'melon ice pop', 'Frozen', 43, 20, 'Chill it', 'Melon-flavored ice pop with a soft, milky bite.', 'melon + milky'],
+    ['crab-stick', 'Crab Stick', 'hot pot staple', 'Frozen', 66, 12, null, 'Sweet, springy imitation crab for hot pot or salad.', 'sweet + springy'],
+    ['hotpot', 'Hotpot', 'simmer-ready base', 'Frozen', 184, 6, 'New in', 'A ready-to-simmer hot pot base with all the fixings.', 'savory broth'],
+    ['la-beaute', 'La Beaute', 'rice cake dessert', 'Frozen', 85, 0, null, 'Delicate rice cake dessert, light and lightly sweet.', 'light + sweet'],
+    ['enoki-meat-roll', 'Enoki Meat Roll', 'beef + enoki rolls', 'Frozen', 105, 9, null, 'Thin beef wrapped around bundles of enoki mushroom.', 'savory + umami'],
+    ['ice-cream', 'Ice Cream', 'vanilla tub', 'Frozen', 81, 13, null, 'A tub of creamy vanilla, ready whenever the craving hits.', 'sweet + creamy'],
+    ['cheese', 'Cheese', 'sliceable + meltable', 'Frozen', 77, 15, null, 'Sliceable, meltable cheese for stews, toast, and midnight snacks.', 'rich + melty'],
     // Korean Noodles
-    ['buldak-rose', 'Buldak Rose', '불닭로제', 'Korean Noodles', 3.25, 16, null, 'Creamy tomato heat — the ros\u00e9 twist on the fire noodle.', 'spicy + creamy'],
-    ['buldak-original', 'Buldak Original', '불닭볶음면', 'Korean Noodles', 3.1, 15, null, 'The one that started it all: fiery, chewy, and endlessly craveable.', 'original spicy'],
-    ['buldak-swicy', 'Buldak Swicy', 'sweet + spicy', 'Korean Noodles', 3.25, 14, null, 'Sweet meets spicy in this milder fire noodle remix.', 'sweet + spicy'],
-    ['cheese-ramen-stir-fry', 'Cheese Ramen Stir Fry', 'cheesy stir-fry', 'Korean Noodles', 3.5, 10, null, 'Stir-fried noodles finished with a blanket of melted cheese.', 'cheesy + savory'],
-    ['shin-ramyun', 'Shin Ramyun', '신라면', 'Korean Noodles', 2.25, 24, 'Mimi pick', 'The classic red bowl: spicy, beefy, and endlessly comforting.', 'spicy + beefy'],
-    ['buldak-carbonara', 'Buldak Carbonara', '불닭까르보나라', 'Korean Noodles', 3.25, 18, 'Best seller', 'Fire noodles gone creamy with a smoky carbonara sauce.', 'spicy + smoky'],
-    ['quattro-cheese', 'Quattro Cheese', 'four-cheese bowl', 'Korean Noodles', 3.5, 12, null, 'Four cheeses, one bowl, maximum comfort.', 'four-cheese rich'],
-    ['buldak-cream-carbonara', 'Buldak Cream Carbonara', 'extra-creamy carbonara', 'Korean Noodles', 3.5, 11, null, 'An extra-silky carbonara spin on the original fire noodle.', 'extra creamy heat'],
-    ['jin', 'Jin Ramyun', '진라면', 'Korean Noodles', 2.1, 22, null, 'A no-fuss favorite: light broth, soft noodles, done in minutes.', 'light + savory'],
-    ['buldak-spicy-2x', 'Buldak (Spicy 2\u00d7)', 'extra-spicy 2\u00d7', 'Korean Noodles', 3.4, 9, null, 'For the heat-seekers: double the spice of the original fire noodle.', 'extra spicy'],
+    ['buldak-rose', 'Buldak Rose', '불닭로제', 'Korean Noodles', 50, 16, null, 'Creamy tomato heat — the ros\u00e9 twist on the fire noodle.', 'spicy + creamy'],
+    ['buldak-original', 'Buldak Original', '불닭볶음면', 'Korean Noodles', 48, 15, null, 'The one that started it all: fiery, chewy, and endlessly craveable.', 'original spicy'],
+    ['buldak-swicy', 'Buldak Swicy', 'sweet + spicy', 'Korean Noodles', 50, 14, null, 'Sweet meets spicy in this milder fire noodle remix.', 'sweet + spicy'],
+    ['cheese-ramen-stir-fry', 'Cheese Ramen Stir Fry', 'cheesy stir-fry', 'Korean Noodles', 54, 10, null, 'Stir-fried noodles finished with a blanket of melted cheese.', 'cheesy + savory'],
+    ['shin-ramyun', 'Shin Ramyun', '신라면', 'Korean Noodles', 35, 24, 'Mimi pick', 'The classic red bowl: spicy, beefy, and endlessly comforting.', 'spicy + beefy'],
+    ['buldak-carbonara', 'Buldak Carbonara', '불닭까르보나라', 'Korean Noodles', 50, 18, 'Best seller', 'Fire noodles gone creamy with a smoky carbonara sauce.', 'spicy + smoky'],
+    ['quattro-cheese', 'Quattro Cheese', 'four-cheese bowl', 'Korean Noodles', 54, 12, null, 'Four cheeses, one bowl, maximum comfort.', 'four-cheese rich'],
+    ['buldak-cream-carbonara', 'Buldak Cream Carbonara', 'extra-creamy carbonara', 'Korean Noodles', 54, 11, null, 'An extra-silky carbonara spin on the original fire noodle.', 'extra creamy heat'],
+    ['jin', 'Jin Ramyun', '진라면', 'Korean Noodles', 33, 22, null, 'A no-fuss favorite: light broth, soft noodles, done in minutes.', 'light + savory'],
+    ['buldak-spicy-2x', 'Buldak (Spicy 2\u00d7)', 'extra-spicy 2\u00d7', 'Korean Noodles', 53, 9, null, 'For the heat-seekers: double the spice of the original fire noodle.', 'extra spicy'],
     // Sweets
-    ['nerds', 'Nerds', 'crunchy candy', 'Sweets', 2.95, 17, null, 'Tiny, crunchy candy clusters in a rainbow of flavors.', 'tangy + crunchy'],
-    ['mnms', 'M&M\u2019s', 'candy-coated chocolate', 'Sweets', 3.25, 20, null, 'Colorful candy shells around a smooth chocolate center.', 'sweet + crunchy'],
-    ['maltesers', 'Maltesers', 'malt + chocolate', 'Sweets', 4.25, 12, null, 'Light, crunchy malt balls coated in milk chocolate.', 'malty crunch'],
-    ['hershey', 'Hershey', 'milk chocolate', 'Sweets', 2.75, 19, null, 'Classic milk chocolate, simple and familiar.', 'classic chocolate'],
-    ['pistachio', 'Pistachio', 'roasted nuts', 'Sweets', 6.5, 8, null, 'Roasted pistachios with a naturally rich, nutty bite.', 'roasted + nutty'],
-    ['macadamia', 'Macadamia', 'roasted nuts', 'Sweets', 7.9, 7, null, 'Buttery macadamia nuts, roasted to a perfect crunch.', 'buttery + nutty'],
-    ['kisses', 'Kisses', 'chocolate drops', 'Sweets', 4.5, 0, null, 'Bite-sized chocolate drops, perfect for sharing (or not).', 'smooth chocolate'],
-    ['bounty', 'Bounty', 'coconut + chocolate', 'Sweets', 2.95, 14, null, 'Coconut filling wrapped in a coat of milk chocolate.', 'coconut + chocolate'],
-    ['nutella', 'Nutella', 'hazelnut cocoa spread', 'Sweets', 6.25, 10, 'Shop favorite', 'Smooth hazelnut cocoa spread for toast, spoons, everything.', 'rich hazelnut'],
-    ['coco-manisa', 'Coco Manisa', 'chewy coconut candy', 'Sweets', 3.75, 13, null, 'Chewy coconut candy with a soft caramel sweetness.', 'chewy + sweet'],
+    ['nerds', 'Nerds', 'crunchy candy', 'Sweets', 46, 17, null, 'Tiny, crunchy candy clusters in a rainbow of flavors.', 'tangy + crunchy'],
+    ['mnms', 'M&M\u2019s', 'candy-coated chocolate', 'Sweets', 50, 20, null, 'Colorful candy shells around a smooth chocolate center.', 'sweet + crunchy'],
+    ['maltesers', 'Maltesers', 'malt + chocolate', 'Sweets', 66, 12, null, 'Light, crunchy malt balls coated in milk chocolate.', 'malty crunch'],
+    ['hershey', 'Hershey', 'milk chocolate', 'Sweets', 43, 19, null, 'Classic milk chocolate, simple and familiar.', 'classic chocolate'],
+    ['pistachio', 'Pistachio', 'roasted nuts', 'Sweets', 101, 8, null, 'Roasted pistachios with a naturally rich, nutty bite.', 'roasted + nutty'],
+    ['macadamia', 'Macadamia', 'roasted nuts', 'Sweets', 122, 7, null, 'Buttery macadamia nuts, roasted to a perfect crunch.', 'buttery + nutty'],
+    ['kisses', 'Kisses', 'chocolate drops', 'Sweets', 70, 0, null, 'Bite-sized chocolate drops, perfect for sharing (or not).', 'smooth chocolate'],
+    ['bounty', 'Bounty', 'coconut + chocolate', 'Sweets', 46, 14, null, 'Coconut filling wrapped in a coat of milk chocolate.', 'coconut + chocolate'],
+    ['nutella', 'Nutella', 'hazelnut cocoa spread', 'Sweets', 97, 10, 'Shop favorite', 'Smooth hazelnut cocoa spread for toast, spoons, everything.', 'rich hazelnut'],
+    ['coco-manisa', 'Coco Manisa', 'chewy coconut candy', 'Sweets', 58, 13, null, 'Chewy coconut candy with a soft caramel sweetness.', 'chewy + sweet'],
     // Snacks
-    ['pepero', 'Pepero', '빼빼로', 'Snacks', 3.75, 16, 'Best seller', 'Crunchy almond pieces tucked into a chocolate-dipped biscuit stick.', 'chocolate crunch'],
-    ['energy-bar', 'Energy Bar', 'oats + honey', 'Snacks', 2.25, 21, null, 'A grab-and-go bar with oats, nuts, and a hint of honey.', 'oat + honey'],
-    ['sunflower-seed', 'Sunflower Seed', 'roasted + salted', 'Snacks', 3.1, 15, null, 'Roasted and salted seeds for a slow, snackable break.', 'roasted + salty'],
-    ['favo-rocco', 'Favo Rocco', 'wafer rolls', 'Snacks', 3.5, 10, null, 'Crispy wafer rolls with a light hazelnut filling.', 'hazelnut crunch'],
-    ['lays-stax', 'Lays Stax', 'stackable crisps', 'Snacks', 3.25, 18, null, 'Stackable potato crisps in a resealable tube.', 'crispy + salty'],
-    ['pringles', 'Pringles', 'stackable crisps', 'Snacks', 3.5, 20, 'New in', 'The iconic stackable chip in a satisfying tube.', 'crispy + salty'],
-    ['mini-krunch', 'Mini Krunch', 'corn puffs', 'Snacks', 2.75, 0, null, 'Bite-sized crunchy corn snacks, light and airy.', 'light + crunchy'],
-    ['caramel-popcorn', 'Caramel Popcorn', 'buttery caramel', 'Snacks', 4.25, 11, null, 'Popcorn glazed in a buttery caramel coating.', 'sweet + buttery'],
-    ['nachos', 'Nachos', 'corn chips', 'Snacks', 3.95, 13, null, 'Crunchy corn chips ready for cheese, salsa, or both.', 'crunchy + salty'],
-    ['chicharon', 'Chicharon', 'pork rinds', 'Snacks', 2.95, 9, null, 'Crispy fried pork rinds with a salty crunch.', 'crispy + salty']
+    ['pepero', 'Pepero', '빼빼로', 'Snacks', 58, 16, 'Best seller', 'Crunchy almond pieces tucked into a chocolate-dipped biscuit stick.', 'chocolate crunch'],
+    ['energy-bar', 'Energy Bar', 'oats + honey', 'Snacks', 35, 21, null, 'A grab-and-go bar with oats, nuts, and a hint of honey.', 'oat + honey'],
+    ['sunflower-seed', 'Sunflower Seed', 'roasted + salted', 'Snacks', 48, 15, null, 'Roasted and salted seeds for a slow, snackable break.', 'roasted + salty'],
+    ['favo-rocco', 'Favo Rocco', 'wafer rolls', 'Snacks', 54, 10, null, 'Crispy wafer rolls with a light hazelnut filling.', 'hazelnut crunch'],
+    ['lays-stax', 'Lays Stax', 'stackable crisps', 'Snacks', 50, 18, null, 'Stackable potato crisps in a resealable tube.', 'crispy + salty'],
+    ['pringles', 'Pringles', 'stackable crisps', 'Snacks', 54, 20, 'New in', 'The iconic stackable chip in a satisfying tube.', 'crispy + salty'],
+    ['mini-krunch', 'Mini Krunch', 'corn puffs', 'Snacks', 43, 0, null, 'Bite-sized crunchy corn snacks, light and airy.', 'light + crunchy'],
+    ['caramel-popcorn', 'Caramel Popcorn', 'buttery caramel', 'Snacks', 66, 11, null, 'Popcorn glazed in a buttery caramel coating.', 'sweet + buttery'],
+    ['nachos', 'Nachos', 'corn chips', 'Snacks', 61, 13, null, 'Crunchy corn chips ready for cheese, salsa, or both.', 'crunchy + salty'],
+    ['chicharon', 'Chicharon', 'pork rinds', 'Snacks', 46, 9, null, 'Crispy fried pork rinds with a salty crunch.', 'crispy + salty']
   ];
 
   // Drop real photos in here as you get them — key is the product id (first
@@ -1254,6 +1348,9 @@ var REQUIRE_OTP = false;
     contactCountryCode: '+63',
     contactPhone: '',
     contactEmail: '',
+    // ---- checkout email confirmation (OTP) ----
+    verifiedEmail: '',
+    emailOtp: { sent: false, sending: false, code: '', input: '', email: '', expiresAt: 0, attempts: 0, error: '', notice: '', cooldown: 0 },
 
     fulfillment: 'pickup', // 'pickup' | 'delivery'
 
@@ -1262,6 +1359,9 @@ var REQUIRE_OTP = false;
     addressProvince: '',
     addressCity: '',
     addressBarangay: '',
+    addressRegionCode: '',
+    addressProvinceCode: '',
+    addressCityCode: '',
     addressStreet: '',
     deliveryNotes: '',
     reservationSubmitting: false,
@@ -1287,8 +1387,13 @@ var REQUIRE_OTP = false;
     // ---- account dialog sub-view: 'main' | 'settings' ----
     accountView: 'main',
 
-    // ---- client-side login lockout countdown (mm:ss), shown on the login form ----
+    // ---- login lockout countdown (mm:ss), shown on the login form ----
     lockoutRemaining: '',
+
+    // ---- sign-in activity shown under Settings (loaded from Firestore) ----
+    securityLogs: null,
+    securityLogsLoading: false,
+    securityLogsError: '',
 
     // ---- customer order tracking (tiktok-style shipment tracker) ----
     ordersOpen: false,
@@ -1635,19 +1740,354 @@ next.push({
     if (state.contactMethod === 'email') {
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.contactEmail.trim());
     }
-    return state.contactPhone.trim().replace(/\D/g, '').length >= 7;
+    var digits = state.contactPhone.trim().replace(/\D/g, '');
+    // +63 (Philippine) mobile numbers are always exactly 10 digits
+    // (e.g. "9XX XXX XXXX") — everything else keeps the looser 7\u201315
+    // digit range since we don't have an exact length for every country.
+    if (state.contactCountryCode === '+63') return digits.length === 10;
+    return digits.length >= 7 && digits.length <= maxPhoneDigits(state.contactCountryCode);
   }
   function contactValue() {
     if (state.contactMethod === 'email') return state.contactEmail.trim();
     return (state.contactCountryCode + ' ' + state.contactPhone.trim()).trim();
   }
 
-  // ---- structured delivery address ----
+  // ---- live PH address lists (PSGC) ----
+  // Cache values: undefined = not requested yet, array = loaded, 'error' = failed.
+  var psgc = { regions: {}, provinces: {}, cities: {}, barangays: {}, loading: {} };
+
+  function escHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function escAttr(s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;'); }
+
+  function psgcNormalize(data, byCode) {
+    var list = Array.isArray(data) ? data : (data && Array.isArray(data.data) ? data.data : null);
+    if (!list) throw new Error('Unexpected PSGC response');
+    return list
+      .filter(function (i) { return i && i.code && i.name; })
+      .map(function (i) { return { code: String(i.code), name: String(i.name) }; })
+      .sort(function (a, b) { return byCode ? a.code.localeCompare(b.code) : a.name.localeCompare(b.name); });
+  }
+
+  // Tries every base URL (with and without a trailing slash) until one answers.
+  function psgcFetchJson(path, byCode) {
+    var urls = [];
+    PSGC_API_BASES.forEach(function (b) { urls.push(b + path + '/'); urls.push(b + path); });
+    return urls.reduce(function (chain, url) {
+      return chain.catch(function () {
+        var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+        var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, 8000) : null;
+        return fetch(url, ctrl ? { signal: ctrl.signal } : undefined)
+          .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+          .then(function (data) { if (timer) clearTimeout(timer); return psgcNormalize(data, byCode); })
+          .catch(function (err) { if (timer) clearTimeout(timer); throw err; });
+      });
+    }, Promise.reject(new Error('start')));
+  }
+
+  function psgcLoad(bucket, key, path, opts) {
+    opts = opts || {};
+    var store = psgc[bucket];
+    var lkey = bucket + ':' + key;
+    if (store[key] !== undefined || psgc.loading[lkey]) return;
+    psgc.loading[lkey] = true;
+    psgcFetchJson(path, opts.byCode).then(function (list) {
+      store[key] = list;
+    }).catch(function (err) {
+      console.warn('MimiCart: address list failed to load (' + path + ')', err);
+      store[key] = opts.hasOwnProperty('errorValue') ? opts.errorValue : 'error';
+    }).then(function () {
+      delete psgc.loading[lkey];
+      if (state.cartOpen && state.cartStep === 'pickup') renderCartDrawer();
+    });
+  }
+
+  // Which cities list applies right now: by province, or by region when the
+  // region has no provinces (Metro Manila).
+  function psgcCityKey() {
+    var r = state.addressRegionCode;
+    if (!r) return null;
+    var provs = psgc.provinces[r];
+    if (provs === undefined) return null;
+    if (provs.length) return state.addressProvinceCode ? 'p' + state.addressProvinceCode : null;
+    return 'r' + r;
+  }
+  function psgcCityPath(key) {
+    return key.charAt(0) === 'p'
+      ? '/provinces/' + key.slice(1) + '/cities-municipalities'
+      : '/regions/' + key.slice(1) + '/cities-municipalities';
+  }
+  function addressApiMode() { return Array.isArray(psgc.regions.all); }
+
+  function selectHTML(id, label, items, selectedValue, placeholder, disabled) {
+    return '<label for="' + id + '">' + label + '</label><select id="' + id + '"' + (disabled ? ' disabled' : '') + '>' +
+      '<option value="">' + escHtml(placeholder) + '</option>' +
+      items.map(function (i) {
+        return '<option value="' + escAttr(i.value) + '"' + (String(selectedValue) === String(i.value) ? ' selected' : '') + '>' + escHtml(i.label) + '</option>';
+      }).join('') + '</select>';
+  }
+  function textFieldHTML(id, label, autocomplete, placeholder, value) {
+    return '<label for="' + id + '">' + label + '</label><input id="' + id + '" type="text" autocomplete="' + autocomplete + '" placeholder="' + escAttr(placeholder) + '" value="' + escAttr(value) + '" />';
+  }
+  function streetAndNotesHTML() {
+    return textFieldHTML('delivery-street', 'House no. / Street', 'street-address', 'Unit/house no., street name', state.addressStreet) +
+      '<label for="delivery-notes">Delivery notes (optional)</label><input id="delivery-notes" type="text" placeholder="Landmark, gate instructions, etc." value="' + escAttr(state.deliveryNotes) + '" />';
+  }
+
+  // Old free-typing form (used only if the address lists can't be loaded).
+  function legacyAddressHTML() {
+    var regionProvinces = provincesForRegion(state.addressRegion);
+    return (
+      '<p class="delivery-address-note">Enter your complete address \u2014 region, then province, city, and barangay.</p>' +
+      selectHTML('delivery-region', 'Region', PH_REGIONS.map(function (r) { return { value: r.name, label: r.name }; }), state.addressRegion, 'Select region', false) +
+      (regionProvinces.length
+        ? selectHTML('delivery-province', 'Province', regionProvinces.map(function (p) { return { value: p, label: p }; }), state.addressProvince, 'Select province', false)
+        : (state.addressRegion ? '<p class="address-hint">NCR has no provinces \u2014 go straight to city below.</p>' : '')) +
+      textFieldHTML('delivery-city', 'City / Municipality', 'address-level2', 'e.g. Quezon City', state.addressCity) +
+      textFieldHTML('delivery-barangay', 'Barangay', 'address-level3', 'e.g. Barangay Holy Spirit', state.addressBarangay) +
+      streetAndNotesHTML()
+    );
+  }
+
+  function addressFormHTML() {
+    psgcLoad('regions', 'all', '/regions', { byCode: true });
+    var regs = psgc.regions.all;
+    var note = '<p class="delivery-address-note">Choose your region, province, city and barangay from the lists, then type your house no. and street.</p>';
+    if (regs === undefined) {
+      return note + selectHTML('delivery-region', 'Region', [], '', 'Loading regions\u2026', true) + streetAndNotesHTML();
+    }
+    if (regs === 'error') return legacyAddressHTML();
+
+    var rCode = state.addressRegionCode;
+    var html = note + selectHTML('delivery-region', 'Region',
+      regs.map(function (r) { return { value: r.code, label: r.name }; }), rCode, 'Select region', false);
+
+    // ---- province ----
+    var provs = [], provLoading = false;
+    if (rCode) {
+      psgcLoad('provinces', rCode, '/regions/' + rCode + '/provinces', { errorValue: [] });
+      if (psgc.provinces[rCode] === undefined) provLoading = true; else provs = psgc.provinces[rCode];
+    }
+    if (provLoading) {
+      html += selectHTML('delivery-province', 'Province', [], '', 'Loading provinces\u2026', true);
+    } else if (provs.length) {
+      html += selectHTML('delivery-province', 'Province',
+        provs.map(function (p) { return { value: p.code, label: p.name }; }), state.addressProvinceCode, 'Select province', false);
+    } else if (rCode) {
+      html += '<p class="address-hint">This region has no provinces \u2014 go straight to city below.</p>';
+    }
+
+    // ---- city / municipality ----
+    var cityKey = psgcCityKey();
+    var cityEntry;
+    if (cityKey) { psgcLoad('cities', cityKey, psgcCityPath(cityKey)); cityEntry = psgc.cities[cityKey]; }
+
+    if (cityKey && cityEntry === 'error') {
+      // This one list couldn't load \u2014 let them type city + barangay instead.
+      return html +
+        textFieldHTML('delivery-city', 'City / Municipality', 'address-level2', 'e.g. Quezon City', state.addressCity) +
+        textFieldHTML('delivery-barangay', 'Barangay', 'address-level3', 'e.g. Barangay Holy Spirit', state.addressBarangay) +
+        streetAndNotesHTML();
+    }
+    var cityPlaceholder = !rCode ? 'Select region first'
+      : provLoading ? 'Loading\u2026'
+      : !cityKey ? 'Select province first'
+      : cityEntry === undefined ? 'Loading cities\u2026' : 'Select city / municipality';
+    html += selectHTML('delivery-city', 'City / Municipality',
+      Array.isArray(cityEntry) ? cityEntry.map(function (c) { return { value: c.code, label: c.name }; }) : [],
+      state.addressCityCode, cityPlaceholder, !Array.isArray(cityEntry));
+
+    // ---- barangay ----
+    var cCode = state.addressCityCode;
+    var brgyEntry;
+    if (cCode) { psgcLoad('barangays', cCode, '/cities-municipalities/' + cCode + '/barangays'); brgyEntry = psgc.barangays[cCode]; }
+    if (cCode && brgyEntry === 'error') {
+      html += textFieldHTML('delivery-barangay', 'Barangay', 'address-level3', 'e.g. Barangay Holy Spirit', state.addressBarangay);
+    } else {
+      html += selectHTML('delivery-barangay', 'Barangay',
+        Array.isArray(brgyEntry) ? brgyEntry.map(function (b) { return { value: b.code, label: b.name }; }) : [],
+        Array.isArray(brgyEntry) ? (brgyEntry.filter(function (b) { return b.name === state.addressBarangay; })[0] || {}).code || '' : '',
+        !cCode ? 'Select city first' : brgyEntry === undefined ? 'Loading barangays\u2026' : 'Select barangay',
+        !Array.isArray(brgyEntry));
+    }
+    return html + streetAndNotesHTML();
+  }
+
+  function regionHasProvinces() {
+    if (addressApiMode()) {
+      var p = psgc.provinces[state.addressRegionCode];
+      return Array.isArray(p) && p.length > 0;
+    }
+    return provincesForRegion(state.addressRegion).length > 0;
+  }
   function addressIsComplete() {
     var regionOk = state.addressRegion.trim();
-    var provinceOk = provincesForRegion(state.addressRegion).length === 0 || state.addressProvince.trim();
+    var provinceOk = !regionHasProvinces() || state.addressProvince.trim();
     return !!(regionOk && provinceOk && state.addressCity.trim() && state.addressBarangay.trim() && state.addressStreet.trim());
   }
+
+  // ---- email confirmation at checkout (6-digit code) ----
+  var ckCooldownTimer = null;
+  function ckEmailNorm() { return (state.contactEmail || '').trim().toLowerCase(); }
+  function ckEmailFormatOk() { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((state.contactEmail || '').trim()); }
+  function ckEmailVerified() { return !!state.verifiedEmail && state.verifiedEmail === ckEmailNorm(); }
+  // True when nothing more is needed to trust the contact detail.
+  function contactIsVerified() {
+    if (state.contactMethod !== 'email' || !REQUIRE_CHECKOUT_EMAIL_OTP) return true;
+    return ckEmailVerified();
+  }
+  function ckRandomCode() {
+    if (window.crypto && window.crypto.getRandomValues) {
+      var a = new Uint32Array(1);
+      window.crypto.getRandomValues(a);
+      return String(100000 + (a[0] % 900000));
+    }
+    return String(100000 + Math.floor(Math.random() * 900000));
+  }
+  function ckResetOtp() {
+    var o = state.emailOtp;
+    o.sent = false; o.sending = false; o.code = ''; o.input = ''; o.email = ''; o.expiresAt = 0; o.attempts = 0; o.error = ''; o.notice = '';
+  }
+  // Called whenever the email box changes: a code sent to a different
+  // address no longer counts.
+  function ckOnEmailEdited() {
+    var o = state.emailOtp;
+    if ((o.sent || o.sending) && o.email && o.email !== ckEmailNorm()) ckResetOtp();
+  }
+  function ckStartCooldown(seconds) {
+    var o = state.emailOtp;
+    o.cooldown = seconds;
+    clearInterval(ckCooldownTimer);
+    ckCooldownTimer = setInterval(function () {
+      o.cooldown -= 1;
+      var b = document.getElementById('ck-resend-code');
+      if (o.cooldown <= 0) {
+        clearInterval(ckCooldownTimer);
+        o.cooldown = 0;
+        if (b) { b.disabled = false; b.textContent = 'Resend code'; }
+      } else if (b) {
+        b.textContent = 'Resend code (' + o.cooldown + 's)';
+      }
+    }, 1000);
+  }
+
+  function ckEmailBlockHTML() {
+    if (state.contactMethod !== 'email' || !REQUIRE_CHECKOUT_EMAIL_OTP) return '';
+    var o = state.emailOtp;
+    var msg = (o.error ? '<p class="login-error">' + escHtml(o.error) + '</p>' : '') +
+              (!o.error && o.notice ? '<p class="login-notice good">' + escHtml(o.notice) + '</p>' : '');
+    if (!ckEmailFormatOk()) {
+      return '<p class="address-hint">Type your email above \u2014 you\u2019ll confirm it with a 6-digit code.</p>';
+    }
+    if (ckEmailVerified()) {
+      return '<span class="verify-badge is-verified">\u2713 Email confirmed</span>';
+    }
+    if (!o.sent || o.email !== ckEmailNorm()) {
+      return '<button type="button" class="secondary-button full-width focus-ring" id="ck-send-code"' + (o.sending || o.cooldown > 0 ? ' disabled' : '') + '>' +
+        (o.sending ? 'Sending code\u2026' : 'Confirm email') + '</button>' +
+        '<p class="address-hint" style="margin-top:8px">We\u2019ll email a 6-digit code to this address.</p>' + msg;
+    }
+    return '<label for="ck-code-input">Enter the 6-digit code</label>' +
+      '<input id="ck-code-input" class="otp-field" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" style="text-align:center;letter-spacing:.35em;font-weight:700" value="' + escAttr(o.input) + '" />' +
+      msg +
+      '<button type="button" class="primary-button full-width focus-ring" id="ck-verify-code" style="margin-top:12px">Verify code</button>' +
+      '<div class="otp-actions-row"><button type="button" id="ck-resend-code"' + (o.cooldown > 0 ? ' disabled' : '') + '>' +
+        (o.cooldown > 0 ? 'Resend code (' + o.cooldown + 's)' : 'Resend code') + '</button>' +
+      '<button type="button" id="ck-change-email">Use a different email</button></div>';
+  }
+
+  function ckRenderEmailBlock() {
+    var el = document.getElementById('ck-email-block');
+    if (!el) return;
+    el.innerHTML = ckEmailBlockHTML();
+    var o = state.emailOtp;
+    var sendBtn = document.getElementById('ck-send-code');
+    if (sendBtn) sendBtn.addEventListener('click', ckSendEmailCode);
+    var input = document.getElementById('ck-code-input');
+    if (input) {
+      input.addEventListener('input', function () {
+        o.input = input.value.replace(/\D/g, '').slice(0, 6);
+        input.value = o.input;
+      });
+      input.addEventListener('keydown', function (e) { if (e.key === 'Enter') ckVerifyEmailCode(); });
+    }
+    var verifyBtn = document.getElementById('ck-verify-code');
+    if (verifyBtn) verifyBtn.addEventListener('click', ckVerifyEmailCode);
+    var resendBtn = document.getElementById('ck-resend-code');
+    if (resendBtn) resendBtn.addEventListener('click', ckSendEmailCode);
+    var changeBtn = document.getElementById('ck-change-email');
+    if (changeBtn) changeBtn.addEventListener('click', function () {
+      ckResetOtp();
+      ckRenderEmailBlock();
+      var emailEl = document.getElementById('pickup-contact-email');
+      if (emailEl) emailEl.focus();
+    });
+    updateReservationButtonState();
+  }
+
+  function ckSendEmailCode() {
+    var o = state.emailOtp;
+    if (!ckEmailFormatOk() || o.sending || o.cooldown > 0) return;
+    var email = state.contactEmail.trim();
+    var norm = email.toLowerCase();
+    var code = ckRandomCode();
+    o.sending = true; o.error = ''; o.notice = '';
+    o.email = norm;
+    ckRenderEmailBlock();
+
+    var sendPromise;
+    if (emailjsConfigured) {
+      sendPromise = emailjs.send(EMAILJS_CONFIG.serviceId, EMAILJS_CONFIG.templateId, { to_email: email, passcode: code });
+    } else {
+      console.warn('EmailJS isn\u2019t configured yet \u2014 your checkout code is:', code);
+      sendPromise = Promise.resolve();
+    }
+    sendPromise.then(function () {
+      if (o.email !== norm) return; // they changed the email while it was sending
+      o.code = code; o.expiresAt = Date.now() + 5 * 60 * 1000; o.attempts = 0;
+      o.sent = true; o.sending = false; o.input = '';
+      o.notice = 'Code sent! Check ' + email + ' (and your spam folder).';
+      ckStartCooldown(30);
+      ckRenderEmailBlock();
+      var input = document.getElementById('ck-code-input');
+      if (input) input.focus();
+    }).catch(function (err) {
+      console.error('MimiCart: checkout OTP email failed', err);
+      if (o.email !== norm) return;
+      o.sending = false; o.sent = false; o.code = '';
+      o.error = 'Couldn\u2019t send the code. Please check the email address and try again.';
+      ckRenderEmailBlock();
+    });
+  }
+
+  function ckVerifyEmailCode() {
+    var o = state.emailOtp;
+    o.error = ''; o.notice = '';
+    if (!o.code || Date.now() > o.expiresAt) {
+      o.error = 'That code expired. Tap \u201cResend code\u201d for a new one.';
+      o.code = '';
+      ckRenderEmailBlock();
+      return;
+    }
+    if (o.input.length !== 6) {
+      o.error = 'Enter all 6 digits of the code.';
+      ckRenderEmailBlock();
+      var again = document.getElementById('ck-code-input'); if (again) again.focus();
+      return;
+    }
+    if (o.input !== o.code) {
+      o.attempts += 1;
+      o.input = '';
+      if (o.attempts >= 5) { o.code = ''; o.error = 'Too many wrong tries. Tap \u201cResend code\u201d for a new one.'; }
+      else o.error = 'That code isn\u2019t right. Please try again.';
+      ckRenderEmailBlock();
+      var retry = document.getElementById('ck-code-input'); if (retry) retry.focus();
+      return;
+    }
+    state.verifiedEmail = o.email;
+    ckResetOtp();
+    ckRenderEmailBlock();
+  }
+
   function fullAddressText() {
     return [state.addressStreet.trim(), state.addressBarangay.trim(), state.addressCity.trim(), state.addressProvince.trim(), state.addressRegion.trim()]
       .filter(Boolean).join(', ');
@@ -1656,7 +2096,7 @@ next.push({
   function updateReservationButtonState() {
     var btn = document.getElementById('submit-reservation');
     if (!btn) return;
-    var ready = state.pickupName.trim() && contactIsValid() &&
+    var ready = state.pickupName.trim() && contactIsValid() && contactIsVerified() &&
       (state.fulfillment === 'delivery' ? addressIsComplete() : state.pickupDate && state.pickupTime);
     btn.disabled = !ready || state.reservationSubmitting;
   }
@@ -1688,12 +2128,11 @@ next.push({
       );
     } else {
       var itemCount = state.cart.reduce(function (s, l) { return s + l.quantity; }, 0);
-      var today = new Date().toISOString().slice(0, 10);
+      var today = localDateStr();
       var isDelivery = state.fulfillment === 'delivery';
       var isEmail = state.contactMethod === 'email';
       var fulfillmentReady = isDelivery ? addressIsComplete() : (state.pickupDate && state.pickupTime);
-      var canSubmit = fulfillmentReady && state.pickupName.trim() && contactIsValid() && !state.reservationSubmitting;
-      var regionProvinces = provincesForRegion(state.addressRegion);
+      var canSubmit = fulfillmentReady && state.pickupName.trim() && contactIsValid() && contactIsVerified() && !state.reservationSubmitting;
 
       var contactHTML = (
         '<label>Contact method</label>' +
@@ -1702,32 +2141,19 @@ next.push({
           '<button type="button" class="fulfillment-option ' + (isEmail ? 'active' : '') + '" data-contact-method="email">\uD83D\uDCE7 Email</button>' +
         '</div>' +
         (isEmail
-          ? '<label for="pickup-contact-email">Email address</label><input id="pickup-contact-email" type="email" autocomplete="email" placeholder="you@example.com" value="' + state.contactEmail.replace(/"/g, '&quot;') + '" />'
+          ? '<label for="pickup-contact-email">Email address</label><input id="pickup-contact-email" type="email" autocomplete="email" placeholder="you@example.com" value="' + state.contactEmail.replace(/"/g, '&quot;') + '" />' +
+            '<div id="ck-email-block" style="margin:10px 0 6px">' + ckEmailBlockHTML() + '</div>'
           : '<label for="pickup-contact-phone">Phone number</label>' +
             '<div class="phone-input-row">' +
               '<select id="contact-country-code" aria-label="Country code">' +
                 COUNTRY_CODES.map(function (c) { return '<option value="' + c.code + '"' + (state.contactCountryCode === c.code ? ' selected' : '') + '>' + c.label + '</option>'; }).join('') +
               '</select>' +
-              '<input id="pickup-contact-phone" type="tel" autocomplete="tel" placeholder="9XX XXX XXXX" value="' + state.contactPhone.replace(/"/g, '&quot;') + '" />' +
-            '</div>')
+              '<input id="pickup-contact-phone" type="tel" inputmode="numeric" autocomplete="tel" placeholder="9XX XXX XXXX" maxlength="' + (maxPhoneDigits(state.contactCountryCode) + 4) + '" value="' + state.contactPhone.replace(/"/g, '&quot;') + '" />' +
+            '</div>' +
+            (state.contactCountryCode === '+63' ? '<p class="address-hint">10 digits, no leading 0 \u2014 e.g. 917 123 4567.</p>' : ''))
       );
 
-      var addressHTML = (
-        '<p class="delivery-address-note">Enter your complete address, just like registering on a government app \u2014 region, then province, city, and barangay.</p>' +
-        '<label for="delivery-region">Region</label>' +
-        '<select id="delivery-region"><option value="">Select region</option>' +
-          PH_REGIONS.map(function (r) { return '<option value="' + r.name.replace(/"/g, '&quot;') + '"' + (state.addressRegion === r.name ? ' selected' : '') + '>' + r.name + '</option>'; }).join('') +
-        '</select>' +
-        (regionProvinces.length
-          ? '<label for="delivery-province">Province</label><select id="delivery-province"><option value="">Select province</option>' +
-            regionProvinces.map(function (p) { return '<option value="' + p.replace(/"/g, '&quot;') + '"' + (state.addressProvince === p ? ' selected' : '') + '>' + p + '</option>'; }).join('') +
-            '</select>'
-          : (state.addressRegion ? '<p class="address-hint">NCR has no provinces \u2014 go straight to city below.</p>' : '')) +
-        '<label for="delivery-city">City / Municipality</label><input id="delivery-city" type="text" autocomplete="address-level2" placeholder="e.g. Quezon City" value="' + state.addressCity.replace(/"/g, '&quot;') + '" />' +
-        '<label for="delivery-barangay">Barangay</label><input id="delivery-barangay" type="text" autocomplete="address-level3" placeholder="e.g. Barangay Holy Spirit" value="' + state.addressBarangay.replace(/"/g, '&quot;') + '" />' +
-        '<label for="delivery-street">House no. / Street</label><input id="delivery-street" type="text" autocomplete="street-address" placeholder="Unit/house no., street name" value="' + state.addressStreet.replace(/"/g, '&quot;') + '" />' +
-        '<label for="delivery-notes">Delivery notes (optional)</label><input id="delivery-notes" type="text" placeholder="Landmark, gate instructions, etc." value="' + state.deliveryNotes.replace(/"/g, '&quot;') + '" />'
-      );
+      var addressHTML = addressFormHTML();
 
       bodyHTML = (
         '<div class="pickup-form-wrap">' +
@@ -1743,8 +2169,11 @@ next.push({
             ? addressHTML
             : '<label for="pickup-date">Pickup date</label><input id="pickup-date" type="date" min="' + today + '" value="' + state.pickupDate + '" />' +
               '<label for="pickup-time">Pickup window</label><select id="pickup-time"><option value="">Choose a time</option>' +
-                ['12:00–14:00', '14:00–16:00', '16:00–18:00', '18:00–20:00'].map(function (t) { return '<option value="' + t + '"' + (state.pickupTime === t ? ' selected' : '') + '>' + t + '</option>'; }).join('') +
-              '</select>') +
+                PICKUP_WINDOWS.filter(function (w) { return !isPickupWindowPast(w.value, state.pickupDate); })
+                  .map(function (w) { return '<option value="' + w.value + '"' + (state.pickupTime === w.value ? ' selected' : '') + '>' + w.label + '</option>'; }).join('') +
+              '</select>' +
+              (state.pickupDate && PICKUP_WINDOWS.every(function (w) { return isPickupWindowPast(w.value, state.pickupDate); })
+                ? '<p class="address-hint">All of today\u2019s pickup windows have passed \u2014 please pick a later date.</p>' : '')) +
           '<div class="pickup-summary"><span>' + itemCount + ' items</span><strong>₱' + total.toFixed(2) + '</strong></div>' +
           (isDelivery ? '<div class="delivery-fee-row"><span>Delivery fee</span><span>₱5.00</span></div>' : '') +
           (state.reservationError ? '<p class="login-error">' + state.reservationError + '</p>' : '') +
@@ -1790,13 +2219,38 @@ next.push({
       var contactPhoneEl = document.getElementById('pickup-contact-phone');
       var contactEmailEl = document.getElementById('pickup-contact-email');
       var countryCodeEl = document.getElementById('contact-country-code');
-      if (contactPhoneEl) contactPhoneEl.addEventListener('input', function (e) { state.contactPhone = e.target.value; updateReservationButtonState(); });
-      if (contactEmailEl) contactEmailEl.addEventListener('input', function (e) { state.contactEmail = e.target.value; updateReservationButtonState(); });
-      if (countryCodeEl) countryCodeEl.addEventListener('change', function (e) { state.contactCountryCode = e.target.value; });
+      if (contactPhoneEl) contactPhoneEl.addEventListener('input', function (e) {
+        var sanitized = sanitizePhoneInput(e.target.value, state.contactCountryCode);
+        if (sanitized !== e.target.value) e.target.value = sanitized;
+        state.contactPhone = sanitized;
+        updateReservationButtonState();
+      });
+      if (contactEmailEl) contactEmailEl.addEventListener('input', function (e) {
+        state.contactEmail = e.target.value;
+        ckOnEmailEdited();
+        ckRenderEmailBlock();
+        updateReservationButtonState();
+      });
+      ckRenderEmailBlock();
+      if (countryCodeEl) countryCodeEl.addEventListener('change', function (e) {
+        state.contactCountryCode = e.target.value;
+        // Switching country (e.g. from +1 to +63) may make the number the
+        // shopper already typed too long — trim it down to fit right away
+        // instead of only catching it on the next keystroke.
+        state.contactPhone = sanitizePhoneInput(state.contactPhone, state.contactCountryCode);
+        renderCartDrawer();
+      });
 
       var pickupDateEl = document.getElementById('pickup-date');
       var pickupTimeEl = document.getElementById('pickup-time');
-      if (pickupDateEl) pickupDateEl.addEventListener('change', function (e) { state.pickupDate = e.target.value; renderCartDrawer(); });
+      if (pickupDateEl) pickupDateEl.addEventListener('change', function (e) {
+        state.pickupDate = e.target.value;
+        // If they'd already picked a window and then switched the date to
+        // today, that window might now be in the past — clear it instead
+        // of silently keeping an invalid, already-passed selection.
+        if (state.pickupTime && isPickupWindowPast(state.pickupTime, state.pickupDate)) state.pickupTime = '';
+        renderCartDrawer();
+      });
       if (pickupTimeEl) pickupTimeEl.addEventListener('change', function (e) { state.pickupTime = e.target.value; renderCartDrawer(); });
 
       var regionEl = document.getElementById('delivery-region');
@@ -1805,10 +2259,54 @@ next.push({
       var barangayEl = document.getElementById('delivery-barangay');
       var streetEl = document.getElementById('delivery-street');
       var deliveryNotesEl = document.getElementById('delivery-notes');
-      if (regionEl) regionEl.addEventListener('change', function (e) { state.addressRegion = e.target.value; state.addressProvince = ''; renderCartDrawer(); });
-      if (provinceEl) provinceEl.addEventListener('change', function (e) { state.addressProvince = e.target.value; updateReservationButtonState(); });
-      if (cityEl) cityEl.addEventListener('input', function (e) { state.addressCity = e.target.value; updateReservationButtonState(); });
-      if (barangayEl) barangayEl.addEventListener('input', function (e) { state.addressBarangay = e.target.value; updateReservationButtonState(); });
+      var apiMode = addressApiMode();
+      function nameByCode(list, code) {
+        var m = (Array.isArray(list) ? list : []).filter(function (x) { return x.code === code; })[0];
+        return m ? m.name : '';
+      }
+      if (regionEl) regionEl.addEventListener('change', function (e) {
+        var v = e.target.value;
+        state.addressProvince = ''; state.addressProvinceCode = '';
+        state.addressCity = ''; state.addressCityCode = ''; state.addressBarangay = '';
+        if (apiMode) { state.addressRegionCode = v; state.addressRegion = nameByCode(psgc.regions.all, v); }
+        else { state.addressRegionCode = ''; state.addressRegion = v; }
+        renderCartDrawer();
+      });
+      if (provinceEl) provinceEl.addEventListener('change', function (e) {
+        var v = e.target.value;
+        if (apiMode) {
+          state.addressProvinceCode = v;
+          state.addressProvince = nameByCode(psgc.provinces[state.addressRegionCode], v);
+          state.addressCity = ''; state.addressCityCode = ''; state.addressBarangay = '';
+          renderCartDrawer();
+        } else {
+          state.addressProvince = v;
+          updateReservationButtonState();
+        }
+      });
+      if (cityEl) {
+        if (cityEl.tagName === 'SELECT') {
+          cityEl.addEventListener('change', function (e) {
+            var v = e.target.value;
+            state.addressCityCode = v;
+            state.addressCity = nameByCode(psgc.cities[psgcCityKey()], v);
+            state.addressBarangay = '';
+            renderCartDrawer();
+          });
+        } else {
+          cityEl.addEventListener('input', function (e) { state.addressCity = e.target.value; updateReservationButtonState(); });
+        }
+      }
+      if (barangayEl) {
+        if (barangayEl.tagName === 'SELECT') {
+          barangayEl.addEventListener('change', function (e) {
+            state.addressBarangay = nameByCode(psgc.barangays[state.addressCityCode], e.target.value);
+            updateReservationButtonState();
+          });
+        } else {
+          barangayEl.addEventListener('input', function (e) { state.addressBarangay = e.target.value; updateReservationButtonState(); });
+        }
+      }
       if (streetEl) streetEl.addEventListener('input', function (e) { state.addressStreet = e.target.value; updateReservationButtonState(); });
       if (deliveryNotesEl) deliveryNotesEl.addEventListener('input', function (e) { state.deliveryNotes = e.target.value; });
 
@@ -1830,6 +2328,9 @@ next.push({
         state.addressProvince = '';
         state.addressCity = '';
         state.addressBarangay = '';
+        state.addressRegionCode = '';
+        state.addressProvinceCode = '';
+        state.addressCityCode = '';
         state.addressStreet = '';
         state.deliveryNotes = '';
         saveCartToStorage();
@@ -1879,6 +2380,11 @@ next.push({
   function submitReservation() {
     if (state.reservationSubmitting || !state.cart.length) return;
     state.reservationError = '';
+    if (!contactIsVerified()) {
+      state.reservationError = 'Please confirm your email with the 6-digit code before placing the order.';
+      renderCartDrawer();
+      return;
+    }
 
     var lineItems = state.cart.map(function (line) {
       var product = productById(line.productId);
@@ -2128,7 +2634,9 @@ next.push({
     var emailFilter = state.user.email;
     unsubscribeCustomerOrders = ORDER_COLLECTIONS.map(function (group) {
       return firebaseDb.collection(group).where('customerEmail', '==', emailFilter).onSnapshot(function (snap) {
-        customerOrdersByCollection[group] = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
+        // _collection is client-only — it's how cancelMyOrder() knows which
+        // collection to delete the doc from when moving it to "cancelled".
+        customerOrdersByCollection[group] = snap.docs.map(function (d) { return Object.assign({ id: d.id, _collection: group }, d.data()); });
         handleMerge();
       }, function (err) { console.error('MimiCart: could not load your orders (' + group + ')', err); });
     });
@@ -2198,6 +2706,16 @@ next.push({
     } else if (order.fulfillment === 'delivery' && order.status !== 'completed' && order.status !== 'cancelled') {
       reminderNote = '<p class="order-reminder-note">\uD83D\uDCE2 We\u2019ll notify you here the moment your order is out for delivery.</p>';
     }
+    // Customers may only cancel while the order is still on the very first
+    // dot ("Order placed" / pending) — the moment staff start preparing it
+    // (or it moves on to any later stage), self-cancel goes away and
+    // they'd need to reach out to have it cancelled instead.
+    var cancelSection = order.status === 'pending'
+      ? '<div class="order-track-actions">' +
+          '<button type="button" class="secondary-button" data-cancel-mine="' + order.id + '">Cancel order</button>' +
+          '<p class="order-cancel-hint">You can cancel it yourself while it\u2019s just been placed. Once we start preparing it, this button goes away.</p>' +
+        '</div>'
+      : '';
     return (
       '<div class="order-track-card">' +
         '<div class="order-track-head">' +
@@ -2208,8 +2726,58 @@ next.push({
         '<p class="order-track-items">' + itemsSummary + '</p>' +
         tiktokTrackerHTML(order) +
         reminderNote +
+        cancelSection +
       '</div>'
     );
+  }
+
+  // Lets a customer cancel their OWN order themselves, but only while it's
+  // still sitting on the very first dot ("pending" / just placed) — once
+  // staff have started preparing it (or it's moved further along), this
+  // is blocked both here and by the Firestore Security Rules, so a stale
+  // button click can't cancel something already in progress. Mirrors the
+  // move-with-retry pattern admin.html uses: the doc is physically moved
+  // into "cancelled" (same id) and deleted from wherever it was, with
+  // stock restored in the same atomic batch. If that exact id happens to
+  // already exist in "cancelled" (an older order reusing the same
+  // name/option), our rules only allow CREATE there, never overwrite, so
+  // the attempt comes back "permission-denied" and we retry with "(2)",
+  // "(3)", etc. instead of silently clobbering that earlier record.
+  function cancelMyOrder(id) {
+    var order = state.customerOrders.filter(function (o) { return o.id === id; })[0];
+    if (!order || order.status !== 'pending') return;
+    if (!confirm('Cancel this order? Your items will be released back into stock.')) return;
+
+    function attempt(candidateId, attemptNumber) {
+      var data = Object.assign({}, order, {
+        status: 'cancelled',
+        cancelledAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      delete data.id;
+      delete data._collection;
+      var batch = firebaseDb.batch();
+      batch.set(firebaseDb.collection('cancelled').doc(candidateId), data);
+      batch.delete(firebaseDb.collection(order._collection).doc(order.id));
+      (order.items || []).forEach(function (item) {
+        batch.update(firebaseDb.collection('products').doc(item.productId), {
+          stock: firebase.firestore.FieldValue.increment(item.quantity)
+        });
+      });
+      return batch.commit().catch(function (err) {
+        if (err && err.code === 'permission-denied' && attemptNumber < 8) {
+          return attempt(order.id + ' (' + (attemptNumber + 1) + ')', attemptNumber + 1);
+        }
+        throw err;
+      });
+    }
+
+    attempt(order.id, 1).then(function () {
+      showToast('Order cancelled \u2014 your items are back in stock.');
+    }).catch(function (err) {
+      console.error('MimiCart: could not cancel order', err);
+      var reason = (err && (err.message || err.code)) ? (err.message || err.code) : 'Please try again.';
+      showToast('Couldn\u2019t cancel that order. (' + reason + ')');
+    });
   }
 
   function renderOrdersDialogIfNeeded() {
@@ -2235,6 +2803,10 @@ next.push({
     if (!overlay) return;
     overlay.addEventListener('mousedown', function (e) { if (e.target === overlay) closeOrdersDialog(); });
     document.getElementById('close-orders-dialog').addEventListener('click', closeOrdersDialog);
+    overlay.addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-cancel-mine]');
+      if (btn) cancelMyOrder(btn.getAttribute('data-cancel-mine'));
+    });
   }
 
   function openOrdersDialog() {
@@ -2343,21 +2915,18 @@ next.push({
 
   // ================================================================
   // BASIC SECURITY HELPERS
-  // (password strength policy, client-side login lockout + a login
-  // history log, and an idle "are you still there?" check)
+  // (password strength policy, a Firestore-backed login lockout + login
+  // activity log, and an idle "are you still there?" check)
   //
-  // Important honesty note: everything below runs in the visitor's own
-  // browser and is stored in that browser's localStorage. It's a good
-  // UX-level deterrent (slows down casual guessing, gives people a
-  // record of their own sign-ins) but it is NOT a substitute for real
-  // server-side protection — anyone can clear their browser storage or
-  // open a private window to reset it. For actual brute-force
-  // protection, pair this with Firebase App Check + a Cloud Function
-  // (or Identity Platform's built-in throttling) that enforces the
-  // lockout server-side. See the notes at the bottom of this file.
+  // The lockout counter and the login log live in Firestore (collections
+  // login_lockouts and login_logs — see firestore.rules), NOT in this
+  // browser, so they follow the account across refreshes and devices.
+  // One limit remains: a determined attacker who skips this page and calls
+  // the Firebase Auth API directly never touches the counter. Stopping
+  // that needs a Cloud Function / Identity Platform on the server side.
   // ================================================================
   var MAX_LOGIN_ATTEMPTS = 5;
-  var LOCKOUT_MS = 5 * 60 * 1000;      // 5 minutes
+  var LOCKOUT_MS = 10 * 60 * 1000;     // 10 minutes
   var IDLE_LIMIT_MS = 10 * 60 * 1000;  // 10 minutes
   var IDLE_GRACE_MS = 60 * 1000;       // 60s to respond to "are you still there?"
 
@@ -2393,47 +2962,328 @@ next.push({
     });
   }
 
-  // ---- login attempt / lockout tracking (per email, in this browser) ----
-  function attemptsKey(email) { return 'mimicart:login-attempts:' + normalizeEmail(email); }
-  function getAttemptRecord(email) {
-    try {
-      var raw = localStorage.getItem(attemptsKey(email));
-      return raw ? JSON.parse(raw) : { count: 0, lockUntil: 0 };
-    } catch (e) { return { count: 0, lockUntil: 0 }; }
+  // ================================================================
+  // SIGN-IN SECURITY — lockout + login activity, stored in FIRESTORE
+  //
+  // Both used to live in this browser's localStorage, which is why a
+  // refresh, a private window, or a second device got a clean slate.
+  // Now:
+  //   * login_lockouts/{email}  holds the failed-password counter and
+  //     the lock. It belongs to the ACCOUNT, so the 10-minute wait
+  //     follows it everywhere. The 5th failed attempt is stamped with
+  //     the SERVER's clock and the Firestore rules refuse further
+  //     attempts until 10 server-minutes have passed — changing this
+  //     computer's clock or clearing storage does not help.
+  //   * login_logs/{id}  gets one row per sign-in / failed attempt /
+  //     lockout, with date+time, device, IP and approximate location,
+  //     so activity from OTHER devices shows up here too.
+  //
+  // Requires the updated firestore.rules (login_lockouts + login_logs).
+  // ================================================================
+  var SECURITY_APP = 'store';
+  var LOCK_EMAIL_KEY = 'mimicart:lock-email';
+  var DEVICE_ID_KEY = 'mimicart:device-id';
+  var GEO_CACHE_KEY = 'mimicart:geo-cache';
+  var serverOffsetMs = 0;   // (Firestore's clock) minus (this device's clock)
+  var lockedUntilMs = 0;    // when the current lock ends, on the server's clock (0 = not locked)
+
+  function serverNow() { return Date.now() + serverOffsetMs; }
+  function isLockActive() { return lockedUntilMs > serverNow(); }
+  function isPlausibleEmail(email) {
+    var e = normalizeEmail(email);
+    return e.length > 2 && e.length <= 254 && e.indexOf('@') > 0 && e.indexOf('/') === -1;
   }
-  function setAttemptRecord(email, record) {
-    try { localStorage.setItem(attemptsKey(email), JSON.stringify(record)); } catch (e) { /* ignore */ }
-  }
-  function lockoutMsRemaining(email) {
-    var record = getAttemptRecord(email);
-    var remaining = record.lockUntil - Date.now();
-    return remaining > 0 ? remaining : 0;
-  }
-  function recordFailedLogin(email) {
-    var record = getAttemptRecord(email);
-    if (record.lockUntil && record.lockUntil > Date.now()) return record; // already locked
-    record.count = (record.count || 0) + 1;
-    if (record.count >= MAX_LOGIN_ATTEMPTS) {
-      record.lockUntil = Date.now() + LOCKOUT_MS;
-      record.count = 0;
-    }
-    setAttemptRecord(email, record);
-    return record;
-  }
-  function resetLoginAttempts(email) { setAttemptRecord(email, { count: 0, lockUntil: 0 }); }
+  function lockRef(email) { return firebaseDb.collection('login_lockouts').doc(normalizeEmail(email)); }
+  function lockedAtMs(data) { return data && data.lockedAt && data.lockedAt.toMillis ? data.lockedAt.toMillis() : 0; }
+
+  // Only a convenience so a refresh can show the countdown straight away —
+  // the lock itself is enforced by Firestore, never by this value.
+  function rememberLockedEmail(email) { try { localStorage.setItem(LOCK_EMAIL_KEY, normalizeEmail(email)); } catch (e) { /* ignore */ } }
+  function forgetLockedEmail() { try { localStorage.removeItem(LOCK_EMAIL_KEY); } catch (e) { /* ignore */ } }
+  function getRememberedLockedEmail() { try { return localStorage.getItem(LOCK_EMAIL_KEY) || ''; } catch (e) { return ''; } }
+
   function formatCountdown(ms) {
     var totalSeconds = Math.max(0, Math.ceil(ms / 1000));
     var m = Math.floor(totalSeconds / 60);
     var s = totalSeconds % 60;
     return m + ':' + (s < 10 ? '0' : '') + s;
   }
+
+  // Read-only: is this account locked right now?
+  function readLockState(email) {
+    if (!firebaseDb || !isPlausibleEmail(email)) return Promise.resolve({ locked: false });
+    return lockRef(email).get().then(function (snap) {
+      var d = snap.exists ? snap.data() : null;
+      if (!d || (d.count || 0) < MAX_LOGIN_ATTEMPTS || !d.lockedAt) return { locked: false };
+      var until = lockedAtMs(d) + LOCKOUT_MS;
+      var remaining = until - serverNow();
+      if (remaining <= 0) return { locked: false };
+      if (remaining > LOCKOUT_MS + 5000) return { locked: true, remainingMs: 0 };   // this device's clock is off
+      lockedUntilMs = until;
+      return { locked: true, remainingMs: remaining };
+    }, function () { return { locked: false }; });
+  }
+
+  // Called BEFORE the password is checked. Counts this attempt on the
+  // account (so refreshing mid-attempt can't dodge the count) or refuses it
+  // if the account is locked.
+  //   -> { ok:false, remainingMs }                    account is locked
+  //   -> { ok:true, count, lockedNow }                go ahead and check the password
+  //   -> rejects                                      couldn't reach the lock (e.g. rules not published)
+  function beginLoginAttempt(email) {
+    if (!firebaseDb || !isPlausibleEmail(email)) return Promise.resolve({ ok: true, count: 0, lockedNow: false });
+    var ref = lockRef(email);
+    return firebaseDb.runTransaction(function (tx) {
+      return tx.get(ref).then(function (snap) {
+        var data = snap.exists ? snap.data() : null;
+        var count = data ? (data.count || 0) : 0;
+        var stamp = firebase.firestore.FieldValue.serverTimestamp();
+        if (count >= MAX_LOGIN_ATTEMPTS) {
+          var until = lockedAtMs(data) + LOCKOUT_MS;
+          var left = until - serverNow();
+          // A lock can never have more than LOCKOUT_MS left; if this device's clock says otherwise, the
+          // clock is off, so don't trust it — let the server (the rules) decide below.
+          if (left > 0 && left <= LOCKOUT_MS + 5000) return { ok: false, until: until };  // still locked — nothing to write
+          tx.set(ref, { count: 1, lockedAt: null, lastAttemptAt: stamp }); // lock has run out — start over
+          return { ok: true, count: 1 };
+        }
+        var next = count + 1;
+        tx.set(ref, { count: next, lockedAt: next >= MAX_LOGIN_ATTEMPTS ? stamp : null, lastAttemptAt: stamp });
+        return { ok: true, count: next };
+      });
+    }).then(function (result) {
+      if (!result.ok) {
+        lockedUntilMs = result.until;
+        rememberLockedEmail(email);
+        return { ok: false, remainingMs: result.until - serverNow() };
+      }
+      if (result.count < MAX_LOGIN_ATTEMPTS) return { ok: true, count: result.count, lockedNow: false };
+      // This was the 5th attempt: read the lock back so the countdown runs on the server's clock.
+      return ref.get().then(function (snap) {
+        var d = snap.exists ? snap.data() : null;
+        if (d && d.lastAttemptAt && d.lastAttemptAt.toMillis) serverOffsetMs = d.lastAttemptAt.toMillis() - Date.now();
+        lockedUntilMs = (lockedAtMs(d) || serverNow()) + LOCKOUT_MS;
+        rememberLockedEmail(email);
+        return { ok: true, count: result.count, lockedNow: true };
+      }, function () {
+        lockedUntilMs = serverNow() + LOCKOUT_MS;
+        rememberLockedEmail(email);
+        return { ok: true, count: result.count, lockedNow: true };
+      });
+    }, function (err) {
+      // Firestore refused the write. Usually that means the server says the
+      // account is locked (this device's clock thought it wasn't). Confirm by reading it.
+      return ref.get().then(function (snap) {
+        var d = snap.exists ? snap.data() : null;
+        if (d && (d.count || 0) >= MAX_LOGIN_ATTEMPTS) {
+          var until = lockedAtMs(d) + LOCKOUT_MS;
+          var left = until - serverNow();
+          rememberLockedEmail(email);
+          if (left > 0 && left <= LOCKOUT_MS + 5000) { lockedUntilMs = until; return { ok: false, remainingMs: left }; }
+          return { ok: false, remainingMs: 0 };   // locked per the server, but this clock can't say for how long
+        }
+        throw err;
+      });
+    });
+  }
+
+  // Called after a SUCCESSFUL password sign-in (the rules only let the
+  // signed-in owner of the account do this).
+  function clearLoginAttempts(email) {
+    lockedUntilMs = 0;
+    forgetLockedEmail();
+    if (!firebaseDb || !isPlausibleEmail(email)) return Promise.resolve();
+    return lockRef(email).set({ count: 0, lockedAt: null, lastAttemptAt: firebase.firestore.FieldValue.serverTimestamp() })
+      .catch(function (err) { console.warn('MimiCart: couldn\u2019t reset the attempt counter', err); });
+  }
+
+  // ---- device + location for the login log ----
+  function detectDeviceParts() {
+    var ua = navigator.userAgent || '';
+    var os = 'Unknown device';
+    if (/iPhone/.test(ua)) os = 'iPhone';
+    else if (/iPad/.test(ua)) os = 'iPad';
+    else if (/Android/.test(ua)) os = /Mobile/.test(ua) ? 'Android phone' : 'Android tablet';
+    else if (/Macintosh/.test(ua)) os = 'Mac';
+    else if (/Windows/.test(ua)) os = 'Windows PC';
+    else if (/CrOS/.test(ua)) os = 'Chromebook';
+    else if (/Linux/.test(ua)) os = 'Linux';
+    var browser = 'browser';
+    if (/Edg\//.test(ua)) browser = 'Edge';
+    else if (/OPR\//.test(ua) || /Opera/.test(ua)) browser = 'Opera';
+    else if (/Chrome\//.test(ua) && !/Chromium/.test(ua)) browser = 'Chrome';
+    else if (/CriOS\//.test(ua)) browser = 'Chrome';
+    else if (/FxiOS\//.test(ua) || /Firefox\//.test(ua)) browser = 'Firefox';
+    else if (/Safari\//.test(ua)) browser = 'Safari';
+    return { os: os, browser: browser };
+  }
+  function detectDevice() {
+    var p = detectDeviceParts();
+    return p.os + ' \u2022 ' + p.browser;
+  }
+  function randomId(n) {
+    var chars = 'abcdefghijklmnopqrstuvwxyz0123456789', out = '', i;
+    var cryptoObj = window.crypto || window.msCrypto;
+    if (cryptoObj && cryptoObj.getRandomValues) {
+      var arr = new Uint8Array(n);
+      cryptoObj.getRandomValues(arr);
+      for (i = 0; i < n; i++) out += chars.charAt(arr[i] % chars.length);
+    } else {
+      for (i = 0; i < n; i++) out += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return out;
+  }
+  // A random id kept in this browser, so a log row can be tagged "This device".
+  function getDeviceId() {
+    try {
+      var id = localStorage.getItem(DEVICE_ID_KEY);
+      if (!id) { id = randomId(16); localStorage.setItem(DEVICE_ID_KEY, id); }
+      return id;
+    } catch (e) { return 'unknown'; }
+  }
+
+  // Approximate location comes from the visitor's IP address (a browser can't
+  // know where it is without asking for GPS permission). City-level at best,
+  // and wrong for VPN users — treat it as a hint, not proof.
+  var GEO_SOURCES = [
+    { url: 'https://ipwho.is/', map: function (d) {
+        if (!d || d.success === false || !d.ip) throw new Error('no result');
+        return { ip: d.ip, city: d.city, region: d.region, country: d.country, timezone: d.timezone && d.timezone.id };
+      } },
+    { url: 'https://ipapi.co/json/', map: function (d) {
+        if (!d || d.error || !d.ip) throw new Error('no result');
+        return { ip: d.ip, city: d.city, region: d.region, country: d.country_name, timezone: d.timezone };
+      } },
+    { url: 'https://get.geojs.io/v1/ip/geo.json', map: function (d) {
+        if (!d || !d.ip) throw new Error('no result');
+        return { ip: d.ip, city: d.city, region: d.region, country: d.country, timezone: d.timezone };
+      } }
+  ];
+  function fetchJsonWithTimeout(url, ms) {
+    var ctrl = window.AbortController ? new AbortController() : null;
+    var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, ms);
+    return fetch(url, ctrl ? { signal: ctrl.signal } : {}).then(function (r) {
+      clearTimeout(timer);
+      if (!r.ok) throw new Error('http ' + r.status);
+      return r.json();
+    }, function (e) { clearTimeout(timer); throw e; });
+  }
+  function tryGeoSource(i) {
+    if (i >= GEO_SOURCES.length) return Promise.resolve({});
+    var src = GEO_SOURCES[i];
+    return fetchJsonWithTimeout(src.url, 4000).then(function (d) { return src.map(d); })
+      .catch(function () { return tryGeoSource(i + 1); });
+  }
+  var geoPromise = null;
+  function lookupLocation() {
+    if (geoPromise) return geoPromise;
+    try {
+      var cached = JSON.parse(sessionStorage.getItem(GEO_CACHE_KEY) || 'null');
+      if (cached && cached.ip) { geoPromise = Promise.resolve(cached); return geoPromise; }
+    } catch (e) { /* ignore */ }
+    geoPromise = tryGeoSource(0).then(function (geo) {
+      if (geo && geo.ip) { try { sessionStorage.setItem(GEO_CACHE_KEY, JSON.stringify(geo)); } catch (e) { /* ignore */ } }
+      else { geoPromise = null; }   // try again next time
+      return geo || {};
+    });
+    return geoPromise;
+  }
+  function buildLocationLabel(geo) {
+    var seen = {}, parts = [];
+    [geo.city, geo.region, geo.country].forEach(function (p) {
+      if (p && !seen[p]) { seen[p] = true; parts.push(p); }
+    });
+    return parts.join(', ') || 'Unknown location';
+  }
+  function clip(v) { return String(v == null ? '' : v).slice(0, 120); }
+
+  // Writes one row to login_logs. Never throws / never blocks a sign-in.
+  function logLoginEvent(email, status, method) {
+    if (!firebaseDb || !isPlausibleEmail(email)) return Promise.resolve();
+    return lookupLocation().then(function (geo) {
+      var parts = detectDeviceParts();
+      // newest-first doc ids -> a plain query returns the latest rows, no index needed
+      var id = String(9999999999999 - Date.now()) + '_' + randomId(8);
+      return firebaseDb.collection('login_logs').doc(id).set({
+        email: normalizeEmail(email),
+        status: status,
+        method: method || 'password',
+        app: SECURITY_APP,
+        device: clip(parts.os + ' \u2022 ' + parts.browser),
+        os: clip(parts.os),
+        browser: clip(parts.browser),
+        deviceId: clip(getDeviceId()),
+        ip: clip(geo.ip),
+        city: clip(geo.city),
+        region: clip(geo.region),
+        country: clip(geo.country),
+        location: clip(buildLocationLabel(geo)),
+        timezone: clip(geo.timezone),
+        time: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }).catch(function (err) {
+      console.warn('MimiCart: couldn\u2019t record sign-in activity (are the latest Firestore rules published?)', err);
+    });
+  }
+
+  function docToLogEntry(doc) {
+    var d = doc.data() || {};
+    return {
+      id: doc.id, email: d.email || '', status: d.status || 'failed', method: d.method || 'password',
+      app: d.app || '', device: d.device || '', deviceId: d.deviceId || '', ip: d.ip || '',
+      location: d.location || '', time: d.time && d.time.toMillis ? d.time.toMillis() : Date.now()
+    };
+  }
+  // One account's activity, from every device, newest first.
+  function fetchLoginLogs(email, limit) {
+    return firebaseDb.collection('login_logs').where('email', '==', normalizeEmail(email)).limit(limit || 30).get()
+      .then(function (snap) { return snap.docs.map(docToLogEntry); });
+  }
+  // Staff only: the latest activity across every account.
+  function fetchAllLoginLogs(limit) {
+    return firebaseDb.collection('login_logs').orderBy(firebase.firestore.FieldPath.documentId()).limit(limit || 100).get()
+      .then(function (snap) { return snap.docs.map(docToLogEntry); });
+  }
+
+  // Log rows contain text that came from a browser (anyone can create a
+  // "failed" row), so everything is escaped before it touches innerHTML.
+  function logEsc(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, function (ch) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+    });
+  }
+  function formatLogTime(ts) {
+    var d = new Date(ts);
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) + ' \u2022 ' +
+      d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  }
+  function loginLogRowHTML(entry, showEmail) {
+    var statusClass = entry.status === 'success' ? 'log-success' : (entry.status === 'locked' ? 'log-locked' : 'log-failed');
+    var statusLabel = entry.status === 'success' ? '\u2713 Signed in' : (entry.status === 'locked' ? '\u23f1 Locked out' : '\u2717 Failed attempt');
+    var badge = entry.deviceId && entry.deviceId === getDeviceId() ? ' <span class="log-badge">This device</span>' : '';
+    var bits = [];
+    if (showEmail && entry.email) bits.push('<strong>' + logEsc(entry.email) + '</strong>');
+    bits.push(logEsc(entry.device || 'Unknown device'));
+    bits.push('Location: ' + logEsc(entry.location && entry.location !== 'Unknown location' ? entry.location : 'unavailable'));
+    if (entry.ip) bits.push('IP ' + logEsc(entry.ip));
+    bits.push(entry.method === 'google' ? 'Google' : 'Email &amp; password');
+    if (showEmail && entry.app) bits.push(entry.app === 'admin' ? 'Staff dashboard' : 'Storefront');
+    return '<li class="login-log-row ' + statusClass + '">' +
+      '<div class="log-top"><span class="log-status">' + statusLabel + badge + '</span><span class="log-time">' + logEsc(formatLogTime(entry.time)) + '</span></div>' +
+      '<div class="log-sub">' + bits.join(' \u2022 ') + '</div>' +
+    '</li>';
+  }
+
+  // ---- lockout countdown on the login form ----
   var lockoutCountdownTimer = null;
-  function startLockoutCountdown(email) {
+  function startLockoutCountdown() {
     clearInterval(lockoutCountdownTimer);
     function tick() {
-      var remaining = lockoutMsRemaining(email);
+      var remaining = lockedUntilMs - serverNow();
       if (remaining <= 0) {
         clearInterval(lockoutCountdownTimer);
+        lockedUntilMs = 0;
+        forgetLockedEmail();
         state.lockoutRemaining = '';
         state.loginError = '';
         renderOverlays();
@@ -2446,46 +3296,46 @@ next.push({
     tick();
     lockoutCountdownTimer = setInterval(tick, 1000);
   }
-
-  // ---- device fingerprint shown in the login log (best-effort, from the User-Agent) ----
-  function detectDevice() {
-    var ua = navigator.userAgent || '';
-    var os = 'Unknown device';
-    if (/iPhone/.test(ua)) os = 'iPhone';
-    else if (/iPad/.test(ua)) os = 'iPad';
-    else if (/Android/.test(ua)) os = /Mobile/.test(ua) ? 'Android phone' : 'Android tablet';
-    else if (/Macintosh/.test(ua)) os = 'Mac';
-    else if (/Windows/.test(ua)) os = 'Windows PC';
-    else if (/Linux/.test(ua)) os = 'Linux';
-    var browser = 'browser';
-    if (/Edg\//.test(ua)) browser = 'Edge';
-    else if (/OPR\//.test(ua) || /Opera/.test(ua)) browser = 'Opera';
-    else if (/Chrome\//.test(ua) && !/Chromium/.test(ua)) browser = 'Chrome';
-    else if (/CriOS\//.test(ua)) browser = 'Chrome';
-    else if (/Firefox\//.test(ua)) browser = 'Firefox';
-    else if (/Safari\//.test(ua)) browser = 'Safari';
-    return os + ' \u2022 ' + browser;
+  function showLockedMessage(email, remainingMs) {
+    state.loginPassword = '';
+    if (remainingMs > 0) {
+      state.loginError = 'Too many failed attempts \u2014 this account is locked. Try again in <strong id="lockout-countdown">' + formatCountdown(remainingMs) + '</strong>.';
+      renderOverlays();
+      startLockoutCountdown();
+    } else {
+      // The server says it's still locked but this device's clock disagrees.
+      state.loginError = 'This account may still be locked. Please try again in a few minutes. (If this keeps happening, check that this device\u2019s clock is correct.)';
+      renderOverlays();
+    }
+  }
+  // After a refresh: if the last account that got locked out is still locked
+  // (asked of Firestore, not this browser), bring the countdown back.
+  function restoreLockNotice() {
+    var remembered = getRememberedLockedEmail();
+    if (!remembered || !firebaseConfigured) return;
+    readLockState(remembered).then(function (s) {
+      if (!s.locked) { forgetLockedEmail(); return; }
+      if (!state.loginEmail) state.loginEmail = remembered;
+      if (state.user || !state.loginOpen) return;
+      showLockedMessage(remembered, s.remainingMs);
+    });
   }
 
-  // ---- login history log (per email, in this browser) ----
-  function loginLogKey(email) { return 'mimicart:login-logs:' + normalizeEmail(email); }
-  function getLoginLogs(email) {
-    try {
-      var raw = localStorage.getItem(loginLogKey(email));
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) { return []; }
-  }
-  function logLoginEvent(email, status, method) {
-    if (!email) return;
-    var logs = getLoginLogs(email);
-    logs.unshift({ time: Date.now(), status: status, method: method, device: detectDevice() });
-    logs = logs.slice(0, 20); // keep the most recent 20
-    try { localStorage.setItem(loginLogKey(email), JSON.stringify(logs)); } catch (e) { /* ignore */ }
-  }
-  function formatLogTime(ts) {
-    var d = new Date(ts);
-    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' \u2022 ' +
-      d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  // ---- Settings view: this account's sign-in activity from ALL devices ----
+  function loadSecurityLogs() {
+    if (!state.user || !firebaseDb) return;
+    state.securityLogsLoading = true;
+    state.securityLogsError = '';
+    fetchLoginLogs(state.user.email, 30).then(function (logs) {
+      state.securityLogs = logs;
+      state.securityLogsLoading = false;
+    }, function (err) {
+      console.error('MimiCart: couldn\u2019t load sign-in activity', err);
+      state.securityLogsLoading = false;
+      state.securityLogsError = 'Couldn\u2019t load your sign-in activity right now. Please try again.';
+    }).then(function () {
+      if (state.loginOpen && state.user && state.accountView === 'settings') renderOverlays();
+    });
   }
 
   // ---- idle timeout: "are you still there?" ----
@@ -2637,20 +3487,21 @@ next.push({
     } else if (state.user && state.accountView === 'settings') {
       // settings sub-view: login activity log for this account
       titleHTML = '<h2 id="login-dialog-title" class="font-display">Settings</h2>';
-      copyHTML = '<p class="login-copy">Recent sign-in activity for <strong>' + state.user.email + '</strong>, kept on this device.</p>';
-      var logs = getLoginLogs(state.user.email);
-      var logsHTML = logs.length
-        ? '<ul class="login-log-list">' + logs.map(function (entry) {
-            var statusClass = entry.status === 'success' ? 'log-success' : (entry.status === 'locked' ? 'log-locked' : 'log-failed');
-            var statusLabel = entry.status === 'success' ? '\u2713 Signed in' : (entry.status === 'locked' ? '\u23f1 Locked out' : '\u2717 Failed attempt');
-            var methodLabel = entry.method === 'google' ? 'Google' : 'Email &amp; password';
-            var deviceLabel = entry.device ? entry.device + ' \u2022 ' : '';
-            return '<li class="login-log-row ' + statusClass + '"><span class="log-status">' + statusLabel + '</span><span class="log-meta">' + methodLabel + ' \u2022 ' + deviceLabel + formatLogTime(entry.time) + '</span></li>';
-          }).join('') + '</ul>'
-        : '<p class="login-copy">No sign-in activity recorded yet on this device.</p>';
+      copyHTML = '<p class="login-copy">Recent sign-in activity for <strong>' + state.user.email + '</strong> from <strong>all your devices</strong> \u2014 with the date, time, device and approximate location of each. Don\u2019t recognise one? Change your password.</p>';
+      var logsHTML;
+      if (state.securityLogsError) {
+        logsHTML = '<p class="login-error">' + state.securityLogsError + '</p>';
+      } else if (state.securityLogsLoading && !state.securityLogs) {
+        logsHTML = '<p class="login-copy">Loading your sign-in activity\u2026</p>';
+      } else if (state.securityLogs && state.securityLogs.length) {
+        logsHTML = '<ul class="login-log-list">' + state.securityLogs.map(function (entry) { return loginLogRowHTML(entry, false); }).join('') + '</ul>';
+      } else {
+        logsHTML = '<p class="login-copy">No sign-in activity recorded yet.</p>';
+      }
       bodyHTML = (
         logsHTML +
-        '<button type="button" class="secondary-button full-width focus-ring" id="settings-back-button" style="margin-top:15px">\u2190 Back to account</button>'
+        '<button type="button" class="secondary-button full-width focus-ring" id="settings-refresh-button" style="margin-top:15px" ' + (state.securityLogsLoading ? 'disabled' : '') + '>' + (state.securityLogsLoading ? 'Refreshing\u2026' : 'Refresh') + '</button>' +
+        '<button type="button" class="secondary-button full-width focus-ring" id="settings-back-button" style="margin-top:9px">\u2190 Back to account</button>'
       );
     } else if (state.user) {
       // signed-in view, opened from the account button
@@ -2705,7 +3556,7 @@ next.push({
           ? '<label for="login-confirm-password">Confirm password</label><input id="login-confirm-password" class="login-field" type="password" autocomplete="new-password" placeholder="Type it again" value="' + state.loginConfirmPassword + '" />'
           : '') +
         configWarningHTML + errorHTML + noticeHTML +
-        '<button type="button" class="primary-button full-width focus-ring" id="email-submit-button" style="margin-top:15px" ' + (state.loginLoading ? 'disabled' : '') + '>' +
+        '<button type="button" class="primary-button full-width focus-ring" id="email-submit-button" style="margin-top:15px" ' + (state.loginLoading || (state.loginMode !== 'signup' && isLockActive()) ? 'disabled' : '') + '>' +
           (state.loginLoading ? (isSignup ? 'Creating account\u2026' : 'Logging in\u2026') : (isSignup ? 'Create account' : 'Log in')) +
         '</button>' +
         (isSignup
@@ -2738,7 +3589,14 @@ next.push({
     if (signOutBtn) signOutBtn.addEventListener('click', signOutUser);
 
     var settingsBtn = document.getElementById('account-settings-button');
-    if (settingsBtn) settingsBtn.addEventListener('click', function () { state.accountView = 'settings'; renderOverlays(); });
+    if (settingsBtn) settingsBtn.addEventListener('click', function () {
+      state.accountView = 'settings';
+      state.securityLogs = null;
+      loadSecurityLogs();
+      renderOverlays();
+    });
+    var settingsRefreshBtn = document.getElementById('settings-refresh-button');
+    if (settingsRefreshBtn) settingsRefreshBtn.addEventListener('click', function () { loadSecurityLogs(); renderOverlays(); });
     var settingsBackBtn = document.getElementById('settings-back-button');
     if (settingsBackBtn) settingsBackBtn.addEventListener('click', function () { state.accountView = 'main'; renderOverlays(); });
 
@@ -2811,6 +3669,10 @@ next.push({
     state.accountView = 'main';
     if (!state.user) state.loginMode = 'login';
     renderOverlays();
+    if (!state.user) {
+      lookupLocation();     // warm up the approximate-location lookup for the login log
+      restoreLockNotice();  // if this account is still locked, the countdown comes straight back
+    }
   }
   function closeLoginDialog() {
     if (state.otpPending) { cancelOtpStep(true); return; }
@@ -2842,6 +3704,7 @@ next.push({
     state.loginLoading = true;
     renderOverlays();
     var provider = new firebase.auth.GoogleAuthProvider();
+    lookupLocation();
     explicitLoginInProgress = true;
     firebaseAuth.signInWithPopup(provider).then(function (result) {
       state.loginLoading = false;
@@ -2933,45 +3796,49 @@ next.push({
       return;
     }
 
-    // ---- client-side lockout: 5 failed attempts = 5 minute cooldown ----
-    var remaining = lockoutMsRemaining(email);
-    if (remaining > 0) {
-      state.loginError = 'Too many failed attempts. Try again in <strong id="lockout-countdown">' + formatCountdown(remaining) + '</strong>.';
-      renderOverlays();
-      startLockoutCountdown(email);
-      return;
-    }
-
     state.loginLoading = true;
     renderOverlays();
 
-    explicitLoginInProgress = true;
-    firebaseAuth.signInWithEmailAndPassword(email, state.loginPassword).then(function () {
-      state.loginLoading = false;
-      state.loginPassword = '';
-      resetLoginAttempts(email);
-      logLoginEvent(email, 'success', 'password');
-      renderOverlays();
-      // onAuthStateChanged (below) notices the new session and kicks off
-      // the one-time email code before state.user gets set.
-    }).catch(function (err) {
-      explicitLoginInProgress = false;
-      state.loginLoading = false;
-      logLoginEvent(email, 'failed', 'password');
-      var record = recordFailedLogin(email);
-      if (record.lockUntil && record.lockUntil > Date.now()) {
-        state.loginError = 'Too many failed attempts. Try again in <strong id="lockout-countdown">' + formatCountdown(lockoutMsRemaining(email)) + '</strong>.';
-        renderOverlays();
-        startLockoutCountdown(email);
+    // Count this attempt on the ACCOUNT (Firestore) — or refuse it if the
+    // account is locked. Works the same after a refresh or on another device.
+    beginLoginAttempt(email).then(function (gate) {
+      if (!gate.ok) {
+        state.loginLoading = false;
+        showLockedMessage(email, gate.remainingMs);
+        logLoginEvent(email, 'locked', 'password');
         return;
       }
-      var attemptsLeft = MAX_LOGIN_ATTEMPTS - record.count;
-      var attemptsNote = attemptsLeft <= 2 ? ' (' + attemptsLeft + ' attempt' + (attemptsLeft === 1 ? '' : 's') + ' left before a 5-minute lockout)' : '';
-      if (err && (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password')) {
-        state.loginError = 'This email isn\u2019t registered yet, or the password is wrong. New here? Sign up first.' + attemptsNote;
-      } else {
-        state.loginError = ((err && err.message) ? err.message : 'Couldn\u2019t log you in. Please try again.') + attemptsNote;
-      }
+      explicitLoginInProgress = true;
+      return firebaseAuth.signInWithEmailAndPassword(email, state.loginPassword).then(function () {
+        state.loginLoading = false;
+        state.loginPassword = '';
+        clearLoginAttempts(email);
+        logLoginEvent(email, 'success', 'password');
+        renderOverlays();
+        // onAuthStateChanged (below) notices the new session and kicks off
+        // the one-time email code before state.user gets set.
+      }, function (err) {
+        explicitLoginInProgress = false;
+        state.loginLoading = false;
+        logLoginEvent(email, 'failed', 'password');
+        if (gate.lockedNow) {
+          logLoginEvent(email, 'locked', 'password');
+          showLockedMessage(email, lockedUntilMs - serverNow());
+          return;
+        }
+        var attemptsLeft = MAX_LOGIN_ATTEMPTS - gate.count;
+        var attemptsNote = attemptsLeft <= 2 ? ' (' + attemptsLeft + ' attempt' + (attemptsLeft === 1 ? '' : 's') + ' left before a 10-minute lockout)' : '';
+        if (err && (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password')) {
+          state.loginError = 'This email isn\u2019t registered yet, or the password is wrong. New here? Sign up first.' + attemptsNote;
+        } else {
+          state.loginError = ((err && err.message) ? err.message : 'Couldn\u2019t log you in. Please try again.') + attemptsNote;
+        }
+        renderOverlays();
+      });
+    }, function (err) {
+      console.error('MimiCart: sign-in protection check failed', err);
+      state.loginLoading = false;
+      state.loginError = 'Couldn\u2019t check the sign-in protection right now, so sign-in is paused. Please check your connection and try again in a moment.';
       renderOverlays();
     });
   }
@@ -3003,6 +3870,8 @@ next.push({
     state.loginPassword = '';
     state.loginConfirmPassword = '';
     state.ordersOpen = false;
+    state.securityLogs = null;
+    state.securityLogsError = '';
     unsubscribeFromCustomerOrders();
     renderOverlays();
     updateAccountButton();
