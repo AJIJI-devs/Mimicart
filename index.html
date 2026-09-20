@@ -25,6 +25,9 @@
     --muted: 34 36% 90%;
     --muted-foreground: 344 13% 43%;
     --accent: 38 91% 61%;
+    --on-accent: 348 25% 18%;   /* dark ink for text that sits on the bright accent colour */
+    --warn-text: 30 70% 32%;    /* amber text on a light tinted badge */
+    --danger-text: 0 65% 42%;
     --app-font-sans: 'DM Sans', sans-serif;
     --app-font-serif: 'Baloo 2', sans-serif;
     --app-font-mono: 'Space Mono', monospace;
@@ -44,7 +47,8 @@
   button, input, select { font: inherit; color: inherit; }
   button { cursor: pointer; }
   button:disabled { cursor: not-allowed; }
-  ::selection { background: hsl(var(--accent)); color: hsl(var(--foreground)); }
+  ::selection { background: hsl(var(--accent)); color: hsl(var(--on-accent)); }
+  ::placeholder { color: hsl(var(--muted-foreground)); opacity: .75; }
   svg { display: block; }
 
   @keyframes float-in { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
@@ -65,7 +69,7 @@
   .hide-scrollbar::-webkit-scrollbar { display: none; }
 
   .app-shell { min-height: 100dvh; overflow: hidden; background: hsl(var(--background)); }
-  .site-header { position: sticky; top: 0; z-index: 40; background: rgba(255, 250, 240, .9); backdrop-filter: blur(18px); border-bottom: 1px solid hsl(var(--border)); }
+  .site-header { position: sticky; top: 0; z-index: 40; background: hsl(var(--background) / .92); backdrop-filter: blur(18px); border-bottom: 1px solid hsl(var(--border)); }
   .header-inner { width: min(1220px, calc(100% - 48px)); height: 78px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 28px; }
   .brand-button { border: 0; background: transparent; padding: 0; text-align: left; }
   .brand { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; align-items: center; column-gap: 9px; min-width: 180px; }
@@ -80,12 +84,30 @@
   .nav-link:hover, .nav-link.active { color: hsl(var(--foreground)); }
   .nav-link.active::after { content: ""; position: absolute; bottom: -8px; left: 0; right: 0; margin: auto; width: 5px; height: 5px; border-radius: 50%; background: hsl(var(--primary)); }
   .header-actions { display: flex; align-items: center; gap: 10px; }
+  /* On desktop this wrapper is invisible (display:contents) so the nav
+     links + icon buttons inside it sit exactly where they always have,
+     as direct flex children of .header-inner. On narrow screens it turns
+     into the burger-menu dropdown instead — see the max-width:720px block. */
+  .mobile-menu-panel { display: contents; }
+  .header-extra-actions { display: flex; align-items: center; gap: 10px; }
+  .header-action-label { display: none; }
   .header-icon-button, .mobile-menu-button { width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid hsl(var(--border)); border-radius: 50%; color: hsl(var(--foreground)); background: hsl(var(--card)); }
   .header-cart { height: 40px; display: inline-flex; align-items: center; gap: 8px; padding: 0 7px 0 13px; border: 1px solid hsl(var(--foreground)); border-radius: 999px; background: hsl(var(--foreground)); color: hsl(var(--card)); font-size: 11px; font-weight: 700; }
-  .header-cart b { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: hsl(var(--accent)); color: hsl(var(--foreground)); font: 700 12px var(--app-font-mono); }
+  .header-cart b { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: hsl(var(--accent)); color: hsl(var(--on-accent)); font: 700 12px var(--app-font-mono); }
   .notif-button { position: relative; }
   .notif-badge { position: absolute; top: -3px; right: -3px; min-width: 17px; height: 17px; padding: 0 4px; display: grid; place-items: center; border-radius: 999px; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); font: 700 9px var(--app-font-mono); line-height: 1; border: 2px solid hsl(var(--background)); }
-  .mobile-menu-button { display: none; }
+  .mobile-menu-button { display: none; padding: 0; }
+  .nav-link-icon { display: none; }
+  /* Burger icon: three bars drawn in CSS so they stay perfectly centred and
+     morph into an X when the menu is open. */
+  .burger-icon { position: relative; display: block; width: 18px; height: 14px; }
+  .burger-icon > span { position: absolute; left: 0; width: 100%; height: 2px; border-radius: 2px; background: currentColor; transition: top .25s ease, transform .25s ease, opacity .2s ease; }
+  .burger-icon > span:nth-child(1) { top: 0; }
+  .burger-icon > span:nth-child(2) { top: 6px; }
+  .burger-icon > span:nth-child(3) { top: 12px; }
+  .mobile-menu-button[aria-expanded="true"] .burger-icon > span:nth-child(1) { top: 6px; transform: rotate(45deg); }
+  .mobile-menu-button[aria-expanded="true"] .burger-icon > span:nth-child(2) { opacity: 0; }
+  .mobile-menu-button[aria-expanded="true"] .burger-icon > span:nth-child(3) { top: 6px; transform: rotate(-45deg); }
 
   .hero-section { position: relative; min-height: 620px; display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 40px; width: min(1220px, calc(100% - 48px)); margin: 0 auto; padding: 76px 0 112px; }
   .hero-section::before { content: ""; position: absolute; width: 58vw; height: 58vw; max-width: 760px; max-height: 760px; border-radius: 50%; top: -55%; right: -24%; background: hsl(var(--accent) / .27); z-index: -1; }
@@ -99,10 +121,12 @@
   .hero-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 19px; }
   .primary-button, .secondary-button { min-height: 45px; display: inline-flex; align-items: center; justify-content: center; gap: 9px; border: 1px solid transparent; border-radius: 999px; padding: 0 20px; font-size: 12px; font-weight: 700; transition: transform .2s ease, background-color .2s ease, color .2s ease; }
   .primary-button { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); box-shadow: 0 9px 18px hsl(var(--primary) / .17); }
-  .primary-button:hover:not(:disabled) { transform: translateY(-2px); background: hsl(358 76% 39%); }
+  .primary-button:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(.92); }
   .primary-button:disabled { opacity: .45; }
   .secondary-button { border-color: hsl(var(--border)); background: hsl(var(--card)); color: hsl(var(--foreground)); }
   .secondary-button:hover { border-color: hsl(var(--primary)); color: hsl(var(--primary)); }
+  .danger-button { border-color: hsl(0 60% 45% / .35); background: hsl(0 60% 45% / .08); color: hsl(var(--danger-text)); }
+  .danger-button:hover { border-color: hsl(var(--danger-text)); background: hsl(0 60% 45% / .14); }
   .full-width { width: 100%; }
   .hero-note { display: inline-flex; align-items: center; gap: 5px; color: hsl(var(--muted-foreground)); font-size: 11px; }
   .hero-note svg { color: hsl(var(--secondary)); }
@@ -113,7 +137,7 @@
   .shelf-caption { display: flex; align-items: end; justify-content: space-between; padding: 13px 2px 0; }
   .shelf-caption span { color: hsl(var(--primary)); font: 10px var(--app-font-mono); text-transform: uppercase; }
   .shelf-caption strong { color: hsl(var(--foreground)); font: 700 21px/1 var(--app-font-serif); text-align: right; }
-  .hero-stamp { position: absolute; top: 2px; right: 7%; z-index: 3; width: 86px; height: 86px; display: grid; place-items: center; align-content: center; border: 1px solid hsl(var(--secondary)); border-radius: 50%; color: hsl(var(--secondary)); background: hsl(var(--accent)); transform: rotate(11deg); }
+  .hero-stamp { position: absolute; top: 2px; right: 7%; z-index: 3; width: 86px; height: 86px; display: grid; place-items: center; align-content: center; border: 1px solid hsl(var(--on-accent) / .55); border-radius: 50%; color: hsl(var(--on-accent)); background: hsl(var(--accent)); transform: rotate(11deg); }
   .hero-stamp span { font: 700 25px var(--app-font-serif); }
   .hero-stamp small { font: 700 8px var(--app-font-mono); text-transform: uppercase; }
   .hero-mini-product { position: absolute; z-index: 3; width: 135px; padding: 7px; border: 1px solid rgba(70, 46, 43, .13); border-radius: 17px; background: hsl(var(--card)); box-shadow: var(--shadow-soft); }
@@ -202,7 +226,7 @@
   .product-card-bottom { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; }
   .product-card-bottom > strong { font: 700 18px var(--app-font-mono); letter-spacing: -.08em; }
   .add-button { display: inline-flex; align-items: center; gap: 4px; min-height: 30px; padding: 0 12px; border: 1px solid hsl(var(--foreground)); border-radius: 999px; background: hsl(var(--foreground)); color: hsl(var(--card)); font-size: 10px; font-weight: 700; }
-  .add-button:hover:not(:disabled) { background: hsl(var(--primary)); border-color: hsl(var(--primary)); }
+  .add-button:hover:not(:disabled) { background: hsl(var(--primary)); border-color: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
   .add-button:disabled { opacity: .4; }
   .skeleton-card { padding: 11px; box-shadow: none; }
   .skeleton-block { height: 214px; border-radius: 13px; }
@@ -346,8 +370,8 @@
   .divider-row::before, .divider-row::after { content: ""; flex: 1; height: 1px; background: hsl(var(--border)); }
   .login-field { width: 100%; height: 44px; padding: 0 12px; border: 1px solid hsl(var(--border)); border-radius: 10px; outline: 0; background: hsl(var(--background)); color: hsl(var(--foreground)); font-size: 13px; margin-bottom: 13px; }
   .login-field:focus { border-color: hsl(var(--primary)); box-shadow: 0 0 0 3px hsl(var(--primary) / .1); }
-  .login-error { margin: 12px 0 0; padding: 11px 13px; border: 1px solid hsl(var(--primary) / .28); border-left: 4px solid hsl(var(--primary)); border-radius: 0 10px 10px 0; background: hsl(var(--primary) / .11); color: hsl(348 30% 14%); font-size: 11px; font-weight: 600; line-height: 1.5; }
-  .login-notice { margin: 12px 0 0; padding: 11px 13px; border: 1px solid hsl(var(--secondary) / .28); border-left: 4px solid hsl(var(--secondary)); border-radius: 0 10px 10px 0; background: hsl(var(--secondary) / .11); color: hsl(158 35% 16%); font-size: 11px; font-weight: 600; line-height: 1.5; }
+  .login-error { margin: 12px 0 0; padding: 11px 13px; border: 1px solid hsl(var(--primary) / .28); border-left: 4px solid hsl(var(--primary)); border-radius: 0 10px 10px 0; background: hsl(var(--primary) / .11); color: hsl(var(--foreground)); font-size: 11px; font-weight: 600; line-height: 1.5; }
+  .login-notice { margin: 12px 0 0; padding: 11px 13px; border: 1px solid hsl(var(--secondary) / .28); border-left: 4px solid hsl(var(--secondary)); border-radius: 0 10px 10px 0; background: hsl(var(--secondary) / .11); color: hsl(var(--foreground)); font-size: 11px; font-weight: 600; line-height: 1.5; }
   .login-switch-note { margin: 15px 0 0; color: hsl(var(--foreground)); font-size: 11px; font-weight: 600; text-align: center; }
   .login-switch-note button { border: 0; background: transparent; padding: 0; color: hsl(var(--primary)); font-size: 11px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
   .account-chip { display: flex; align-items: center; gap: 12px; margin: 4px 0 20px; padding: 12px 14px; border: 1px solid hsl(var(--border)); border-radius: 14px; background: hsl(var(--muted)); }
@@ -373,6 +397,8 @@
 
   /* ---- settings / login activity log ---- */
   .login-log-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; max-height: 320px; overflow-y: auto; }
+  .settings-section + .settings-section { margin-top: 22px; padding-top: 18px; border-top: 1px dashed hsl(var(--border)); }
+  .settings-section-title { margin: 0 0 10px; color: hsl(var(--muted-foreground)); font: 700 10px var(--app-font-mono); text-transform: uppercase; letter-spacing: .06em; }
   .login-log-row { display: flex; flex-direction: column; gap: 3px; padding: 10px 12px; border-radius: 10px; background: hsl(var(--muted)); font-size: 11px; }
   .login-log-row .log-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
   .login-log-row .log-status { font-weight: 700; }
@@ -381,7 +407,7 @@
   .login-log-row .log-badge { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: hsl(var(--secondary) / .15); color: hsl(var(--secondary)); font-size: 9px; font-weight: 700; vertical-align: 1px; }
   .login-log-row.log-success .log-status { color: hsl(var(--secondary)); }
   .login-log-row.log-failed .log-status { color: hsl(var(--primary)); }
-  .login-log-row.log-locked .log-status { color: hsl(28 85% 45%); }
+  .login-log-row.log-locked .log-status { color: hsl(var(--warn-text)); }
 
   /* ---- idle "are you still there?" prompt ---- */
   .idle-overlay { z-index: 90; }
@@ -464,7 +490,7 @@
   .order-track-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
   .order-track-head strong { font-size: 13px; }
   .order-track-head span { display: block; color: hsl(var(--muted-foreground)); font-size: 11px; margin-top: 2px; }
-  .order-track-badge { flex-shrink: 0; padding: 3px 10px; border-radius: 999px; font: 700 10px var(--app-font-mono); text-transform: uppercase; background: hsl(var(--accent) / .3); color: hsl(30 70% 32%); }
+  .order-track-badge { flex-shrink: 0; padding: 3px 10px; border-radius: 999px; font: 700 10px var(--app-font-mono); text-transform: uppercase; background: hsl(var(--accent) / .3); color: hsl(var(--warn-text)); }
   .order-track-badge.is-live { background: hsl(var(--secondary) / .15); color: hsl(var(--secondary)); }
   .order-track-badge.is-done { background: hsl(var(--secondary) / .15); color: hsl(var(--secondary)); }
   .order-track-badge.is-cancelled { background: hsl(var(--muted)); color: hsl(var(--muted-foreground)); }
@@ -480,7 +506,7 @@
   .tiktok-step.is-done .tiktok-step-connector { background: hsl(var(--secondary)); }
   .tiktok-step:first-child .tiktok-step-connector { display: none; }
   @keyframes pulse-ring { 0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / .35); } 50% { box-shadow: 0 0 0 6px hsl(var(--primary) / 0); } }
-  .order-reminder-note { margin: 10px 0 0; padding: 9px 11px; border-radius: 10px; background: hsl(var(--accent) / .25); color: hsl(30 70% 30%); font-size: 11px; line-height: 1.5; }
+  .order-reminder-note { margin: 10px 0 0; padding: 9px 11px; border-radius: 10px; background: hsl(var(--accent) / .25); color: hsl(var(--warn-text)); font-size: 11px; line-height: 1.5; }
   .order-track-actions { margin-top: 12px; padding-top: 12px; border-top: 1px dashed hsl(var(--border)); display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
   .order-track-actions .secondary-button { min-height: 36px; padding: 0 16px; font-size: 11px; }
   .order-cancel-hint { margin: 0; color: hsl(var(--muted-foreground)); font-size: 10.5px; }
@@ -509,6 +535,84 @@
 
   @media (max-width: 980px) {
     .desktop-nav { gap: 16px; }
+
+    /* ---- burger menu (tablet + phone) ----
+       Every row is: [20px icon slot] [label] [optional badge], so all the
+       labels start on the same vertical line. */
+    .mobile-menu-button { display: grid; }
+    .header-actions { flex: 0 0 auto; }
+    .mobile-menu-panel {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      z-index: 39;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0;
+      max-height: calc(100dvh - 80px);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      padding: 4px 24px 16px;
+      border-top: 1px solid hsl(var(--border));
+      border-bottom: 1px solid hsl(var(--border));
+      background: hsl(var(--background) / .98);
+      box-shadow: var(--shadow-soft);
+    }
+    .mobile-menu-panel.mobile-nav-open { display: flex; }
+
+    /* margin-left:auto on the desktop nav was pushing it to the right edge */
+    .desktop-nav { flex-direction: column; align-items: stretch; gap: 0; margin-left: 0; }
+    .nav-link { display: flex; align-items: center; gap: 14px; padding: 14px 2px; text-align: left; font-size: 14px; color: hsl(var(--foreground)); border-bottom: 1px solid hsl(var(--border)); }
+    .nav-link.active { color: hsl(var(--primary)); }
+    .nav-link.active::after { display: none; }
+    .nav-link-icon { display: block; width: 20px; height: 20px; flex: 0 0 20px; }
+
+    .header-extra-actions { flex-direction: column; align-items: stretch; gap: 0; margin: 0; }
+    .header-extra-actions .theme-switcher { display: block; width: 100%; }
+    .header-extra-actions > button,
+    .header-extra-actions .theme-toggle {
+      position: relative;
+      width: 100%;
+      height: auto;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 14px;
+      padding: 14px 2px;
+      border: 0;
+      border-radius: 0;
+      border-bottom: 1px solid hsl(var(--border));
+      background: transparent;
+      color: hsl(var(--foreground));
+      text-align: left;
+    }
+    .header-extra-actions > button:last-child { border-bottom: 0; }
+    .header-extra-actions svg { width: 20px; height: 20px; flex: 0 0 20px; }
+    .header-action-label { display: block; flex: 1 1 auto; min-width: 0; font-size: 14px; font-weight: 600; line-height: 1.2; text-align: left; }
+    .header-extra-actions .notif-badge { position: static; flex: 0 0 auto; margin-left: auto; border: 0; }
+    .header-extra-actions .theme-toggle { touch-action: manipulation; }
+    .header-extra-actions .theme-toggle[aria-expanded="true"] { border-bottom-color: transparent; }
+
+    /* Theme choices open inline under the "Theme" row instead of floating. */
+    .header-extra-actions .theme-menu {
+      position: static !important;
+      left: auto !important;
+      top: auto !important;
+      width: auto !important;
+      margin: 0;
+      padding: 0 0 14px 34px;
+      border: 0;
+      border-bottom: 1px solid hsl(var(--border));
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+    .header-extra-actions .theme-menu.open { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .header-extra-actions .theme-choice { padding: 10px 12px; border: 1px solid hsl(var(--border)); border-radius: 999px; font-size: 12px; text-align: center; }
+    .header-extra-actions .theme-choice.active { border-color: hsl(var(--primary)); }
     .product-grid { grid-template-columns: repeat(3, 1fr); }
     .category-rail { grid-template-columns: repeat(3, 1fr); }
     .category-tile:nth-child(3) { border-right: 0; }
@@ -520,52 +624,11 @@
     .brand-sub { display: none; }
     .brand-word { font-size: 22px; }
     .brand-mark { width: 30px; height: 30px; font-size: 22px; }
-    .desktop-nav { position: absolute; top: 67px; left: 0; right: 0; display: none; flex-direction: column; align-items: stretch; gap: 0; padding: 8px 16px 16px; border-bottom: 1px solid hsl(var(--border)); background: rgba(255, 250, 240, .98); box-shadow: var(--shadow-soft); }
-    .desktop-nav.mobile-nav-open { display: flex; }
-    .nav-link { padding: 13px 0; text-align: left; border-bottom: 1px solid hsl(var(--border)); }
-    .nav-link.active::after { display: none; }
-    .mobile-menu-button { display: grid; }
     .header-cart span { display: none; }
     .header-cart { padding-left: 10px; }
-    /* The row of header icon buttons can be wider than the screen on small
-       phones. Let it scroll horizontally instead of clipping/squishing the
-       buttons so every button stays reachable. */
-    .header-inner { flex-wrap: nowrap; }
+    .header-inner { flex-wrap: nowrap; gap: 10px; }
     .brand-button { flex: 0 0 auto; min-width: 0; }
-    /* Mobile header: keep every action at its natural width and make the
-       action row genuinely swipe-scrollable on touch screens. */
-    .header-actions {
-      flex: 1 1 0;
-      width: 0;
-      min-width: 0;
-      max-width: none;
-      display: flex;
-      flex-wrap: nowrap;
-      align-items: center;
-      justify-content: flex-start;
-      gap: 10px;
-      overflow-x: auto;
-      overflow-y: hidden;
-      white-space: nowrap;
-      -webkit-overflow-scrolling: touch;
-      touch-action: pan-x;
-      overscroll-behavior-x: contain;
-      scrollbar-width: none;
-      padding: 6px 3px;
-      margin: -6px -3px;
-    }
-    .header-actions::-webkit-scrollbar { display: none; }
-    .header-actions > * {
-      flex: 0 0 auto;
-      flex-shrink: 0;
-    }
-    .header-actions button {
-      flex-shrink: 0;
-    }
-    /* Keep the theme button touch-friendly; the menu itself is positioned
-       from the button coordinates for every screen size. */
-    .theme-toggle { touch-action: manipulation; }
-    .header-inner { gap: 10px; }
+    .mobile-menu-panel { padding-left: 16px; padding-right: 16px; }
     .hero-section { display: block; min-height: 760px; padding: 67px 0 95px; }
     .hero-title { font-size: clamp(59px, 15vw, 85px); }
     .hero-description { font-size: 13px; }
@@ -644,6 +707,11 @@
   .theme-menu.open { display:grid; gap:4px; }
   .theme-choice { border:0; border-radius:9px; background:transparent; padding:9px 10px; text-align:left; color:hsl(var(--foreground)); font-size:11px; font-weight:700; }
   .theme-choice:hover, .theme-choice.active { background:hsl(var(--muted)); color:hsl(var(--primary)); }
+  /* dark themes: lighter amber/red text, native controls in dark mode, and a
+     deeper story panel so the yellow headline stays readable */
+  :root[data-theme="dark"], :root[data-theme="comet-night"] { color-scheme: dark; --warn-text: 40 92% 72%; --danger-text: 0 88% 75%; }
+  :root[data-theme="dark"] .story-panel { --secondary: 158 30% 20%; --primary-foreground: 40 25% 94%; }
+  :root[data-theme="comet-night"] .story-panel { --secondary: 252 32% 26%; --primary-foreground: 220 35% 94%; }
 
   [hidden] { display: none !important; }
   @media (prefers-reduced-motion: reduce) {
@@ -734,42 +802,50 @@
           <span class="brand-sub">Mimi&apos;s Sweets &amp; Korean Mart</span>
         </div>
       </button>
-      <nav class="desktop-nav" id="desktop-nav" aria-label="Primary navigation">
-        <button type="button" class="nav-link active" data-nav="top">Home</button>
-        <button type="button" class="nav-link" data-nav="categories">Shop shelves</button>
-        <button type="button" class="nav-link" data-nav="story">Our corner</button>
-       </nav>
+      <div class="mobile-menu-panel" id="mobile-menu-panel">
+        <nav class="desktop-nav" id="desktop-nav" aria-label="Primary navigation">
+          <button type="button" class="nav-link active" data-nav="top"><svg class="nav-link-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Home</span></button>
+          <button type="button" class="nav-link" data-nav="categories"><svg class="nav-link-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg><span>Shop shelves</span></button>
+          <button type="button" class="nav-link" data-nav="story"><svg class="nav-link-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg><span>Our corner</span></button>
+        </nav>
+        <div class="header-extra-actions" id="header-extra-actions">
+          <div class="theme-switcher">
+            <button class="theme-toggle focus-ring" type="button" id="theme-toggle" aria-label="Change appearance" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3Z"/></svg><span class="header-action-label">Theme</span></button>
+            <div class="theme-menu" id="theme-menu" role="menu" aria-label="Appearance themes">
+              <button type="button" class="theme-choice" data-theme-choice="light">Light</button>
+              <button type="button" class="theme-choice" data-theme-choice="dark">Dark</button>
+              <button type="button" class="theme-choice" data-theme-choice="summer">Summer</button>
+              <button type="button" class="theme-choice" data-theme-choice="winter">Winter</button>
+              <button type="button" class="theme-choice" data-theme-choice="comet-night">Comet Night</button>
+            </div>
+          </div>
+          <button class="header-icon-button focus-ring" type="button" data-nav="catalogue" aria-label="Search the catalogue">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <span class="header-action-label">Search</span>
+          </button>
+          <button class="header-icon-button focus-ring" type="button" id="orders-button" aria-label="Track your orders">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 9.4 7.55 4.24"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+            <span class="header-action-label">Track orders</span>
+          </button>
+          <button class="header-icon-button focus-ring notif-button" type="button" id="notif-button" aria-label="Order notifications" hidden>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span class="header-action-label">Notifications</span>
+            <span class="notif-badge" id="notif-badge" hidden>0</span>
+          </button>
+          <button class="header-icon-button focus-ring" type="button" id="account-button" aria-label="Sign in">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span class="header-action-label">Account</span>
+          </button>
+        </div>
+      </div>
       <div class="header-actions">
-         <div class="theme-switcher">
-           <button class="theme-toggle focus-ring" type="button" id="theme-toggle" aria-label="Change appearance" aria-expanded="false">✦</button>
-           <div class="theme-menu" id="theme-menu" role="menu" aria-label="Appearance themes">
-             <button type="button" class="theme-choice" data-theme-choice="light">Light</button>
-             <button type="button" class="theme-choice" data-theme-choice="dark">Dark</button>
-             <button type="button" class="theme-choice" data-theme-choice="summer">Summer</button>
-             <button type="button" class="theme-choice" data-theme-choice="winter">Winter</button>
-             <button type="button" class="theme-choice" data-theme-choice="comet-night">Comet Night</button>
-           </div>
-         </div>
-        <button class="header-icon-button focus-ring" type="button" data-nav="catalogue" aria-label="Search the catalogue">
-          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        </button>
-        <button class="header-icon-button focus-ring" type="button" id="orders-button" aria-label="Track your orders">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 9.4 7.55 4.24"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
-        </button>
-        <button class="header-icon-button focus-ring notif-button" type="button" id="notif-button" aria-label="Order notifications" hidden>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-          <span class="notif-badge" id="notif-badge" hidden>0</span>
-        </button>
-        <button class="header-icon-button focus-ring" type="button" id="account-button" aria-label="Sign in">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        </button>
         <button class="header-cart focus-ring" type="button" id="open-cart">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
           <span>Reservation cart</span>
           <b id="cart-count">0</b>
         </button>
-        <button class="mobile-menu-button focus-ring" type="button" id="mobile-menu-toggle" aria-expanded="false" aria-label="Toggle menu">
-          <svg id="menu-icon" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+        <button class="mobile-menu-button focus-ring" type="button" id="mobile-menu-toggle" aria-expanded="false" aria-controls="mobile-menu-panel" aria-label="Toggle menu">
+          <span class="burger-icon" aria-hidden="true"><span></span><span></span><span></span></span>
         </button>
       </div>
     </div>
@@ -3485,9 +3561,9 @@ next.push({
         '</div>'
       );
     } else if (state.user && state.accountView === 'settings') {
-      // settings sub-view: login activity log for this account
+      // settings sub-view: sign-in activity + account-level actions, grouped
       titleHTML = '<h2 id="login-dialog-title" class="font-display">Settings</h2>';
-      copyHTML = '<p class="login-copy">Recent sign-in activity for <strong>' + state.user.email + '</strong> from <strong>all your devices</strong> \u2014 with the date, time, device and approximate location of each. Don\u2019t recognise one? Change your password.</p>';
+      copyHTML = '';
       var logsHTML;
       if (state.securityLogsError) {
         logsHTML = '<p class="login-error">' + state.securityLogsError + '</p>';
@@ -3499,9 +3575,20 @@ next.push({
         logsHTML = '<p class="login-copy">No sign-in activity recorded yet.</p>';
       }
       bodyHTML = (
-        logsHTML +
-        '<button type="button" class="secondary-button full-width focus-ring" id="settings-refresh-button" style="margin-top:15px" ' + (state.securityLogsLoading ? 'disabled' : '') + '>' + (state.securityLogsLoading ? 'Refreshing\u2026' : 'Refresh') + '</button>' +
-        '<button type="button" class="secondary-button full-width focus-ring" id="settings-back-button" style="margin-top:9px">\u2190 Back to account</button>'
+        '<div class="settings-section">' +
+          '<h3 class="settings-section-title">Where you log in</h3>' +
+          '<p class="login-copy">Recent sign-in activity for <strong>' + state.user.email + '</strong> from <strong>all your devices</strong> \u2014 with the date, time, device and approximate location of each. Don\u2019t recognise one? Change your password.</p>' +
+          logsHTML +
+          '<button type="button" class="secondary-button full-width focus-ring" id="settings-refresh-button" style="margin-top:15px" ' + (state.securityLogsLoading ? 'disabled' : '') + '>' + (state.securityLogsLoading ? 'Refreshing\u2026' : 'Refresh') + '</button>' +
+          '<button type="button" class="secondary-button full-width focus-ring" id="log-out-other-sessions-button" style="margin-top:9px">Log out other sessions</button>' +
+        '</div>' +
+        '<div class="settings-section">' +
+          '<h3 class="settings-section-title">Account</h3>' +
+          '<p class="login-copy">Taking a break, or leaving for good? These affect your account right away.</p>' +
+          '<button type="button" class="secondary-button full-width focus-ring" id="deactivate-account-button">Deactivate account for 1 month</button>' +
+          '<button type="button" class="danger-button full-width focus-ring" id="delete-account-button" style="margin-top:9px">Delete account</button>' +
+        '</div>' +
+        '<button type="button" class="secondary-button full-width focus-ring" id="settings-back-button" style="margin-top:18px">\u2190 Back to account</button>'
       );
     } else if (state.user) {
       // signed-in view, opened from the account button
@@ -3522,7 +3609,7 @@ next.push({
           : '') +
         noticeHTML + errorHTML +
         '<button type="button" class="secondary-button full-width focus-ring" id="track-orders-button" style="margin-top:11px">\uD83D\uDCE6 Track my orders</button>' +
-        '<button type="button" class="secondary-button full-width focus-ring" id="account-settings-button" style="margin-top:9px">Settings &amp; login logs</button>' +
+        '<button type="button" class="secondary-button full-width focus-ring" id="account-settings-button" style="margin-top:9px">Settings</button>' +
         '<button type="button" class="secondary-button full-width focus-ring" id="sign-out-button" style="margin-top:9px">Sign out</button>'
       );
     } else {
@@ -3587,6 +3674,13 @@ next.push({
 
     var signOutBtn = document.getElementById('sign-out-button');
     if (signOutBtn) signOutBtn.addEventListener('click', signOutUser);
+
+    var otherSessionsBtn = document.getElementById('log-out-other-sessions-button');
+    if (otherSessionsBtn) otherSessionsBtn.addEventListener('click', logOutOtherSessions);
+    var deactivateBtn = document.getElementById('deactivate-account-button');
+    if (deactivateBtn) deactivateBtn.addEventListener('click', deactivateAccountOneMonth);
+    var deleteAccountBtn = document.getElementById('delete-account-button');
+    if (deleteAccountBtn) deleteAccountBtn.addEventListener('click', deleteMyAccount);
 
     var settingsBtn = document.getElementById('account-settings-button');
     if (settingsBtn) settingsBtn.addEventListener('click', function () {
@@ -3873,8 +3967,181 @@ next.push({
     state.securityLogs = null;
     state.securityLogsError = '';
     unsubscribeFromCustomerOrders();
+    unsubscribeFromSessionDoc();
     renderOverlays();
     updateAccountButton();
+  }
+
+  // ---------------- account: other sessions, deactivate, delete ----------------
+  // One small Firestore doc per account holds two independent flags:
+  //   invalidateBefore \u2014 "log out other sessions" writes a fresh server
+  //     timestamp here; every OTHER signed-in device/browser is listening
+  //     and signs itself out the moment it sees a timestamp newer than
+  //     when IT signed in. This device bumps its own local marker first so
+  //     it doesn't sign itself out by its own action.
+  //   deactivatedUntil \u2014 "deactivate for 1 month" stores a future date;
+  //     any sign-in attempt before that date is intercepted and asked to
+  //     confirm before the account is reactivated.
+  // There's no backend here, so this is a client + Firestore approximation
+  // of what a real auth backend (e.g. revoking refresh tokens) would do
+  // \u2014 fine for a small storefront, but a determined attacker with a
+  // still-valid Firebase ID token could keep using it for up to an hour
+  // (Firebase's own token lifetime) after a "log out other sessions".
+  function sessionDocRef(email) { return firebaseDb.collection('customer_sessions').doc(email.toLowerCase()); }
+  function sessionMarkerKey(email) { return 'mimicart:session-started:' + normalizeEmail(email); }
+  function ensureSessionMarker(email) {
+    var key = sessionMarkerKey(email);
+    var existing = null;
+    try { existing = localStorage.getItem(key); } catch (e) { /* ignore */ }
+    if (!existing) {
+      existing = String(Date.now());
+      try { localStorage.setItem(key, existing); } catch (e) { /* ignore */ }
+    }
+    return Number(existing);
+  }
+
+  var unsubscribeSessionDoc = null;
+  var skipNextInvalidationCheck = false;
+  function subscribeToSessionDoc(email) {
+    if (!firebaseConfigured || !firebaseDb) return;
+    unsubscribeFromSessionDoc();
+    var marker = ensureSessionMarker(email);
+    unsubscribeSessionDoc = sessionDocRef(email).onSnapshot(function (snap) {
+      if (!snap.exists) return;
+      if (skipNextInvalidationCheck) { skipNextInvalidationCheck = false; return; }
+      var data = snap.data();
+      var invalidateBefore = data.invalidateBefore && data.invalidateBefore.toMillis ? data.invalidateBefore.toMillis() : null;
+      if (invalidateBefore && invalidateBefore > marker) {
+        showToast('You were signed out \u2014 "Log out other sessions" was used on another device.');
+        signOutUser();
+      }
+    }, function (err) { console.error('MimiCart: session listener failed', err); });
+  }
+  function unsubscribeFromSessionDoc() {
+    if (unsubscribeSessionDoc) { unsubscribeSessionDoc(); unsubscribeSessionDoc = null; }
+  }
+
+  function logOutOtherSessions() {
+    if (!state.user || !firebaseConfigured || !firebaseDb) return;
+    if (!confirm('Sign out of MimiCart on all your OTHER devices and browsers? This device stays signed in.')) return;
+    var key = sessionMarkerKey(state.user.email);
+    // Push this device's own marker a couple seconds into the future
+    // first, so when the server timestamp we're about to write comes
+    // back down through this device's own listener, it reads as
+    // "before" that marker and doesn't log itself out too.
+    try { localStorage.setItem(key, String(Date.now() + 5000)); } catch (e) { /* ignore */ }
+    skipNextInvalidationCheck = true;
+    sessionDocRef(state.user.email).set({ invalidateBefore: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true })
+      .then(function () { showToast('Signed out of your other sessions.'); })
+      .catch(function (err) {
+        console.error('MimiCart: could not log out other sessions', err);
+        showToast('Couldn\u2019t log out other sessions. (' + ((err && err.message) || 'unknown error') + ')');
+      });
+  }
+
+  function deactivateAccountOneMonth() {
+    if (!state.user || !firebaseConfigured || !firebaseDb) return;
+    if (!confirm('Deactivate your MimiCart account for 1 month? You\u2019ll be signed out now and won\u2019t be able to sign back in until then \u2014 signing in early will reactivate it right away.')) return;
+    var until = Date.now() + 30 * 24 * 60 * 60 * 1000;
+    sessionDocRef(state.user.email).set({ deactivatedUntil: until }, { merge: true }).then(function () {
+      showToast('Account deactivated for 1 month.');
+      signOutUser();
+    }).catch(function (err) {
+      console.error('MimiCart: could not deactivate account', err);
+      showToast('Couldn\u2019t deactivate your account. (' + ((err && err.message) || 'unknown error') + ')');
+    });
+  }
+
+  function deleteMyAccount() {
+    if (!state.user || !firebaseConfigured || !firebaseAuth || !firebaseAuth.currentUser) return;
+    if (!confirm('Permanently delete your MimiCart account? This removes your login for good \u2014 past orders stay on file for our records, but you won\u2019t be able to sign back in with this account. This can\u2019t be undone.')) return;
+    var email = state.user.email;
+    var provider = state.user.provider;
+    var authUser = firebaseAuth.currentUser;
+
+    function afterDeleted() {
+      if (firebaseDb) sessionDocRef(email).delete().catch(function () { /* best-effort cleanup */ });
+      try { localStorage.removeItem(notifKey(email)); localStorage.removeItem(sessionMarkerKey(email)); } catch (e) { /* ignore */ }
+      unsubscribeFromCustomerOrders();
+      unsubscribeFromSessionDoc();
+      state.user = null;
+      state.loginOpen = false;
+      renderOverlays();
+      updateAccountButton();
+      showToast('Your account has been deleted.');
+    }
+
+    authUser.delete().then(afterDeleted).catch(function (err) {
+      if (err && err.code === 'auth/requires-recent-login') {
+        // Firebase requires a fresh sign-in right before letting an
+        // account be deleted, as a safety measure against a stolen
+        // session. Re-authenticate, then retry the delete.
+        var reauthed;
+        if (provider === 'google') {
+          reauthed = authUser.reauthenticateWithPopup(new firebase.auth.GoogleAuthProvider());
+        } else {
+          var pw = prompt('For your security, please re-enter your password to confirm account deletion:');
+          if (!pw) return;
+          reauthed = authUser.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(email, pw));
+        }
+        reauthed.then(function () { return authUser.delete(); }).then(afterDeleted).catch(function (err2) {
+          console.error('MimiCart: re-authentication failed', err2);
+          showToast('Couldn\u2019t verify it\u2019s you, so the account wasn\u2019t deleted. Please try again.');
+        });
+      } else {
+        console.error('MimiCart: could not delete account', err);
+        showToast('Couldn\u2019t delete your account. (' + ((err && err.message) || 'unknown error') + ')');
+      }
+    });
+  }
+
+  // Shared tail end of every successful sign-in path (OTP completion,
+  // "is this you?" confirmation, and the plain onAuthStateChanged path):
+  // checks whether the account is currently deactivated before actually
+  // handing over access, then wires up the customer's order + session
+  // listeners. Centralized here so all three call sites treat a
+  // deactivated account the same way.
+  function finalizeSignIn(fbUser, options) {
+    options = options || {};
+    var email = fbUser.email;
+
+    function grantAccess() {
+      state.user = userFromFirebaseUser(fbUser);
+      state.otpPending = false;
+      state.loginOpen = false;
+      state.loginLoading = false;
+      renderOverlays();
+      updateAccountButton();
+      if (options.showWelcome !== false) showWelcomeToast(state.user);
+      subscribeToCustomerOrders();
+      subscribeToSessionDoc(email);
+    }
+
+    if (!firebaseConfigured || !firebaseDb) { grantAccess(); return; }
+
+    sessionDocRef(email).get().then(function (snap) {
+      var data = snap.exists ? snap.data() : null;
+      if (data && data.deactivatedUntil && data.deactivatedUntil > Date.now()) {
+        var untilLabel = new Date(data.deactivatedUntil).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+        var reactivate = confirm('Your MimiCart account is deactivated until ' + untilLabel + '. Sign in anyway to reactivate it now?');
+        if (reactivate) {
+          sessionDocRef(email).set({ deactivatedUntil: firebase.firestore.FieldValue.delete() }, { merge: true }).catch(function () { /* best-effort */ });
+          showToast('Welcome back \u2014 your account is reactivated.');
+          grantAccess();
+        } else {
+          if (firebaseAuth) firebaseAuth.signOut();
+          state.user = null;
+          state.loginOpen = false;
+          renderOverlays();
+          updateAccountButton();
+        }
+        return;
+      }
+      grantAccess();
+    }).catch(function (err) {
+      console.error('MimiCart: could not check account status, signing in anyway', err);
+      grantAccess(); // fail open rather than locking someone out over a network hiccup
+    });
   }
 
   function updateAccountButton() {
@@ -3966,18 +4233,14 @@ next.push({
       return;
     }
     otpVerifiedThisSession = true;
-    state.user = userFromFirebaseUser(pendingOtpUser);
     state.otpPending = false;
     state.otpCode = '';
     state.otpNotice = '';
     state.otpError = '';
-    state.loginOpen = false;
     clearInterval(otpResendCooldownTimer);
+    var otpUser = pendingOtpUser;
     pendingOtpUser = null;
-    renderOverlays();
-    updateAccountButton();
-    showWelcomeToast(state.user);
-    subscribeToCustomerOrders();
+    finalizeSignIn(otpUser);
   }
 
   function resendOtpCode() {
@@ -4026,6 +4289,7 @@ next.push({
         clearInterval(otpResendCooldownTimer);
         updateAccountButton();
         unsubscribeFromCustomerOrders();
+        unsubscribeFromSessionDoc();
         return;
       }
 
@@ -4043,14 +4307,7 @@ next.push({
         }
         explicitLoginInProgress = false;
         var wasSignedIn = !!state.user;
-        state.user = userFromFirebaseUser(fbUser);
-        state.otpPending = false;
-        state.loginOpen = false;
-        state.loginLoading = false;
-        renderOverlays();
-        updateAccountButton();
-        if (!wasSignedIn) showWelcomeToast(state.user);
-        subscribeToCustomerOrders();
+        finalizeSignIn(fbUser, { showWelcome: !wasSignedIn });
         return;
       }
 
@@ -4091,14 +4348,7 @@ next.push({
     var fbUser = pendingConfirmUser;
     pendingConfirmUser = null;
     state.confirmIdentityPending = false;
-    state.user = userFromFirebaseUser(fbUser);
-    state.otpPending = false;
-    state.loginOpen = false;
-    state.loginLoading = false;
-    renderOverlays();
-    updateAccountButton();
-    showWelcomeToast(state.user);
-    subscribeToCustomerOrders();
+    finalizeSignIn(fbUser);
   }
   function confirmIdentityNo() {
     pendingConfirmUser = null;
@@ -4127,6 +4377,7 @@ next.push({
     else if (state.ordersOpen) closeOrdersDialog();
     else if (state.loginOpen) closeLoginDialog();
     else if (state.cartOpen) closeCartDrawer();
+    else if (mobileMenuPanel && mobileMenuPanel.classList.contains('mobile-nav-open')) setMobileNav(false);
     // note: the "is this you?" identity check has no Escape shortcut —
     // it requires an explicit Yes/No so a shared device can't be skipped past.
   });
@@ -4140,16 +4391,27 @@ next.push({
     btn.addEventListener('click', function () { setMobileNav(false); scrollToId(btn.getAttribute('data-nav')); });
   });
 
-  var desktopNav = document.getElementById('desktop-nav');
+  var mobileMenuPanel = document.getElementById('mobile-menu-panel');
   var mobileToggle = document.getElementById('mobile-menu-toggle');
   function setMobileNav(open) {
-    desktopNav.classList.toggle('mobile-nav-open', open);
+    mobileMenuPanel.classList.toggle('mobile-nav-open', open);
     mobileToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-    mobileToggle.innerHTML = open
-      ? '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
-      : '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>';
   }
-  mobileToggle.addEventListener('click', function () { setMobileNav(!desktopNav.classList.contains('mobile-nav-open')); });
+  mobileToggle.addEventListener('click', function () { setMobileNav(!mobileMenuPanel.classList.contains('mobile-nav-open')); });
+  // Search already closes via the generic [data-nav] handler above. Orders,
+  // notifications and account each open their own dialog/panel on top, so
+  // the burger dropdown behind them should close too instead of lingering.
+  ['orders-button', 'notif-button', 'account-button'].forEach(function (id) {
+    var btn = document.getElementById(id);
+    if (btn) btn.addEventListener('click', function () { setMobileNav(false); });
+  });
+  // Tapping anywhere outside the open burger menu (but not the toggle
+  // button itself) closes it.
+  document.addEventListener('mousedown', function (e) {
+    if (!mobileMenuPanel.classList.contains('mobile-nav-open')) return;
+    if (mobileMenuPanel.contains(e.target) || e.target.closest('#mobile-menu-toggle')) return;
+    setMobileNav(false);
+  });
 
   // ---- initial render ----
   loadCartFromStorage();
