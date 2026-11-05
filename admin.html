@@ -415,6 +415,21 @@
   .perm-switch input:checked + span { background: hsl(var(--good)); }
   .perm-switch input:checked + span::after { transform: translateX(20px); }
   .perm-switch input:focus-visible + span { outline: 2px solid hsl(var(--primary)); outline-offset: 2px; }
+  .orders-controls { padding-bottom: 14px; }
+  .orders-search-wrap { position: relative; margin-bottom: 12px; }
+  .orders-search-wrap .search-input { width: 100%; min-width: 0; height: 46px; font-size: 14px; padding-right: 44px; box-sizing: border-box; }
+  .orders-search-clear { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 30px; height: 30px; border: 0; border-radius: 50%; background: hsl(var(--muted)); color: hsl(var(--foreground)); font-size: 18px; line-height: 1; cursor: pointer; }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .chip { display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid hsl(var(--border)); background: hsl(var(--background)); color: hsl(var(--foreground)); font-size: 13px; font-weight: 600; cursor: pointer; }
+  .chip:hover { border-color: hsl(var(--primary)); }
+  .chip.is-active { background: hsl(var(--primary)); border-color: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+  .chip-count { min-width: 20px; padding: 1px 6px; border-radius: 999px; background: hsl(var(--muted)); color: hsl(var(--foreground)); font-size: 11px; text-align: center; }
+  .chip.is-active .chip-count { background: hsl(0 0% 100% / .25); color: inherit; }
+  .filter-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+  .filter-field { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: hsl(var(--muted-foreground)); font-weight: 600; }
+  .filter-field .filter-select { min-width: 150px; color: hsl(var(--foreground)); font-weight: 400; }
+  .filter-actions { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+  @media (max-width: 640px) { .filter-field { flex: 1 1 140px; } .filter-actions { margin-left: 0; width: 100%; } }
   .hidden { display: none !important; }
 
   @media (max-width: 480px) {
@@ -570,31 +585,60 @@
 
   <!-- ---------------- ORDERS ---------------- -->
   <section class="tab-panel" id="panel-orders">
-    <div class="toolbar-row">
-      <input class="search-input focus-ring" id="orders-search" type="search" placeholder="Search name, order #, item, contact, address&hellip;" style="flex:1;min-width:220px;" />
-      <select class="filter-select focus-ring" id="orders-fulfillment-filter">
-        <option value="all">Pickup &amp; delivery</option>
-        <option value="pickup">Pickup only</option>
-        <option value="delivery">Delivery only</option>
-      </select>
-      <select class="filter-select focus-ring" id="orders-date-filter">
-        <option value="all">Any date</option>
-        <option value="today">Today</option>
-        <option value="week">Last 7 days</option>
-        <option value="month">This month</option>
-      </select>
-      <select class="filter-select focus-ring" id="orders-status-filter">
-        <option value="all">All statuses</option>
-        <option value="pending">Order placed</option>
-        <option value="processing">Preparing order</option>
-        <option value="ready">Ready for pickup</option>
-        <option value="out_for_delivery">Out for delivery</option>
-        <option value="completed">Completed</option>
-        <option value="cancelled">Cancelled</option>
-      </select>
-      <button type="button" class="secondary-button focus-ring" id="orders-export-csv">⬇️ Export CSV</button>
+    <div class="panel-block orders-controls">
+      <div class="orders-search-wrap">
+        <input class="search-input focus-ring" id="orders-search" type="search" autocomplete="off" placeholder="Search: customer name, order #, item, phone, address&hellip;" />
+        <button type="button" class="orders-search-clear hidden" id="orders-search-clear" aria-label="Clear search">&times;</button>
+      </div>
+
+      <div class="chip-row" id="orders-group-chips" role="tablist" aria-label="Show orders">
+        <button type="button" class="chip is-active" data-group-chip="all">All <span class="chip-count" id="chip-count-all">0</span></button>
+        <button type="button" class="chip" data-group-chip="to_be_delivered">🚚 To deliver <span class="chip-count" id="chip-count-to_be_delivered">0</span></button>
+        <button type="button" class="chip" data-group-chip="to_be_picked_up">🏪 To pick up <span class="chip-count" id="chip-count-to_be_picked_up">0</span></button>
+        <button type="button" class="chip" data-group-chip="completed">✅ Completed <span class="chip-count" id="chip-count-completed">0</span></button>
+        <button type="button" class="chip" data-group-chip="cancelled">🚫 Cancelled <span class="chip-count" id="chip-count-cancelled">0</span></button>
+      </div>
+
+      <div class="filter-row">
+        <label class="filter-field"><span>Order type</span>
+          <select class="filter-select focus-ring" id="orders-fulfillment-filter">
+            <option value="all">Pickup &amp; delivery</option>
+            <option value="pickup">Pickup only</option>
+            <option value="delivery">Delivery only</option>
+          </select>
+        </label>
+        <label class="filter-field"><span>Date placed</span>
+          <select class="filter-select focus-ring" id="orders-date-filter">
+            <option value="all">Any date</option>
+            <option value="today">Today</option>
+            <option value="week">Last 7 days</option>
+            <option value="month">This month</option>
+          </select>
+        </label>
+        <label class="filter-field"><span>Progress</span>
+          <select class="filter-select focus-ring" id="orders-status-filter">
+            <option value="all">Any progress</option>
+            <option value="pending">Order placed</option>
+            <option value="processing">Preparing order</option>
+            <option value="ready">Ready for pickup</option>
+            <option value="out_for_delivery">Out for delivery</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </label>
+        <div class="filter-actions">
+          <button type="button" class="ghost-button focus-ring hidden" id="orders-clear-filters">Clear all filters</button>
+          <button type="button" class="secondary-button focus-ring" id="orders-export-csv">⬇️ Export CSV</button>
+        </div>
+      </div>
+      <p class="hint-text" id="orders-result-note" style="margin:10px 0 0;"></p>
     </div>
-    <p class="hint-text" id="orders-result-note" style="margin:0 0 12px;"></p>
+
+    <div class="panel-block hidden" id="orders-no-match" style="text-align:center;">
+      <p style="margin:0 0 10px;"><strong>No orders match.</strong></p>
+      <p class="panel-sub" style="margin:0 0 12px;">Try a shorter search word, or remove a filter.</p>
+      <button type="button" class="secondary-button focus-ring" id="orders-no-match-clear">Clear all filters</button>
+    </div>
 
     <div class="panel-block order-group" data-group="to_be_delivered">
       <h2>🚚 To be delivered <span class="order-group-count" id="orders-count-to_be_delivered">0</span></h2>
@@ -928,6 +972,7 @@ var REQUIRE_OTP = false;
     inventoryCategory: 'All',
     inventoryStockFilter: 'all',
     ordersStatusFilter: 'all',
+    ordersGroup: 'all',
     ordersSearch: '',
     ordersFulfillment: 'all',
     ordersDate: 'all',
@@ -991,9 +1036,7 @@ var REQUIRE_OTP = false;
 
   document.getElementById('orders-export-csv').addEventListener('click', function () {
     if (!can('exportCsv')) { showToast('The admin has not allowed exports for staff.'); return; }
-    var rows = state.orders.filter(function (o) {
-      return state.ordersStatusFilter === 'all' || o.status === state.ordersStatusFilter;
-    });
+    var rows = state.orders.filter(orderPassesAll);
     if (!rows.length) { showToast('No orders to export for this filter.'); return; }
     var header = ['Order #', 'Customer', 'Contact', 'Items', 'Total', 'Fulfillment', 'Address', 'Pickup date', 'Pickup time', 'Status', 'Placed at', 'Completed at'];
     var csvRows = rows.map(function (o) {
@@ -2219,26 +2262,58 @@ var REQUIRE_OTP = false;
     return true;
   }
   function ordersFilterActive() {
-    return state.ordersStatusFilter !== 'all' || state.ordersFulfillment !== 'all' || state.ordersDate !== 'all' || !!(state.ordersSearch || '').trim();
+    return state.ordersGroup !== 'all' || state.ordersStatusFilter !== 'all' || state.ordersFulfillment !== 'all' || state.ordersDate !== 'all' || !!(state.ordersSearch || '').trim();
+  }
+  // Same test the table uses, including the group chip. The CSV export uses it too, so "export" = "what you see".
+  function orderPassesAll(o) {
+    if (state.ordersGroup !== 'all' && o._collection !== state.ordersGroup) return false;
+    return orderPassesFilters(o);
+  }
+  function clearOrderFilters() {
+    state.ordersGroup = 'all'; state.ordersStatusFilter = 'all'; state.ordersFulfillment = 'all'; state.ordersDate = 'all'; state.ordersSearch = '';
+    document.getElementById('orders-search').value = '';
+    document.getElementById('orders-fulfillment-filter').value = 'all';
+    document.getElementById('orders-date-filter').value = 'all';
+    document.getElementById('orders-status-filter').value = 'all';
+    renderOrders();
   }
 
   function renderOrders() {
-    var shown = 0;
+    var shown = 0, filtering = ordersFilterActive();
+    var totalForChips = 0;
     ORDER_GROUPS.forEach(function (group) {
-      var rows = state.orders.filter(function (o) {
-        if (!orderMatchesFilter(o, group)) return false;
-        return orderPassesFilters(o);
-      });
+      // Rows that pass the search + dropdowns (ignoring the group chip) -> the chip counts.
+      var matching = state.orders.filter(function (o) { return o._collection === group && orderPassesFilters(o); });
+      totalForChips += matching.length;
+      var chipCount = document.getElementById('chip-count-' + group);
+      if (chipCount) chipCount.textContent = matching.length;
+
+      var showGroup = state.ordersGroup === 'all' || state.ordersGroup === group;
+      var rows = showGroup ? matching : [];
       shown += rows.length;
       var body = document.getElementById('orders-body-' + group);
       var empty = document.getElementById('orders-empty-' + group);
       var count = document.getElementById('orders-count-' + group);
+      var panel = document.querySelector('.order-group[data-group="' + group + '"]');
       if (count) count.textContent = rows.length;
       if (empty) empty.classList.toggle('hidden', rows.length > 0);
       if (body) body.innerHTML = rows.map(orderRowHTML).join('');
+      // Hide a whole section when it is not chosen, or when filtering leaves it empty (less scrolling).
+      if (panel) panel.classList.toggle('hidden', !showGroup || (filtering && state.ordersGroup === 'all' && rows.length === 0));
     });
+    var allChip = document.getElementById('chip-count-all');
+    if (allChip) allChip.textContent = totalForChips;
+    document.querySelectorAll('[data-group-chip]').forEach(function (c) {
+      c.classList.toggle('is-active', c.getAttribute('data-group-chip') === state.ordersGroup);
+    });
+    var noMatch = document.getElementById('orders-no-match');
+    if (noMatch) noMatch.classList.toggle('hidden', !(filtering && shown === 0 && state.orders.length > 0));
+    var clearBtn = document.getElementById('orders-clear-filters');
+    if (clearBtn) clearBtn.classList.toggle('hidden', !filtering);
+    var sClear = document.getElementById('orders-search-clear');
+    if (sClear) sClear.classList.toggle('hidden', !(state.ordersSearch || '').length);
     var note = document.getElementById('orders-result-note');
-    if (note) note.textContent = ordersFilterActive() ? ('Showing ' + shown + ' of ' + state.orders.length + ' orders') : '';
+    if (note) note.textContent = filtering ? ('Showing ' + shown + ' of ' + state.orders.length + ' orders') : (state.orders.length + ' orders in total');
   }
 
   // Event delegation on the whole Orders panel, so buttons work no matter
@@ -2340,6 +2415,20 @@ var REQUIRE_OTP = false;
     renderOrders();
   });
   document.getElementById('orders-search').addEventListener('input', function (e) { state.ordersSearch = e.target.value; renderOrders(); });
+  document.getElementById('orders-search').addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { e.target.value = ''; state.ordersSearch = ''; renderOrders(); }
+  });
+  document.getElementById('orders-search-clear').addEventListener('click', function () {
+    var box = document.getElementById('orders-search'); box.value = ''; state.ordersSearch = ''; renderOrders(); box.focus();
+  });
+  document.getElementById('orders-group-chips').addEventListener('click', function (e) {
+    var chip = e.target.closest('[data-group-chip]');
+    if (!chip) return;
+    state.ordersGroup = chip.getAttribute('data-group-chip');
+    renderOrders();
+  });
+  document.getElementById('orders-clear-filters').addEventListener('click', clearOrderFilters);
+  document.getElementById('orders-no-match-clear').addEventListener('click', clearOrderFilters);
   document.getElementById('orders-fulfillment-filter').addEventListener('change', function (e) { state.ordersFulfillment = e.target.value; renderOrders(); });
   document.getElementById('orders-date-filter').addEventListener('change', function (e) { state.ordersDate = e.target.value; renderOrders(); });
 
