@@ -688,6 +688,50 @@
   .confirm-identity-dialog h2 { margin: 0 0 8px; font-size: 21px; }
   .confirm-identity-dialog p { margin: 0 0 20px; color: hsl(var(--muted-foreground)); font-size: 13px; line-height: 1.6; }
   .confirm-identity-dialog p strong { color: hsl(var(--foreground)); }
+
+  /* ---- fixes: stock notices, receipt, order search, owner contact, green tracking line ---- */
+  .stock-banner { margin: 0 0 14px; padding: 13px 15px; border-radius: 14px; background: hsl(var(--primary) / .09); border: 1px solid hsl(var(--primary) / .4); font-size: 12px; animation: bannerShake .7s ease both; }
+  .stock-banner ul { margin: 7px 0 10px; padding-left: 18px; }
+  .stock-banner li { margin: 2px 0; }
+  .stock-banner .secondary-button { min-height: 34px; padding: 0 14px; font-size: 11px; }
+  @keyframes bannerShake { 0% { transform: translateX(-18px); opacity: 0; } 30% { transform: translateX(12px); opacity: 1; } 50% { transform: translateX(-8px); } 70% { transform: translateX(5px); } 100% { transform: none; } }
+  .cart-line-issue { display: block; margin-top: 3px; color: hsl(var(--primary)); font: 700 10.5px var(--app-font-sans, inherit); font-style: normal; }
+  .receipt { margin: 4px 0 14px; padding: 18px 16px; border: 1px dashed hsl(var(--border)); border-radius: 14px; background: hsl(var(--card)); font-size: 12px; animation: receiptIn .9s var(--expo) .15s backwards; }
+  @keyframes receiptIn { from { opacity: 0; transform: translateY(60px) rotateX(-25deg) scale(.9); } }
+  .receipt-head { text-align: center; padding-bottom: 12px; margin-bottom: 10px; border-bottom: 2px dashed hsl(var(--border)); }
+  .receipt-head strong { display: block; font: 800 22px var(--app-font-serif); color: hsl(var(--primary)); }
+  .receipt-head span { color: hsl(var(--muted-foreground)); font-size: 11px; }
+  .receipt-meta > div, .receipt-sum > div { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; }
+  .receipt-meta span, .receipt-sum span { color: hsl(var(--muted-foreground)); }
+  .receipt-meta b { text-align: right; max-width: 62%; overflow-wrap: anywhere; }
+  .receipt-table { width: 100%; margin: 10px 0; border-collapse: collapse; border-top: 1px dashed hsl(var(--border)); border-bottom: 1px dashed hsl(var(--border)); }
+  .receipt-table td { padding: 6px 0; }
+  .receipt-table .r-qty { text-align: center; color: hsl(var(--muted-foreground)); }
+  .receipt-table .r-amt { text-align: right; }
+  .receipt-total { margin-top: 5px; padding-top: 7px !important; border-top: 1px solid hsl(var(--foreground)); font-size: 15px; }
+  .receipt-note { margin: 10px 0 0; text-align: center; color: hsl(var(--muted-foreground)); font-size: 11px; }
+  .receipt-contact, .order-contact-owner { margin-top: 12px; padding: 10px 12px; border: 1px dashed hsl(var(--border)); border-radius: 10px; font-size: 11.5px; line-height: 1.6; text-align: center; }
+  .receipt-contact a, .order-contact-owner a { color: hsl(var(--primary)); font-weight: 700; text-decoration: none; }
+  .order-contact-owner { display: grid; gap: 3px; text-align: left; background: hsl(var(--accent) / .16); border-style: solid; border-color: hsl(var(--accent) / .5); }
+  .order-contact-owner span { color: hsl(var(--muted-foreground)); }
+  .receipt-actions { display: grid; gap: 9px; }
+  .order-receipt-row { border-top: 0; margin-top: 4px; padding-top: 0; }
+  .receipt-btn { min-height: 34px !important; font-size: 11px !important; }
+  .orders-toolbar { display: grid; gap: 9px; margin-top: 14px; }
+  .orders-search { width: 100%; min-height: 40px; padding: 0 14px; border: 1px solid hsl(var(--border)); border-radius: 12px; background: hsl(var(--background)); color: hsl(var(--foreground)); font: inherit; font-size: 12px; }
+  .orders-search:focus { outline: 2px solid hsl(var(--primary) / .5); outline-offset: 1px; }
+  .orders-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .orders-chip { min-height: 30px; padding: 0 13px; border: 1px solid hsl(var(--border)); border-radius: 999px; background: transparent; color: hsl(var(--muted-foreground)); font-size: 11px; font-weight: 700; transition: transform .3s var(--spring), background-color .2s; }
+  .orders-chip:hover { transform: translateY(-2px); }
+  .orders-chip.active { background: hsl(var(--primary)); border-color: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+  /* tracking: the green line now fills up to (and including) the current step, animated */
+  .tiktok-step-connector { overflow: hidden; }
+  .tiktok-step-connector::after { content: ''; position: absolute; inset: 0; background: hsl(var(--secondary)); transform: scaleX(0); transform-origin: left; }
+  .tiktok-step.is-done .tiktok-step-connector, .tiktok-step.is-current .tiktok-step-connector { background: hsl(var(--muted)); }
+  .tiktok-step.is-done .tiktok-step-connector::after, .tiktok-step.is-current .tiktok-step-connector::after { animation: trackFill .9s var(--expo) forwards; animation-delay: calc(var(--i, 0) * .22s); }
+  @keyframes trackFill { to { transform: scaleX(1); } }
+  .tiktok-step.is-done .tiktok-step-icon { animation: stepPop .6s var(--spring) backwards; animation-delay: calc(var(--i, 0) * .22s + .5s); }
+  @keyframes stepPop { from { transform: scale(0); } }
   .confirm-identity-actions { display: flex; gap: 10px; }
   .confirm-identity-actions button { flex: 1; }
 
@@ -1268,6 +1312,18 @@ var REQUIRE_OTP = false;
 // Uses the same EmailJS template as the login code above.
 var REQUIRE_CHECKOUT_EMAIL_OTP = true;
 
+// ---- Owner contact ----------------------------------------------------
+// Shown on receipts and under every open order in "Track orders", so a
+// customer knows who to reach if they want to cancel or change an order.
+// Fill in whichever you use; empty fields are simply hidden.
+var OWNER_CONTACT = {
+  name: 'MimiCart owner',
+  phone: '',        // e.g. '+63 917 123 4567'
+  email: '',        // e.g. 'hello@mimicart.shop'
+  messenger: '',    // e.g. 'https://m.me/yourpage'
+  hours: ''         // e.g. 'Daily 9am \u2013 8pm'
+};
+
 // Live Philippine address lists (region > province > city > barangay).
 // Tried in order; if none respond, the form falls back to typing the city
 // and barangay by hand so checkout never gets stuck.
@@ -1611,6 +1667,9 @@ var PSGC_API_BASES = ['https://psgc.gitlab.io/api', 'https://psgc.cloud/api'];
     deliveryNotes: '',
     reservationSubmitting: false,
     reservationError: '',
+    lastReceipt: null,
+    ordersSearch: '',
+    ordersFilter: 'all',
     // ---- customer login (Firebase: Google sign-in + Email/Password) ----
     user: null,           // { email, verified, provider } once signed in
     loginOpen: false,
@@ -1683,6 +1742,8 @@ next.push({
       usingLiveCatalog = true;
       renderCategoryRail();
       renderCatalogue();
+      warnAboutCartStock();
+      if (state.cartOpen) renderCartDrawer();
     }, function (err) {
       console.error('MimiCart: could not load live catalog, showing fallback list.', err);
     });
@@ -1908,12 +1969,60 @@ next.push({
     return state.fulfillment === 'delivery' && state.cart.length ? 5 : 0;
   }
   function cartTotal() { return cartSubtotal() + deliveryFee(); }
+
+  // ---- out-of-stock awareness (checked before anything can be ordered) ----
+  function stockIssues() {
+    return state.cart.map(function (line) {
+      var p = productById(line.productId);
+      if (!p) return { productId: line.productId, name: 'An item in your cart', type: 'gone', available: 0 };
+      if (!p.stock) return { productId: p.id, name: p.name, type: 'out', available: 0 };
+      if (line.quantity > p.stock) return { productId: p.id, name: p.name, type: 'short', available: p.stock };
+      return null;
+    }).filter(Boolean);
+  }
+  function stockIssueFor(productId) {
+    return stockIssues().filter(function (i) { return i.productId === productId; })[0] || null;
+  }
+  function stockBannerHTML() {
+    var issues = stockIssues();
+    if (!issues.length) return '';
+    var rows = issues.map(function (i) {
+      return '<li><strong>' + escHtml(i.name) + '</strong> ' + (i.type === 'short' ? '\u2014 only ' + i.available + ' left in stock' : '\u2014 is out of stock') + '</li>';
+    }).join('');
+    return '<div class="stock-banner" role="alert"><strong>\u26A0\uFE0F Heads up \u2014 some items aren\u2019t available</strong><ul>' + rows + '</ul>' +
+      '<button type="button" class="secondary-button" id="fix-stock">Update my cart</button></div>';
+  }
+  function fixCartStock() {
+    state.cart = state.cart.map(function (line) {
+      var p = productById(line.productId);
+      if (!p || !p.stock) return null;
+      return { productId: line.productId, quantity: Math.min(line.quantity, p.stock) };
+    }).filter(Boolean);
+    saveCartToStorage();
+    updateCartBadge();
+    if (!state.cart.length) state.cartStep = 'bag';
+    renderCartDrawer();
+    showToast('Cart updated to what\u2019s in stock.');
+  }
+  var lastStockWarnings = {};
+  function warnAboutCartStock() {
+    stockIssues().forEach(function (i) {
+      var key = i.productId + ':' + i.type + ':' + i.available;
+      if (lastStockWarnings[key]) return;
+      lastStockWarnings[key] = true;
+      var msg = i.type === 'short' ? i.name + ' \u2014 only ' + i.available + ' left now.' : i.name + ' just sold out.';
+      showToast('\u26A0\uFE0F ' + msg + ' Check your cart.');
+      if (state.user) addNotification('Stock update', msg + ' Please review your cart before ordering.', 'info');
+    });
+  }
   function updateCartBadge() { document.getElementById('cart-count').textContent = cartCount(); }
 
   function addToCart(id, qty) {
     var product = productById(id);
-    if (!product || !product.stock) return;
+    if (!product) return;
+    if (!product.stock) { showToast('\u26A0\uFE0F ' + product.name + ' is out of stock right now.'); return; }
     var existing = state.cart.filter(function (l) { return l.productId === id; })[0];
+    if (existing && existing.quantity >= product.stock) { showToast('Only ' + product.stock + ' of ' + product.name + ' in stock \u2014 you already have them all.'); return; }
     if (existing) {
       existing.quantity = Math.min(product.stock, existing.quantity + qty);
     } else {
@@ -1963,12 +2072,15 @@ next.push({
 
   function cartLineHTML(line) {
     var product = productById(line.productId);
+    if (!product) return '';
+    var issue = stockIssueFor(product.id);
     return (
       '<div class="cart-line" data-testid="row-cart-' + product.id + '">' +
         productArtHTML(product, true) +
         '<div class="cart-line-info">' +
           '<strong>' + product.name + '</strong><span>' + product.korean + '</span>' +
           '<b>₱' + (product.price * line.quantity).toFixed(2) + '</b>' +
+          (issue ? '<em class="cart-line-issue">' + (issue.type === 'short' ? 'Only ' + issue.available + ' left in stock' : 'Out of stock') + '</em>' : '') +
           '<div class="cart-quantity">' +
             '<button type="button" data-qty-dec="' + product.id + '" aria-label="Decrease ' + product.name + '"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>' +
             '<span>' + line.quantity + '</span>' +
@@ -2093,68 +2205,15 @@ next.push({
     );
   }
 
+  // Simple delivery address: no region/province lists to load, so the
+  // delivery button can't get stuck waiting on an address API.
   function addressFormHTML() {
-    psgcLoad('regions', 'all', '/regions', { byCode: true });
-    var regs = psgc.regions.all;
-    var note = '<p class="delivery-address-note">Choose your region, province, city and barangay from the lists, then type your house no. and street.</p>';
-    if (regs === undefined) {
-      return note + selectHTML('delivery-region', 'Region', [], '', 'Loading regions\u2026', true) + streetAndNotesHTML();
-    }
-    if (regs === 'error') return legacyAddressHTML();
-
-    var rCode = state.addressRegionCode;
-    var html = note + selectHTML('delivery-region', 'Region',
-      regs.map(function (r) { return { value: r.code, label: r.name }; }), rCode, 'Select region', false);
-
-    // ---- province ----
-    var provs = [], provLoading = false;
-    if (rCode) {
-      psgcLoad('provinces', rCode, '/regions/' + rCode + '/provinces', { errorValue: [] });
-      if (psgc.provinces[rCode] === undefined) provLoading = true; else provs = psgc.provinces[rCode];
-    }
-    if (provLoading) {
-      html += selectHTML('delivery-province', 'Province', [], '', 'Loading provinces\u2026', true);
-    } else if (provs.length) {
-      html += selectHTML('delivery-province', 'Province',
-        provs.map(function (p) { return { value: p.code, label: p.name }; }), state.addressProvinceCode, 'Select province', false);
-    } else if (rCode) {
-      html += '<p class="address-hint">This region has no provinces \u2014 go straight to city below.</p>';
-    }
-
-    // ---- city / municipality ----
-    var cityKey = psgcCityKey();
-    var cityEntry;
-    if (cityKey) { psgcLoad('cities', cityKey, psgcCityPath(cityKey)); cityEntry = psgc.cities[cityKey]; }
-
-    if (cityKey && cityEntry === 'error') {
-      // This one list couldn't load \u2014 let them type city + barangay instead.
-      return html +
-        textFieldHTML('delivery-city', 'City / Municipality', 'address-level2', 'e.g. Quezon City', state.addressCity) +
-        textFieldHTML('delivery-barangay', 'Barangay', 'address-level3', 'e.g. Barangay Holy Spirit', state.addressBarangay) +
-        streetAndNotesHTML();
-    }
-    var cityPlaceholder = !rCode ? 'Select region first'
-      : provLoading ? 'Loading\u2026'
-      : !cityKey ? 'Select province first'
-      : cityEntry === undefined ? 'Loading cities\u2026' : 'Select city / municipality';
-    html += selectHTML('delivery-city', 'City / Municipality',
-      Array.isArray(cityEntry) ? cityEntry.map(function (c) { return { value: c.code, label: c.name }; }) : [],
-      state.addressCityCode, cityPlaceholder, !Array.isArray(cityEntry));
-
-    // ---- barangay ----
-    var cCode = state.addressCityCode;
-    var brgyEntry;
-    if (cCode) { psgcLoad('barangays', cCode, '/cities-municipalities/' + cCode + '/barangays'); brgyEntry = psgc.barangays[cCode]; }
-    if (cCode && brgyEntry === 'error') {
-      html += textFieldHTML('delivery-barangay', 'Barangay', 'address-level3', 'e.g. Barangay Holy Spirit', state.addressBarangay);
-    } else {
-      html += selectHTML('delivery-barangay', 'Barangay',
-        Array.isArray(brgyEntry) ? brgyEntry.map(function (b) { return { value: b.code, label: b.name }; }) : [],
-        Array.isArray(brgyEntry) ? (brgyEntry.filter(function (b) { return b.name === state.addressBarangay; })[0] || {}).code || '' : '',
-        !cCode ? 'Select city first' : brgyEntry === undefined ? 'Loading barangays\u2026' : 'Select barangay',
-        !Array.isArray(brgyEntry));
-    }
-    return html + streetAndNotesHTML();
+    return '<p class="delivery-address-note">Where should we deliver? Add your barangay and city, then your house no. and street.</p>' +
+      textFieldHTML('delivery-street', 'House no. / Street', 'street-address', 'Unit/house no., street name', state.addressStreet) +
+      textFieldHTML('delivery-barangay', 'Barangay', 'address-level3', 'e.g. Barangay Holy Spirit', state.addressBarangay) +
+      textFieldHTML('delivery-city', 'City / Municipality', 'address-level2', 'e.g. Quezon City', state.addressCity) +
+      textFieldHTML('delivery-province', 'Province (optional)', 'address-level1', 'e.g. Rizal', state.addressProvince) +
+      '<label for="delivery-notes">Delivery notes (optional)</label><input id="delivery-notes" type="text" placeholder="Landmark, gate instructions, etc." value="' + escAttr(state.deliveryNotes) + '" />';
   }
 
   function regionHasProvinces() {
@@ -2165,9 +2224,7 @@ next.push({
     return provincesForRegion(state.addressRegion).length > 0;
   }
   function addressIsComplete() {
-    var regionOk = state.addressRegion.trim();
-    var provinceOk = !regionHasProvinces() || state.addressProvince.trim();
-    return !!(regionOk && provinceOk && state.addressCity.trim() && state.addressBarangay.trim() && state.addressStreet.trim());
+    return !!(state.addressCity.trim() && state.addressBarangay.trim() && state.addressStreet.trim());
   }
 
   // ---- email confirmation at checkout (6-digit code) ----
@@ -2342,7 +2399,7 @@ next.push({
     var btn = document.getElementById('submit-reservation');
     if (!btn) return;
     var ready = state.pickupName.trim() && contactIsValid() && contactIsVerified() &&
-      (state.fulfillment === 'delivery' ? addressIsComplete() : state.pickupDate && state.pickupTime);
+      (state.fulfillment === 'delivery' ? addressIsComplete() : state.pickupDate && state.pickupTime) && !stockIssues().length;
     btn.disabled = !ready || state.reservationSubmitting;
   }
 
@@ -2353,22 +2410,28 @@ next.push({
     if (state.cartStep === 'bag') {
       bodyHTML = (
         '<div class="drawer-body">' +
+          (state.reservationError ? '<p class="login-error">' + state.reservationError + '</p>' : '') +
+          stockBannerHTML() +
           (state.cart.length
             ? state.cart.map(cartLineHTML).join('')
             : '<div class="empty-cart"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg><h3>Your cart is taking a nap.</h3><p>Add a few shelf finds and they&apos;ll wait here for you.</p><button type="button" class="secondary-button" id="empty-cart-close">Keep browsing</button></div>') +
         '</div>' +
         (state.cart.length
-          ? '<div class="drawer-footer"><div class="drawer-total"><span>estimated total</span><strong>₱' + total.toFixed(2) + '</strong></div><button type="button" class="primary-button full-width focus-ring" id="continue-pickup">Choose delivery or pickup <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button><p class="drawer-footnote">Choose pickup or delivery. Payment can be arranged when the order is confirmed.</p></div>'
+          ? '<div class="drawer-footer"><div class="drawer-total"><span>estimated total</span><strong>₱' + total.toFixed(2) + '</strong></div><button type="button" class="primary-button full-width focus-ring" id="continue-pickup"' + (stockIssues().length ? ' disabled' : '') + '>Choose delivery or pickup <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button><p class="drawer-footnote">Choose pickup or delivery. Payment can be arranged when the order is confirmed.</p></div>'
           : '')
       );
     } else if (state.cartStep === 'done') {
       bodyHTML = (
         '<div class="pickup-form-wrap">' +
           '<div class="reservation-done"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>' +
-            '<h3>Order reserved!</h3>' +
-            '<p>' + (state.fulfillment === 'delivery' ? 'Your order is queued for delivery to <strong>' + fullAddressText() + '</strong>.' : 'We’ve set your items aside for <strong>' + state.pickupDate + '</strong>, ' + state.pickupTime + '. See you at pickup!') + '</p>' +
+            '<h3>Order placed!</h3>' +
+            '<p>' + (state.fulfillment === 'delivery' ? 'Your order is queued for delivery.' : 'We\u2019ve set your items aside for pickup.') + ' Here\u2019s your receipt.</p>' +
           '</div>' +
-          '<button type="button" class="secondary-button full-width focus-ring" id="reservation-done-close">Done</button>' +
+          (state.lastReceipt ? '<div class="receipt" id="receipt-card">' + receiptBodyHTML(state.lastReceipt) + '</div>' : '') +
+          '<div class="receipt-actions">' +
+            '<button type="button" class="secondary-button full-width focus-ring" id="print-receipt">\uD83D\uDDA8\uFE0F Print / save as PDF</button>' +
+            '<button type="button" class="primary-button full-width focus-ring" id="reservation-done-close">Done</button>' +
+          '</div>' +
         '</div>'
       );
     } else {
@@ -2377,7 +2440,7 @@ next.push({
       var isDelivery = state.fulfillment === 'delivery';
       var isEmail = state.contactMethod === 'email';
       var fulfillmentReady = isDelivery ? addressIsComplete() : (state.pickupDate && state.pickupTime);
-      var canSubmit = fulfillmentReady && state.pickupName.trim() && contactIsValid() && contactIsVerified() && !state.reservationSubmitting;
+      var canSubmit = fulfillmentReady && state.pickupName.trim() && contactIsValid() && contactIsVerified() && !state.reservationSubmitting && !stockIssues().length;
 
       var contactHTML = (
         '<label>Contact method</label>' +
@@ -2403,6 +2466,7 @@ next.push({
       bodyHTML = (
         '<div class="pickup-form-wrap">' +
           '<button type="button" class="back-link focus-ring" id="back-to-cart"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg> Back to cart</button>' +
+          stockBannerHTML() +
           '<p class="pickup-intro">Choose how you want to receive your order. Add your contact details so Mimi’s can confirm the reservation.</p>' +
           '<div class="fulfillment-toggle">' +
             '<button type="button" class="fulfillment-option ' + (!isDelivery ? 'active' : '') + '" data-fulfillment="pickup">🏪 Pickup</button>' +
@@ -2438,6 +2502,8 @@ next.push({
     );
     overlayRoot.innerHTML = html + renderProductDialogIfNeeded() + renderLoginDialogIfNeeded();
     bindLoginDialogEvents();
+    var fixStockBtn = document.getElementById('fix-stock');
+    if (fixStockBtn) fixStockBtn.addEventListener('click', fixCartStock);
 
     var shellEl = document.getElementById('drawer-shell-el');
     shellEl.addEventListener('mousedown', function (e) { if (e.target === shellEl) closeCartDrawer(); });
@@ -2449,6 +2515,7 @@ next.push({
       var continueBtn = document.getElementById('continue-pickup');
       if (continueBtn) continueBtn.addEventListener('click', function () {
         if (!state.user) { openLoginDialog(); return; }
+        state.reservationError = '';
         state.cartStep = 'pickup';
         renderCartDrawer();
       });
@@ -2517,7 +2584,7 @@ next.push({
         else { state.addressRegionCode = ''; state.addressRegion = v; }
         renderCartDrawer();
       });
-      if (provinceEl) provinceEl.addEventListener('change', function (e) {
+      if (provinceEl) provinceEl.addEventListener('input', function (e) {
         var v = e.target.value;
         if (apiMode) {
           state.addressProvinceCode = v;
@@ -2558,6 +2625,8 @@ next.push({
       var submitBtn = document.getElementById('submit-reservation');
       if (submitBtn) submitBtn.addEventListener('click', submitReservation);
     } else if (state.cartStep === 'done') {
+      var printBtn = document.getElementById('print-receipt');
+      if (printBtn) printBtn.addEventListener('click', function () { if (state.lastReceipt) printReceipt(state.lastReceipt); });
       document.getElementById('reservation-done-close').addEventListener('click', function () {
         state.cart = [];
         state.cartStep = 'bag';
@@ -2569,6 +2638,7 @@ next.push({
         state.contactPhone = '';
         state.contactEmail = '';
         state.fulfillment = 'pickup';
+        state.lastReceipt = null;
         state.addressRegion = '';
         state.addressProvince = '';
         state.addressCity = '';
@@ -2583,6 +2653,79 @@ next.push({
         closeCartDrawer();
       });
     }
+  }
+
+
+  // =====================================================================
+  // RECEIPTS - shown the moment checkout completes, and re-openable from
+  // "Track orders". Print / Save as PDF opens a clean printable page.
+  // =====================================================================
+  function ownerContactHTML(compact) {
+    var c = OWNER_CONTACT || {};
+    var bits = [];
+    if (c.phone) bits.push('<a href="tel:' + escAttr(String(c.phone).replace(/[^+\d]/g, '')) + '">\uD83D\uDCDE ' + escHtml(c.phone) + '</a>');
+    if (c.email) bits.push('<a href="mailto:' + escAttr(c.email) + '">\u2709\uFE0F ' + escHtml(c.email) + '</a>');
+    if (c.messenger) bits.push('<a href="' + escAttr(c.messenger) + '" target="_blank" rel="noopener">\uD83D\uDCAC Message us</a>');
+    if (!bits.length) return '<span class="owner-contact-empty">Message the shop owner through our usual channels to cancel or change this order.</span>';
+    return bits.join(compact ? ' \u00b7 ' : '<br />') + (c.hours ? '<br /><small>' + escHtml(c.hours) + '</small>' : '');
+  }
+  function receiptFromOrder(o) {
+    var created = o.createdAt && o.createdAt.toDate ? o.createdAt.toDate() : (o.createdAt instanceof Date ? o.createdAt : new Date());
+    var fee = Number(o.deliveryFee || 0);
+    var total = Number(o.total || 0);
+    return {
+      code: o.orderCode || '',
+      number: o.orderNumber || o.id || '',
+      name: String(o.customerName || 'Guest').replace(/ - (Pick up|Delivery)$/, ''),
+      fulfillment: o.fulfillment === 'delivery' ? 'delivery' : 'pickup',
+      contact: o.customerContact || '',
+      pickupDate: o.pickupDate || '', pickupTime: o.pickupTime || '',
+      address: o.deliveryAddress || '', notes: o.deliveryNotes || '',
+      items: (o.items || []).map(function (it) { return { name: it.name, quantity: it.quantity, price: Number(it.price || 0) }; }),
+      fee: fee, total: total, subtotal: Math.max(0, total - fee),
+      status: o.status || 'pending',
+      date: created
+    };
+  }
+  function receiptBodyHTML(r) {
+    var when = r.date.toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    var rows = r.items.map(function (it) {
+      return '<tr><td>' + escHtml(it.name) + '</td><td class="r-qty">' + escHtml(it.quantity) + '\u00d7</td><td class="r-amt">\u20b1' + (it.price * it.quantity).toFixed(2) + '</td></tr>';
+    }).join('');
+    var where = r.fulfillment === 'delivery'
+      ? '<div><span>Deliver to</span><b>' + escHtml(r.address || '\u2014') + '</b></div>' + (r.notes ? '<div><span>Notes</span><b>' + escHtml(r.notes) + '</b></div>' : '')
+      : '<div><span>Pickup</span><b>' + escHtml(r.pickupDate || '\u2014') + (r.pickupTime ? ', ' + escHtml(r.pickupTime) : '') + '</b></div>';
+    return (
+      '<div class="receipt-head"><strong>MimiCart</strong><span>Order receipt</span></div>' +
+      '<div class="receipt-meta">' +
+        '<div><span>Order no.</span><b>' + escHtml(r.code ? '#' + r.code : r.number) + '</b></div>' +
+        '<div><span>Date</span><b>' + escHtml(when) + '</b></div>' +
+        '<div><span>Name</span><b>' + escHtml(r.name) + '</b></div>' +
+        '<div><span>Contact</span><b>' + escHtml(r.contact || '\u2014') + '</b></div>' +
+        '<div><span>Type</span><b>' + (r.fulfillment === 'delivery' ? 'Delivery' : 'Pickup') + '</b></div>' +
+        where +
+      '</div>' +
+      '<table class="receipt-table"><tbody>' + rows + '</tbody></table>' +
+      '<div class="receipt-sum"><div><span>Subtotal</span><b>\u20b1' + r.subtotal.toFixed(2) + '</b></div>' +
+        (r.fee ? '<div><span>Delivery fee</span><b>\u20b1' + r.fee.toFixed(2) + '</b></div>' : '') +
+        '<div class="receipt-total"><span>Total</span><b>\u20b1' + r.total.toFixed(2) + '</b></div></div>' +
+      '<p class="receipt-note">' + (r.fulfillment === 'delivery' ? 'Pay on delivery.' : 'No payment today \u2014 pay at pickup.') + ' Thank you for shopping with MimiCart!</p>' +
+      '<div class="receipt-contact"><strong>Need to cancel or change your order?</strong><br />' + ownerContactHTML(false) + '</div>'
+    );
+  }
+  function printReceipt(r) {
+    var w = window.open('', '_blank', 'width=460,height=720');
+    if (!w) { showToast('Please allow pop-ups to print your receipt.'); return; }
+    var css = 'body{font-family:system-ui,Segoe UI,Arial,sans-serif;color:#222;margin:0;padding:24px;max-width:420px;margin:0 auto}' +
+      '.receipt-head{text-align:center;border-bottom:2px dashed #bbb;padding-bottom:12px;margin-bottom:12px}.receipt-head strong{display:block;font-size:24px;color:#d71920}.receipt-head span{font-size:12px;color:#777}' +
+      '.receipt-meta div,.receipt-sum div{display:flex;justify-content:space-between;gap:12px;font-size:12.5px;padding:3px 0}.receipt-meta span,.receipt-sum span{color:#777}.receipt-meta b{text-align:right;max-width:62%}' +
+      '.receipt-table{width:100%;border-collapse:collapse;margin:12px 0;border-top:1px dashed #bbb;border-bottom:1px dashed #bbb;font-size:12.5px}.receipt-table td{padding:6px 0}.r-qty{text-align:center;color:#777}.r-amt{text-align:right}' +
+      '.receipt-total{border-top:1px solid #222;margin-top:6px;padding-top:6px!important;font-size:15px}.receipt-note{font-size:11.5px;color:#666;text-align:center}.receipt-contact{margin-top:12px;padding:10px;border:1px dashed #bbb;border-radius:8px;font-size:12px;text-align:center}.receipt-contact a{color:#d71920}' +
+      '@media print{button{display:none}}';
+    w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>MimiCart receipt ' + escHtml(r.code || '') + '</title><style>' + css + '</style></head><body>' + receiptBodyHTML(r) + '</body></html>');
+    w.document.close();
+    w.focus();
+    setTimeout(function () { try { w.print(); } catch (e) { /* user can print manually */ } }, 350);
   }
 
   // ---- reservation submission ----
@@ -2602,15 +2745,20 @@ next.push({
   // Firestore Security Rules need matching read/write rules for all four
   // order collections (not just one shared "orders" path).
   // Human-readable order name, e.g. "Axel - Pick up".
-  function generateOrderNumber(customerName, fulfillment) {
+  function generateOrderCode() {
+    var t = Date.now().toString(36).toUpperCase().slice(-5);
+    var r = Math.random().toString(36).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3);
+    return (t + r).padEnd(8, 'X');
+  }
+  function generateOrderNumber(customerName, fulfillment, code) {
     var fulfillmentLabel = fulfillment === 'delivery' ? 'Delivery' : 'Pick up';
-    return (customerName || 'Guest').trim() + ' - ' + fulfillmentLabel;
+    return (customerName || 'Guest').trim() + ' - ' + fulfillmentLabel + (code ? ' #' + code : '');
   }
 
   // Firestore document ID, e.g. "axel-pick-up".
   // NOTE: this exact ID means a second order with the same name and
   // fulfillment option would overwrite the first one.
-  function generateOrderDocumentId(customerName, fulfillment) {
+  function generateOrderDocumentId(customerName, fulfillment, code) {
     var fulfillmentLabel = fulfillment === 'delivery' ? 'delivery' : 'pick-up';
     var nameSlug = (customerName || 'guest')
       .toLowerCase()
@@ -2619,7 +2767,9 @@ next.push({
       .replace(/^-+|-+$/g, '')
       .slice(0, 50);
     if (!nameSlug) nameSlug = 'guest';
-    return nameSlug + '-' + fulfillmentLabel;
+    // The unique code at the end means the same person ordering twice gets
+    // two separate orders instead of the second overwriting the first.
+    return nameSlug + '-' + fulfillmentLabel + (code ? '-' + String(code).toLowerCase() : '');
   }
 
   function submitReservation() {
@@ -2631,6 +2781,13 @@ next.push({
       return;
     }
 
+    var preIssues = stockIssues();
+    if (preIssues.length) {
+      state.reservationError = 'Some items aren\u2019t available: ' + preIssues.map(function (i) { return i.name + (i.type === 'short' ? ' (only ' + i.available + ' left)' : ' (out of stock)'); }).join(', ') + '. Please update your cart.';
+      renderCartDrawer();
+      return;
+    }
+
     var lineItems = state.cart.map(function (line) {
       var product = productById(line.productId);
       return product ? { productId: product.id, name: product.name, price: product.price, quantity: line.quantity } : null;
@@ -2638,6 +2795,7 @@ next.push({
     if (!lineItems.length) return;
 
     var rawCustomerName = (state.pickupName || '').trim() || 'Guest';
+    var orderCode = generateOrderCode();
     var fulfillmentSuffix = state.fulfillment === 'delivery' ? 'Delivery' : 'Pick up';
 
     var order = {
@@ -2654,13 +2812,13 @@ next.push({
       pickupDate: state.fulfillment === 'pickup' ? state.pickupDate : null,
       pickupTime: state.fulfillment === 'pickup' ? state.pickupTime : null,
       deliveryAddress: state.fulfillment === 'delivery' ? fullAddressText() : null,
-      deliveryRegion: state.fulfillment === 'delivery' ? state.addressRegion.trim() : null,
       deliveryProvince: state.fulfillment === 'delivery' ? state.addressProvince.trim() : null,
       deliveryCity: state.fulfillment === 'delivery' ? state.addressCity.trim() : null,
       deliveryBarangay: state.fulfillment === 'delivery' ? state.addressBarangay.trim() : null,
       deliveryStreet: state.fulfillment === 'delivery' ? state.addressStreet.trim() : null,
       deliveryNotes: state.fulfillment === 'delivery' ? state.deliveryNotes.trim() : null,
       deliveryFee: deliveryFee(),
+      orderCode: orderCode,
       status: 'pending'
     };
 
@@ -2676,37 +2834,55 @@ next.push({
         if (p) p.stock = Math.max(0, p.stock - item.quantity);
       });
       state.reservationSubmitting = false;
+      state.lastReceipt = receiptFromOrder(Object.assign({}, order, { orderNumber: generateOrderNumber(rawCustomerName, order.fulfillment, orderCode), createdAt: new Date() }));
       state.cartStep = 'done';
       renderCatalogue();
       renderCartDrawer();
       return;
     }
 
-    var batch = firebaseDb.batch();
-    var orderNumber = generateOrderNumber(rawCustomerName, order.fulfillment);
-    // New orders are written straight into the real "to_be_picked_up" or
-    // Write the order into the appropriate collection using a readable
-    // document ID such as "axel-pick-up" or "axel-delivery".
+    var orderNumber = generateOrderNumber(rawCustomerName, order.fulfillment, orderCode);
+    // New orders go straight into "to_be_picked_up" / "to_be_delivered"
+    // with a document id that ends in a unique code, so repeat customers
+    // always get a brand-new, separate order.
     var targetCollection = order.fulfillment === 'delivery' ? 'to_be_delivered' : 'to_be_picked_up';
-    var documentId = generateOrderDocumentId(rawCustomerName, order.fulfillment);
+    var documentId = generateOrderDocumentId(rawCustomerName, order.fulfillment, orderCode);
     var orderRef = firebaseDb.collection(targetCollection).doc(documentId);
-    batch.set(orderRef, Object.assign({}, order, { orderNumber: orderNumber, createdAt: firebase.firestore.FieldValue.serverTimestamp() }));
-    lineItems.forEach(function (item) {
-      var productRef = firebaseDb.collection('products').doc(item.productId);
-      batch.update(productRef, { stock: firebase.firestore.FieldValue.increment(-item.quantity) });
-    });
+    var productRefs = lineItems.map(function (item) { return firebaseDb.collection('products').doc(item.productId); });
 
-    batch.commit().then(function () {
+    // A transaction re-reads live stock at the moment of ordering, so two
+    // people can't both buy the last item.
+    firebaseDb.runTransaction(function (tx) {
+      return Promise.all(productRefs.map(function (ref) { return tx.get(ref); })).then(function (snaps) {
+        var problems = [];
+        snaps.forEach(function (snap, idx) {
+          var have = snap.exists ? Number(snap.data().stock || 0) : 0;
+          if (have < lineItems[idx].quantity) problems.push({ name: lineItems[idx].name, have: have });
+        });
+        if (problems.length) { var oos = new Error('out-of-stock'); oos.code = 'out-of-stock'; oos.problems = problems; throw oos; }
+        tx.set(orderRef, Object.assign({}, order, { orderNumber: orderNumber, createdAt: firebase.firestore.FieldValue.serverTimestamp() }));
+        productRefs.forEach(function (ref, idx) {
+          tx.update(ref, { stock: firebase.firestore.FieldValue.increment(-lineItems[idx].quantity) });
+        });
+      });
+    }).then(function () {
       state.reservationSubmitting = false;
+      state.lastReceipt = receiptFromOrder(Object.assign({}, order, { orderNumber: orderNumber, createdAt: new Date() }));
       state.cartStep = 'done';
       renderCartDrawer();
     }).catch(function (err) {
       console.error('MimiCart: reservation failed', err);
       state.reservationSubmitting = false;
+      if (err && err.code === 'out-of-stock') {
+        state.reservationError = 'Sorry \u2014 ' + err.problems.map(function (p) { return p.name + (p.have ? ' (only ' + p.have + ' left)' : ' (sold out)'); }).join(', ') + '. Your order was not placed; please update your cart.';
+        err.problems.forEach(function (pr) { var pp = PRODUCTS.filter(function (x) { return x.name === pr.name; })[0]; if (pp) pp.stock = pr.have; });
+        state.cartStep = 'bag';
+        renderCartDrawer();
+        showToast('\u26A0\uFE0F Some items just ran out. Your order was not placed.');
+        return;
+      }
       // Surface the real Firebase error (e.g. "Missing or insufficient
-      // permissions") instead of a generic message, so it's obvious what
-      // to fix (almost always a Firestore Security Rules issue) without
-      // needing to open the browser console.
+      // permissions") so it's obvious what to fix (usually Security Rules).
       var reason = (err && (err.message || err.code)) ? (err.message || err.code) : 'Please try again.';
       state.reservationError = 'Couldn\u2019t send that reservation. (' + reason + ')';
       renderCartDrawer();
@@ -2930,11 +3106,12 @@ next.push({
     var currentIdx = stages.indexOf(order.status);
     return '<div class="tiktok-tracker">' + stages.map(function (key, i) {
       var info = stageInfo(key, order);
-      var cls = i < currentIdx ? 'is-done' : (i === currentIdx ? 'is-current' : '');
+      var allDone = order.status === 'completed';
+      var cls = (i < currentIdx || allDone) ? 'is-done' : (i === currentIdx ? 'is-current' : '');
       return (
-        '<div class="tiktok-step ' + cls + '">' +
+        '<div class="tiktok-step ' + cls + '" style="--i:' + i + '">' +
           '<span class="tiktok-step-connector"></span>' +
-          '<span class="tiktok-step-icon">' + (i < currentIdx ? '\u2713' : info.icon) + '</span>' +
+          '<span class="tiktok-step-icon">' + ((i < currentIdx || allDone) ? '\u2713' : info.icon) + '</span>' +
           '<span class="tiktok-step-label">' + info.label + '</span>' +
         '</div>'
       );
@@ -2957,21 +3134,28 @@ next.push({
     // they'd need to reach out to have it cancelled instead.
     var cancelSection = order.status === 'pending'
       ? '<div class="order-track-actions">' +
-          '<button type="button" class="secondary-button" data-cancel-mine="' + order.id + '">Cancel order</button>' +
+          '<button type="button" class="secondary-button" data-cancel-mine="' + escAttr(order._collection + '|' + order.id) + '">Cancel order</button>' +
           '<p class="order-cancel-hint">You can cancel it yourself while it\u2019s just been placed. Once we start preparing it, this button goes away.</p>' +
         '</div>'
       : '';
+    var contactOwner = (order.status === 'completed' || order.status === 'cancelled') ? '' :
+      '<div class="order-contact-owner"><strong>Need to cancel or change this order?</strong>' +
+        '<span>' + (order.status === 'pending' ? 'Use the cancel button above, or contact the owner:' : 'We\u2019re already on it \u2014 please contact the owner:') + '</span>' +
+        '<div>' + ownerContactHTML(true) + '</div></div>';
+    var receiptBtn = '<button type="button" class="secondary-button receipt-btn" data-receipt="' + escAttr(order._collection + '|' + order.id) + '">\uD83E\uDDFE Receipt</button>';
     return (
       '<div class="order-track-card">' +
         '<div class="order-track-head">' +
           '<div><strong>' + (order.fulfillment === 'delivery' ? 'Delivery order' : 'Pickup order') + '</strong>' +
-          '<span>#' + (order.orderNumber || order.id) + ' \u2022 ' + (placed ? placed.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' \u2022 ' : '') + '₱' + Number(order.total || 0).toFixed(2) + '</span></div>' +
+          '<span>' + (order.orderCode ? 'Order #' + order.orderCode : '#' + (order.orderNumber || order.id)) + ' \u2022 ' + (placed ? placed.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' \u2022 ' : '') + '₱' + Number(order.total || 0).toFixed(2) + '</span></div>' +
           '<span class="order-track-badge ' + badgeClass + '">' + stageInfo(order.status, order).label + '</span>' +
         '</div>' +
         '<p class="order-track-items">' + itemsSummary + '</p>' +
         tiktokTrackerHTML(order) +
         reminderNote +
         cancelSection +
+        contactOwner +
+        '<div class="order-track-actions order-receipt-row">' + receiptBtn + '</div>' +
       '</div>'
     );
   }
@@ -2989,7 +3173,7 @@ next.push({
   // the attempt comes back "permission-denied" and we retry with "(2)",
   // "(3)", etc. instead of silently clobbering that earlier record.
   function cancelMyOrder(id) {
-    var order = state.customerOrders.filter(function (o) { return o.id === id; })[0];
+    var order = state.customerOrders.filter(function (o) { return (o._collection + '|' + o.id) === id || o.id === id; })[0];
     if (!order || order.status !== 'pending') return;
     if (!confirm('Cancel this order? Your items will be released back into stock.')) return;
 
@@ -3025,11 +3209,33 @@ next.push({
     });
   }
 
+  function filteredCustomerOrders() {
+    var q = (state.ordersSearch || '').trim().toLowerCase();
+    return state.customerOrders.filter(function (o) {
+      var f = state.ordersFilter;
+      if (f === 'active' && (o.status === 'completed' || o.status === 'cancelled')) return false;
+      if (f === 'completed' && o.status !== 'completed') return false;
+      if (f === 'cancelled' && o.status !== 'cancelled') return false;
+      if (!q) return true;
+      var hay = [o.orderCode, o.orderNumber, o.id, o.customerName, o.fulfillment, stageInfo(o.status, o).label,
+        (o.items || []).map(function (it) { return it.name; }).join(' ')].join(' ').toLowerCase();
+      return hay.indexOf(q) !== -1;
+    });
+  }
+  function ordersListHTML() {
+    if (!state.customerOrders.length) return '<p class="orders-empty-note">No orders yet \u2014 once you place one, you\u2019ll be able to track it right here, live.</p>';
+    var list = filteredCustomerOrders();
+    if (!list.length) return '<p class="orders-empty-note">No orders match that search or filter.</p>';
+    return '<div class="orders-list">' + list.map(orderTrackCardHTML).join('') + '</div>';
+  }
+  function ordersChipsHTML() {
+    return [['all', 'All'], ['active', 'In progress'], ['completed', 'Completed'], ['cancelled', 'Cancelled']].map(function (c) {
+      return '<button type="button" class="orders-chip' + (state.ordersFilter === c[0] ? ' active' : '') + '" data-orders-filter="' + c[0] + '">' + c[1] + '</button>';
+    }).join('');
+  }
+
   function renderOrdersDialogIfNeeded() {
     if (!state.ordersOpen) return '';
-    var listHTML = state.customerOrders.length
-      ? '<div class="orders-list">' + state.customerOrders.map(orderTrackCardHTML).join('') + '</div>'
-      : '<p class="orders-empty-note">No reservations yet \u2014 once you place one, you\u2019ll be able to track it right here, live.</p>';
     return (
       '<div class="overlay" role="presentation" id="orders-overlay">' +
         '<div class="orders-dialog" role="dialog" aria-modal="true" aria-labelledby="orders-dialog-title">' +
@@ -3037,7 +3243,11 @@ next.push({
           '<span class="dialog-eyebrow">live tracking</span>' +
           '<h2 id="orders-dialog-title" class="font-display">Your orders</h2>' +
           '<p class="login-copy">Watch your order move from placed to picked up or delivered, just like a delivery app.</p>' +
-          listHTML +
+          '<div class="orders-toolbar">' +
+            '<input type="search" id="orders-search" class="orders-search" placeholder="Search by order #, item or status\u2026" value="' + escAttr(state.ordersSearch) + '" autocomplete="off" />' +
+            '<div class="orders-chips" id="orders-chips">' + ordersChipsHTML() + '</div>' +
+          '</div>' +
+          '<div id="orders-list-wrap">' + ordersListHTML() + '</div>' +
         '</div>' +
       '</div>'
     );
@@ -3050,7 +3260,25 @@ next.push({
     document.getElementById('close-orders-dialog').addEventListener('click', closeOrdersDialog);
     overlay.addEventListener('click', function (e) {
       var btn = e.target.closest('[data-cancel-mine]');
-      if (btn) cancelMyOrder(btn.getAttribute('data-cancel-mine'));
+      if (btn) { cancelMyOrder(btn.getAttribute('data-cancel-mine')); return; }
+      var rbtn = e.target.closest('[data-receipt]');
+      if (rbtn) {
+        var key = rbtn.getAttribute('data-receipt');
+        var found = state.customerOrders.filter(function (o) { return (o._collection + '|' + o.id) === key; })[0];
+        if (found) printReceipt(receiptFromOrder(found));
+        return;
+      }
+      var chip = e.target.closest('[data-orders-filter]');
+      if (chip) {
+        state.ordersFilter = chip.getAttribute('data-orders-filter');
+        document.getElementById('orders-chips').innerHTML = ordersChipsHTML();
+        document.getElementById('orders-list-wrap').innerHTML = ordersListHTML();
+      }
+    });
+    var searchEl = document.getElementById('orders-search');
+    if (searchEl) searchEl.addEventListener('input', function (e) {
+      state.ordersSearch = e.target.value;
+      document.getElementById('orders-list-wrap').innerHTML = ordersListHTML();
     });
   }
 
@@ -4464,14 +4692,14 @@ next.push({
 
       var isGoogle = (fbUser.providerData || []).some(function (p) { return p.providerId === 'google.com'; });
       if (isGoogle || otpVerifiedThisSession || !REQUIRE_OTP || !explicitLoginInProgress) {
-        if (!explicitLoginInProgress && !state.user) {
-          // This tab didn't just perform a login action — Firebase is
-          // restoring a session that was already active on this device
-          // (e.g. page reload, or the browser remembering a prior visit).
-          // Before handing over the account, double-check it's really them.
-          pendingConfirmUser = fbUser;
-          state.confirmIdentityPending = true;
-          renderOverlays();
+        if (!explicitLoginInProgress) {
+          // A session Firebase restored (page reload) or that changed in
+          // another tab. Sign in quietly - no "Is this you?" popup - and
+          // set state.user straight away so every button works at once
+          // instead of asking the customer to sign in / sign up again.
+          var switchedAccount = !!state.user && state.user.email !== fbUser.email;
+          if (!state.user || switchedAccount) state.user = userFromFirebaseUser(fbUser);
+          finalizeSignIn(fbUser, { showWelcome: switchedAccount });
           return;
         }
         explicitLoginInProgress = false;
