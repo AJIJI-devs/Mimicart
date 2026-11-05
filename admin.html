@@ -404,6 +404,17 @@
   .dash-enter .dash-footer { animation: riseIn 1s var(--ease-out) calc(var(--enter-delay) + 1.3s) backwards; }
   @media (max-width: 600px) { .dash-footer { grid-template-columns: 1fr; } }
 
+  .no-stock-edit .stock-editor, .no-stock-edit .restock-row { display: none !important; }
+  .perm-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0; border-top: 1px solid hsl(var(--border)); }
+  .perm-row:first-of-type { border-top: 0; }
+  .perm-row strong { display: block; font-size: 14px; }
+  .perm-switch { position: relative; width: 46px; height: 26px; flex: none; }
+  .perm-switch input { opacity: 0; width: 100%; height: 100%; position: absolute; inset: 0; margin: 0; cursor: pointer; z-index: 2; }
+  .perm-switch span { position: absolute; inset: 0; border-radius: 999px; background: hsl(var(--muted-foreground) / .35); transition: background .2s; }
+  .perm-switch span::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform .2s; }
+  .perm-switch input:checked + span { background: hsl(var(--good)); }
+  .perm-switch input:checked + span::after { transform: translateX(20px); }
+  .perm-switch input:focus-visible + span { outline: 2px solid hsl(var(--primary)); outline-offset: 2px; }
   .hidden { display: none !important; }
 
   @media (max-width: 480px) {
@@ -512,6 +523,7 @@
     <button type="button" class="tab-button" data-tab="inventory">Products</button>
     <button type="button" class="tab-button" data-tab="orders">Orders</button>
     <button type="button" class="tab-button hidden" data-tab="staff">Staff <span class="tab-badge hidden" id="staff-pending-badge">0</span></button>
+    <button type="button" class="tab-button hidden" data-tab="permissions">Permissions</button>
     <button type="button" class="tab-button" data-tab="settings">Settings</button>
   </nav>
 
@@ -669,6 +681,35 @@
   </section>
 
   <!-- ---------------- SETTINGS / LOGIN LOGS ---------------- -->
+  <!-- ---------------- PERMISSIONS (admin only) ---------------- -->
+  <section class="tab-panel" id="panel-permissions">
+    <div class="panel-block">
+      <h2 class="font-display">Staff permissions</h2>
+      <p class="panel-sub">Switch on what <strong>staff</strong> are allowed to do. Changes save instantly and apply to every staff device within a moment. The admin can always do everything.</p>
+      <div id="perm-message" class="notice-box hidden"></div>
+      <div class="perm-row">
+        <div><strong>Manage orders</strong><span class="prod-sub">Move orders through the stages, mark complete, and cancel. Off = staff can only look.</span></div>
+        <label class="perm-switch"><input type="checkbox" data-perm="manageOrders" /><span></span></label>
+      </div>
+      <div class="perm-row">
+        <div><strong>Change stock</strong><span class="prod-sub">Restock (+10/+25/+50) and edit stock numbers on the Products tab.</span></div>
+        <label class="perm-switch"><input type="checkbox" data-perm="editStock" /><span></span></label>
+      </div>
+      <div class="perm-row">
+        <div><strong>See Overview (revenue)</strong><span class="prod-sub">Shows the Overview tab with sales totals and the 14-day chart.</span></div>
+        <label class="perm-switch"><input type="checkbox" data-perm="viewOverview" /><span></span></label>
+      </div>
+      <div class="perm-row">
+        <div><strong>Export CSV files</strong><span class="prod-sub">Shows the Export CSV buttons on Products and Orders.</span></div>
+        <label class="perm-switch"><input type="checkbox" data-perm="exportCsv" /><span></span></label>
+      </div>
+    </div>
+    <div class="panel-block">
+      <h2 class="font-display">Always admin-only</h2>
+      <p class="panel-sub">These can never be given to staff: the Staff and Permissions tabs, approving/removing staff, seeding the catalog, repairing images, syncing prices, adding/deleting products or changing prices, and viewing everyone&rsquo;s sign-in logs. The admin role itself is only changed in the Firebase console.</p>
+    </div>
+  </section>
+
   <section class="tab-panel" id="panel-settings">
     <div class="panel-block">
       <h2 class="font-display">Sign-in security</h2>
@@ -895,9 +936,12 @@ var REQUIRE_OTP = false;
     isAdmin: false,
     staffSearch: '',
     staffRoleFilter: 'all',
-    staffStatusFilter: 'all'
+    staffStatusFilter: 'all',
+    perms: { viewOverview: false, exportCsv: false, editStock: true, manageOrders: true }
   };
-  var unsubscribeProducts = null, unsubscribeOrders = [], unsubscribeStaff = null;
+  // True when the signed-in person may use a feature: the admin always can; staff only if the admin switched it on.
+  function can(key) { return !!state.isAdmin || !!(state.perms && state.perms[key]); }
+  var unsubscribeProducts = null, unsubscribeOrders = [], unsubscribeStaff = null, unsubscribePerms = null;
 
   function showToast(message) {
     var el = document.createElement('div');
@@ -946,7 +990,7 @@ var REQUIRE_OTP = false;
   }
 
   document.getElementById('orders-export-csv').addEventListener('click', function () {
-    if (!state.isAdmin) { showToast('Only the admin can do that.'); return; }
+    if (!can('exportCsv')) { showToast('The admin has not allowed exports for staff.'); return; }
     var rows = state.orders.filter(function (o) {
       return state.ordersStatusFilter === 'all' || o.status === state.ordersStatusFilter;
     });
@@ -973,7 +1017,7 @@ var REQUIRE_OTP = false;
   });
 
   document.getElementById('inventory-export-csv').addEventListener('click', function () {
-    if (!state.isAdmin) { showToast('Only the admin can do that.'); return; }
+    if (!can('exportCsv')) { showToast('The admin has not allowed exports for staff.'); return; }
     if (!state.products.length) { showToast('No products to export.'); return; }
     var header = ['Product', 'Category', 'Price', 'Stock', 'Product ID'];
     var csvRows = state.products.map(function (p) {
@@ -1740,6 +1784,7 @@ var REQUIRE_OTP = false;
     firebaseAuth.onAuthStateChanged(function (user) {
       if (signingUp) return; // a new staff request is being created - handled below
       if (unsubscribeStaff) { unsubscribeStaff(); unsubscribeStaff = null; }
+      if (unsubscribePerms) { unsubscribePerms(); unsubscribePerms = null; }
       if (unsubscribeProducts) { unsubscribeProducts(); unsubscribeProducts = null; }
       unsubscribeOrders.forEach(function (fn) { if (fn) fn(); });
       unsubscribeOrders = [];
@@ -1824,6 +1869,18 @@ var REQUIRE_OTP = false;
   }
 
   function subscribeData() {
+    // Permission switches set by the admin (app_settings/permissions). Missing = safe defaults.
+    if (unsubscribePerms) { unsubscribePerms(); unsubscribePerms = null; }
+    unsubscribePerms = firebaseDb.collection('app_settings').doc('permissions').onSnapshot(function (doc) {
+      var d = doc.exists ? (doc.data() || {}) : {};
+      state.perms = {
+        viewOverview: d.viewOverview === true,
+        exportCsv: d.exportCsv === true,
+        editStock: d.editStock !== false,
+        manageOrders: d.manageOrders !== false
+      };
+      try { applyRoleUI(); renderPermissions(); renderInventory(); renderOrders(); } catch (e) { console.warn('MimiCart admin: permission refresh', e); }
+    }, function (err) { console.warn('MimiCart admin: permissions unavailable, using defaults', err); });
     // Only the admin can list every staff account (Security Rules enforce the same).
     if (state.isAdmin) {
       unsubscribeStaff = firebaseDb.collection('staff').onSnapshot(function (snap) {
@@ -2010,6 +2067,7 @@ var REQUIRE_OTP = false;
   function productLocal(id) { return state.products.filter(function (p) { return p.id === id; })[0]; }
 
   function setStock(id, value) {
+    if (!can('editStock')) { showToast('The admin has not allowed stock changes for staff.'); return; }
     firebaseDb.collection('products').doc(id).update({ stock: value }).then(function () {
       showToast('Stock updated.');
     }).catch(function (err) { console.error(err); showToast('Couldn\u2019t update stock.'); });
@@ -2022,6 +2080,7 @@ var REQUIRE_OTP = false;
   }
 
   function restockBy(id, amount) {
+    if (!can('editStock')) { showToast('The admin has not allowed stock changes for staff.'); return; }
     firebaseDb.collection('products').doc(id).update({
       stock: firebase.firestore.FieldValue.increment(amount)
     }).then(function () {
@@ -2120,7 +2179,7 @@ var REQUIRE_OTP = false;
     var itemsSummary = (o.items || []).map(function (it) { return escapeHtml(it.quantity) + '\u00d7 ' + escapeHtml(it.name); }).join(', ');
     var next = nextStageKey(o);
     var actions = '';
-    if (o._collection !== 'completed' && o._collection !== 'cancelled') {
+    if (o._collection !== 'completed' && o._collection !== 'cancelled' && can('manageOrders')) {
       actions = '<div class="stage-actions">';
       if (next) actions += '<button type="button" class="tiny-button" data-advance="' + escapeHtml(orderKey(o)) + '">Mark as: ' + stageLabel(next, o) + '</button>';
       actions += '<button type="button" class="tiny-button" data-cancel="' + escapeHtml(orderKey(o)) + '">Cancel</button></div>';
@@ -2237,6 +2296,7 @@ var REQUIRE_OTP = false;
   // and into the real "completed" collection (deleting it from the old
   // one), so it re-sorts into the "Completed" group on screen.
   function advanceOrder(id) {
+    if (!can('manageOrders')) { showToast('The admin has not allowed staff to change orders.'); return; }
     var order = findOrderByKey(id);
     if (!order) return;
     var next = nextStageKey(order);
@@ -2255,6 +2315,7 @@ var REQUIRE_OTP = false;
   }
 
   function cancelOrder(id) {
+    if (!can('manageOrders')) { showToast('The admin has not allowed staff to change orders.'); return; }
     var order = findOrderByKey(id);
     if (!order) return;
     if (!confirm('Cancel this reservation and return the items to stock?')) return;
@@ -2311,11 +2372,23 @@ var REQUIRE_OTP = false;
     // and restock/adjust stock, and see their own sign-in activity.
     // ADMIN can do all of that plus: Overview (revenue), Staff tab, CSV exports,
     // seeding/repairing/price-syncing the catalog, and everyone's sign-in logs.
-    ['inventory-export-csv', 'orders-export-csv', 'sync-prices-button', 'seed-button', 'repair-images-button']
+    // Always admin-only:
+    ['sync-prices-button', 'seed-button', 'repair-images-button']
       .forEach(function (id) { var el = document.getElementById(id); if (el) el.classList.toggle('hidden', !admin); });
+    // Admin decides these on the Permissions tab:
+    ['inventory-export-csv', 'orders-export-csv']
+      .forEach(function (id) { var el = document.getElementById(id); if (el) el.classList.toggle('hidden', !can('exportCsv')); });
     var overviewBtn = document.querySelector('.tab-button[data-tab="overview"]');
-    if (overviewBtn) overviewBtn.classList.toggle('hidden', !admin);
-    if (!admin && (state.activeTab === 'overview' || !state.activeTab)) {
+    if (overviewBtn) overviewBtn.classList.toggle('hidden', !can('viewOverview'));
+    var permBtn = document.querySelector('.tab-button[data-tab="permissions"]');
+    if (permBtn) permBtn.classList.toggle('hidden', !admin);
+    var invPanel = document.getElementById('panel-inventory');
+    if (invPanel) invPanel.classList.toggle('no-stock-edit', !can('editStock'));
+    if (!admin && state.activeTab === 'permissions') {
+      var ob = document.querySelector('.tab-button[data-tab="orders"]');
+      if (ob) ob.click();
+    }
+    if (!can('viewOverview') && (state.activeTab === 'overview' || !state.activeTab)) {
       var ordersBtn = document.querySelector('.tab-button[data-tab="orders"]');
       if (ordersBtn) ordersBtn.click();
     }
@@ -2329,6 +2402,29 @@ var REQUIRE_OTP = false;
       if (first) first.click();
     }
   }
+
+  function renderPermissions() {
+    document.querySelectorAll('#panel-permissions [data-perm]').forEach(function (box) {
+      box.checked = !!state.perms[box.getAttribute('data-perm')];
+      box.disabled = !state.isAdmin;
+    });
+  }
+
+  document.getElementById('panel-permissions').addEventListener('change', function (e) {
+    var box = e.target.closest('[data-perm]');
+    if (!box) return;
+    if (!state.isAdmin) { showToast('Only the admin can change permissions.'); renderPermissions(); return; }
+    var key = box.getAttribute('data-perm'), on = box.checked;
+    var patch = { updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: state.staffEmail || null };
+    patch[key] = on;
+    firebaseDb.collection('app_settings').doc('permissions').set(patch, { merge: true }).then(function () {
+      showToast('Saved \u2014 staff ' + (on ? 'can now' : 'can no longer') + ' use this.');
+    }).catch(function (err) {
+      console.error('MimiCart admin: saving permission failed', err);
+      showToast('Couldn\u2019t save that. Did you publish the new Firestore rules? (' + ((err && err.message) || 'error') + ')');
+      renderPermissions();
+    });
+  });
 
   function renderStaff() {
     var body = document.getElementById('staff-body');
