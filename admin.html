@@ -390,6 +390,20 @@
   @keyframes toastGlow { to { box-shadow: 0 0 0 26px hsl(var(--primary) / 0), 0 14px 34px rgba(0,0,0,.25); } }
   @media (max-width: 480px) { .toast { animation: toastInM .9s var(--ease-spring) backwards, toastOutM .4s ease-in 2.2s forwards; } }
 
+
+  /* ---- staff approval, link button, footer ---- */
+  .link-button { display: block; margin: 16px auto 0; padding: 4px 8px; border: 0; background: none; color: hsl(var(--primary)); font: 700 12px var(--app-font-sans, inherit); cursor: pointer; transition: transform .3s var(--ease-spring); }
+  .link-button:hover { transform: translateY(-2px) scale(1.05); }
+  .tab-badge { display: inline-grid; place-items: center; min-width: 17px; height: 17px; margin-left: 4px; padding: 0 5px; border-radius: 999px; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); font: 700 10px var(--app-font-mono); animation: badgePulse 1.6s ease-in-out infinite; }
+  @keyframes badgePulse { 0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / .5); } 50% { box-shadow: 0 0 0 6px hsl(var(--primary) / 0); } }
+  #panel-staff code { padding: 1px 5px; border-radius: 5px; background: hsl(var(--muted)); font: 11px var(--app-font-mono); }
+  .dash-footer { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 14px 25px; width: min(1180px, calc(100% - 52px)); margin: 0 auto; padding: 27px 0 34px; border-top: 1px solid hsl(var(--border)); }
+  .dash-footer p { margin: 0; color: hsl(var(--muted-foreground)); font-size: 11px; }
+  .dash-footer .footer-small { grid-column: 1 / -1; color: hsl(var(--muted-foreground)); font: 9px var(--app-font-mono); text-transform: uppercase; letter-spacing: .05em; }
+  .dash-footer .brand-mark { width: 30px; height: 30px; font-size: 19px; }
+  .dash-enter .dash-footer { animation: riseIn 1s var(--ease-out) calc(var(--enter-delay) + 1.3s) backwards; }
+  @media (max-width: 600px) { .dash-footer { grid-template-columns: 1fr; } }
+
   .hidden { display: none !important; }
 
   @media (max-width: 480px) {
@@ -413,8 +427,8 @@
 <div class="login-screen" id="login-screen">
   <div class="login-card">
     <div class="brand-mark">m</div>
-    <h1 class="font-display">Staff sign-in</h1>
-    <p class="lede">This dashboard is separate from the MimiCart storefront and only staff accounts can get in.</p>
+    <h1 class="font-display" id="login-title">Staff sign-in</h1>
+    <p class="lede" id="login-lede">This dashboard is separate from the MimiCart storefront and only approved staff can get in.</p>
 
     <div id="config-warning" class="notice-box setup hidden">
       Firebase isn't configured yet in this file, so sign-in is disabled. See the setup notes at the bottom of this page.
@@ -427,7 +441,17 @@
       <input class="field-input" id="login-password" type="password" autocomplete="current-password" required />
       <button type="submit" class="primary-button full-width focus-ring" id="login-submit" style="margin-top:20px;">Sign in</button>
     </form>
+    <form id="signup-form" class="hidden">
+      <label class="field-label" for="signup-email">Email</label>
+      <input class="field-input" id="signup-email" type="email" autocomplete="username" required />
+      <label class="field-label" for="signup-password">Password (8+ characters)</label>
+      <input class="field-input" id="signup-password" type="password" minlength="8" autocomplete="new-password" required />
+      <label class="field-label" for="signup-password2">Confirm password</label>
+      <input class="field-input" id="signup-password2" type="password" minlength="8" autocomplete="new-password" required />
+      <button type="submit" class="primary-button full-width focus-ring" id="signup-submit" style="margin-top:20px;">Request staff access</button>
+    </form>
     <div id="login-message" class="notice-box hidden"></div>
+    <button type="button" class="link-button" id="toggle-signup">New staff? Request access</button>
 
     <a class="back-to-shop" href="index.html">&larr; Back to the storefront</a>
   </div>
@@ -487,7 +511,7 @@
     <button type="button" class="tab-button active" data-tab="overview">Overview</button>
     <button type="button" class="tab-button" data-tab="inventory">Products</button>
     <button type="button" class="tab-button" data-tab="orders">Orders</button>
-    <button type="button" class="tab-button" data-tab="staff">Staff</button>
+    <button type="button" class="tab-button hidden" data-tab="staff">Staff <span class="tab-badge hidden" id="staff-pending-badge">0</span></button>
     <button type="button" class="tab-button" data-tab="settings">Settings</button>
   </nav>
 
@@ -535,6 +559,18 @@
   <!-- ---------------- ORDERS ---------------- -->
   <section class="tab-panel" id="panel-orders">
     <div class="toolbar-row">
+      <input class="search-input focus-ring" id="orders-search" type="search" placeholder="Search name, order #, item, contact, address&hellip;" style="flex:1;min-width:220px;" />
+      <select class="filter-select focus-ring" id="orders-fulfillment-filter">
+        <option value="all">Pickup &amp; delivery</option>
+        <option value="pickup">Pickup only</option>
+        <option value="delivery">Delivery only</option>
+      </select>
+      <select class="filter-select focus-ring" id="orders-date-filter">
+        <option value="all">Any date</option>
+        <option value="today">Today</option>
+        <option value="week">Last 7 days</option>
+        <option value="month">This month</option>
+      </select>
       <select class="filter-select focus-ring" id="orders-status-filter">
         <option value="all">All statuses</option>
         <option value="pending">Order placed</option>
@@ -546,6 +582,7 @@
       </select>
       <button type="button" class="secondary-button focus-ring" id="orders-export-csv">⬇️ Export CSV</button>
     </div>
+    <p class="hint-text" id="orders-result-note" style="margin:0 0 12px;"></p>
 
     <div class="panel-block order-group" data-group="to_be_delivered">
       <h2>🚚 To be delivered <span class="order-group-count" id="orders-count-to_be_delivered">0</span></h2>
@@ -599,20 +636,35 @@
   <!-- ---------------- STAFF ---------------- -->
   <section class="tab-panel" id="panel-staff">
     <div class="panel-block">
-      <h2 class="font-display">Staff allow-list</h2>
-      <p class="panel-sub">Only the emails listed here can sign in to this dashboard. Add an email, then have that person sign in (or sign up) with it on this page.</p>
-      <form id="staff-add-form" class="toolbar-row" style="margin-top:14px;">
-        <input class="search-input focus-ring" id="staff-add-email" type="email" placeholder="staffmember@email.com" required style="flex:1;" />
-        <button type="submit" class="primary-button focus-ring">+ Add staff</button>
+      <h2 class="font-display">Staff &amp; admin accounts</h2>
+      <p class="panel-sub">New staff request access from the sign-in page and wait here as <strong>Pending</strong> until you approve them. There is only <strong>one admin</strong>, and that account is approved in the <strong>Firebase console</strong> (Firestore &rarr; <code>staff</code> &rarr; the email &rarr; <code>role: "admin"</code>, <code>status: "approved"</code>) &mdash; never from this page.</p>
+      <div id="staff-admin-notice" class="notice-box hidden" style="margin-top:12px;"></div>
+      <div class="toolbar-row" style="margin-top:14px;">
+        <input class="search-input focus-ring" id="staff-search" type="search" placeholder="Search by email&hellip;" style="flex:1;min-width:200px;" />
+        <select class="filter-select focus-ring" id="staff-role-filter">
+          <option value="all">All roles</option>
+          <option value="admin">Admin</option>
+          <option value="staff">Staff</option>
+        </select>
+        <select class="filter-select focus-ring" id="staff-status-filter">
+          <option value="all">All statuses</option>
+          <option value="pending">Pending approval</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+        </select>
+      </div>
+      <form id="staff-add-form" class="toolbar-row" style="margin-top:12px;">
+        <input class="search-input focus-ring" id="staff-add-email" type="email" placeholder="Pre-approve a staff email (optional)" required style="flex:1;" />
+        <button type="submit" class="primary-button focus-ring">+ Pre-approve staff</button>
       </form>
       <p class="hint-text hidden" id="staff-add-message"></p>
     </div>
     <div class="panel-block" style="overflow-x:auto;">
       <table class="data-table">
-        <thead><tr><th>Email</th><th>Added</th><th></th></tr></thead>
+        <thead><tr><th>Account</th><th>Role</th><th>Status</th><th>Requested</th><th></th></tr></thead>
         <tbody id="staff-body"></tbody>
       </table>
-      <div class="empty-state hidden" id="staff-empty">No staff accounts yet — add one above.</div>
+      <div class="empty-state hidden" id="staff-empty">No accounts match.</div>
     </div>
   </section>
 
@@ -642,6 +694,12 @@
       <ul class="login-log-list" id="settings-log-list"></ul>
     </div>
   </section>
+
+  <footer class="dash-footer">
+    <div class="brand brand-compact"><span class="brand-mark">m</span><span class="brand-word">Mimi<span>Cart</span></span></div>
+    <p>tiny treats from a very good corner shop.</p>
+    <span class="footer-small">© 2024 MimiCart · made for snack people</span>
+  </footer>
 </div>
 
 <div id="curtain" aria-hidden="true"><div class="slat"></div><div class="slat"></div><div class="slat"></div><div class="slat"></div><div class="slat"></div><div class="slat"></div><div class="slat"></div><div class="slat"></div><div class="slat"></div><div class="curtain-ring"></div><div class="curtain-mark">m</div></div>
@@ -692,9 +750,12 @@
   var firebaseConfigured = FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey.indexOf('YOUR_') !== 0;
   if (firebaseConfigured) {
     try {
-      firebase.initializeApp(FIREBASE_CONFIG);
-      firebaseAuth = firebase.auth();
-      firebaseDb = firebase.firestore();
+      // A NAMED app keeps the dashboard's sign-in completely separate from the
+      // storefront's. Without this, signing in here also signed that account in
+      // on the shop (and vice-versa), which triggered the "Is this you?" popup.
+      var adminApp = firebase.initializeApp(FIREBASE_CONFIG, 'mimicart-admin');
+      firebaseAuth = adminApp.auth();
+      firebaseDb = adminApp.firestore();
     } catch (e) {
       console.error('Firebase failed to initialize:', e);
       firebaseConfigured = false;
@@ -825,9 +886,18 @@ var REQUIRE_OTP = false;
     inventorySearch: '',
     inventoryCategory: 'All',
     inventoryStockFilter: 'all',
-    ordersStatusFilter: 'all'
+    ordersStatusFilter: 'all',
+    ordersSearch: '',
+    ordersFulfillment: 'all',
+    ordersDate: 'all',
+    staff: [],
+    staffRole: 'staff',
+    isAdmin: false,
+    staffSearch: '',
+    staffRoleFilter: 'all',
+    staffStatusFilter: 'all'
   };
-  var unsubscribeProducts = null, unsubscribeOrders = [];
+  var unsubscribeProducts = null, unsubscribeOrders = [], unsubscribeStaff = null;
 
   function showToast(message) {
     var el = document.createElement('div');
@@ -1429,6 +1499,69 @@ var REQUIRE_OTP = false;
     });
   });
 
+
+  // ---------------- STAFF SIGN-UP (needs admin approval) ----------------
+  var signingUp = false;
+  var signupFormEl = document.getElementById('signup-form');
+  var toggleSignupBtn = document.getElementById('toggle-signup');
+  function setAuthMode(mode) {
+    var signup = mode === 'signup';
+    loginForm.classList.toggle('hidden', signup);
+    signupFormEl.classList.toggle('hidden', !signup);
+    document.getElementById('login-title').textContent = signup ? 'Request staff access' : 'Staff sign-in';
+    document.getElementById('login-lede').textContent = signup
+      ? 'Create your staff account. The admin has to approve it before you can sign in.'
+      : 'This dashboard is separate from the MimiCart storefront and only approved staff can get in.';
+    toggleSignupBtn.textContent = signup ? '\u2190 Back to sign in' : 'New staff? Request access';
+    loginMessage.classList.add('hidden');
+  }
+  toggleSignupBtn.addEventListener('click', function () { setAuthMode(signupFormEl.classList.contains('hidden') ? 'signup' : 'login'); });
+
+  function loginSay(text, good) {
+    loginMessage.classList.remove('hidden', 'good');
+    if (good) loginMessage.classList.add('good');
+    loginMessage.textContent = text;
+  }
+  signupFormEl.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!firebaseConfigured) return;
+    var email = document.getElementById('signup-email').value.trim().toLowerCase();
+    var pw = document.getElementById('signup-password').value;
+    var pw2 = document.getElementById('signup-password2').value;
+    var btn = document.getElementById('signup-submit');
+    if (pw.length < 8) { loginSay('Use a password with at least 8 characters.'); return; }
+    if (pw !== pw2) { loginSay('Those passwords don\u2019t match.'); return; }
+    btn.disabled = true;
+    signingUp = true;
+    firebaseAuth.createUserWithEmailAndPassword(email, pw).then(function () {
+      var ref = firebaseDb.collection('staff').doc(email);
+      return ref.get().then(function (snap) {
+        if (snap.exists) return snap.data() || {};   // already on the list (e.g. pre-approved by the admin)
+        // Always created as a PENDING staff member - the admin approves from the Staff tab.
+        return ref.set({ email: email, role: 'staff', status: 'pending', requestedAt: firebase.firestore.FieldValue.serverTimestamp() })
+          .then(function () { return { status: 'pending' }; });
+      });
+    }).then(function (info) {
+      return firebaseAuth.signOut().then(function () { return info; });
+    }).then(function (info) {
+      signingUp = false;
+      btn.disabled = false;
+      signupFormEl.reset();
+      setAuthMode('login');
+      var st = (info && info.status) || 'approved';
+      loginSay(st === 'approved'
+        ? 'Account created \u2014 you\u2019re already approved, so you can sign in now.'
+        : 'Request sent! The admin must approve your account before you can sign in.', true);
+    }).catch(function (err) {
+      signingUp = false;
+      btn.disabled = false;
+      if (firebaseAuth.currentUser) firebaseAuth.signOut();
+      if (err && err.code === 'auth/email-already-in-use') loginSay('That email already has an account. Go back and sign in \u2014 if it says pending, the admin hasn\u2019t approved it yet.');
+      else if (err && err.code === 'auth/weak-password') loginSay('That password is too weak. Try a longer one.');
+      else loginSay((err && err.message) || 'Couldn\u2019t send the request. Please try again.');
+    });
+  });
+
   // Warm up the (approximate) location lookup so the login log row is written instantly.
   document.getElementById('login-email').addEventListener('focus', function () { lookupLocation(); });
 
@@ -1602,6 +1735,8 @@ var REQUIRE_OTP = false;
 
   if (firebaseConfigured) {
     firebaseAuth.onAuthStateChanged(function (user) {
+      if (signingUp) return; // a new staff request is being created - handled below
+      if (unsubscribeStaff) { unsubscribeStaff(); unsubscribeStaff = null; }
       if (unsubscribeProducts) { unsubscribeProducts(); unsubscribeProducts = null; }
       unsubscribeOrders.forEach(function (fn) { if (fn) fn(); });
       unsubscribeOrders = [];
@@ -1610,6 +1745,21 @@ var REQUIRE_OTP = false;
       var staffDocId = user.email.toLowerCase();
       firebaseDb.collection('staff').doc(staffDocId).get().then(function (doc) {
         if (doc.exists) {
+          var staffData = doc.data() || {};
+          var staffStatus = staffData.status || 'approved'; // older allow-list entries have no status = approved
+          if (staffStatus !== 'approved') {
+            explicitLoginInProgress = false;
+            loginMessage.classList.remove('hidden');
+            loginMessage.textContent = staffStatus === 'pending'
+              ? 'Your staff request is still waiting for the admin to approve it. Please check back later.'
+              : 'Your staff request was declined. Please contact the admin.';
+            document.getElementById('login-submit').disabled = false;
+            firebaseAuth.signOut();
+            return;
+          }
+          state.staffRole = staffData.role === 'admin' ? 'admin' : 'staff';
+          state.isAdmin = state.staffRole === 'admin';
+          applyRoleUI();
           var wasExplicit = explicitLoginInProgress;
           explicitLoginInProgress = false;
           // Only a real sign-in gets logged — not a session Firebase restored on refresh.
@@ -1618,7 +1768,7 @@ var REQUIRE_OTP = false;
         } else {
           explicitLoginInProgress = false;
           loginMessage.classList.remove('hidden');
-          loginMessage.textContent = 'That account isn\u2019t on the staff list yet. Ask an admin to add it in Firestore.';
+          loginMessage.textContent = 'That account isn\u2019t on the staff list. Use \u201CNew staff? Request access\u201D below and the admin will approve it.';
           firebaseAuth.signOut();
         }
       }).catch(function (err) {
@@ -1671,6 +1821,20 @@ var REQUIRE_OTP = false;
   }
 
   function subscribeData() {
+    // Only the admin can list every staff account (Security Rules enforce the same).
+    if (state.isAdmin) {
+      unsubscribeStaff = firebaseDb.collection('staff').onSnapshot(function (snap) {
+        var next = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
+        var pendingNow = next.filter(function (x) { return (x.status || 'approved') === 'pending'; }).map(function (x) { return x.id; });
+        if (knownPendingIds) {
+          pendingNow.forEach(function (id) { if (knownPendingIds.indexOf(id) === -1) showToast('New staff request: ' + id); });
+        }
+        knownPendingIds = pendingNow;
+        state.staff = next;
+        resolveAdmin();
+        renderStaff();
+      }, function (err) { console.warn('MimiCart admin: staff list unavailable', err); state.staff = []; renderStaff(); });
+    }
     unsubscribeProducts = firebaseDb.collection('products').onSnapshot(function (snap) {
       state.products = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
       document.getElementById('seed-banner').classList.toggle('hidden', !snap.empty);
@@ -1909,9 +2073,9 @@ var REQUIRE_OTP = false;
     var stages = stagesFor(order);
     var currentIdx = stages.indexOf(order.status);
     var dots = stages.map(function (key, i) {
-      var cls = i < currentIdx ? 'is-done' : (i === currentIdx ? 'is-current' : '');
+      var cls = (i < currentIdx || order.status === 'completed') ? 'is-done' : (i === currentIdx ? 'is-current' : '');
       var dot = '<span class="stage-dot ' + cls + '" title="' + stageLabel(key, order) + '"></span>';
-      var line = i < stages.length - 1 ? '<span class="stage-line ' + (i < currentIdx ? 'is-done' : '') + '"></span>' : '';
+      var line = i < stages.length - 1 ? '<span class="stage-line ' + ((i < currentIdx || order.status === 'completed') ? 'is-done' : '') + '"></span>' : '';
       return dot + line;
     }).join('');
     return '<span class="status-badge status-' + order.status + '">' + stageLabel(order.status, order) + '</span><div class="stage-track">' + dots + '</div>';
@@ -1936,6 +2100,15 @@ var REQUIRE_OTP = false;
   // narrowed further by the "All statuses" dropdown when it isn't "all".
   var ORDER_GROUPS = ['to_be_delivered', 'to_be_picked_up', 'completed', 'cancelled'];
 
+  // An order id can repeat across the four collections (older orders were
+  // named after the customer), so every button identifies an order by
+  // collection + id. This is what stops buttons acting on the wrong doc.
+  function orderKey(o) { return o._collection + '|' + o.id; }
+  function findOrderByKey(key) {
+    return state.orders.filter(function (o) { return orderKey(o) === key; })[0] ||
+           state.orders.filter(function (o) { return o.id === key; })[0];
+  }
+
   function orderRowHTML(o) {
     var placed = orderDateObj(o, false);
     var itemsSummary = (o.items || []).map(function (it) { return escapeHtml(it.quantity) + '\u00d7 ' + escapeHtml(it.name); }).join(', ');
@@ -1943,12 +2116,12 @@ var REQUIRE_OTP = false;
     var actions = '';
     if (o._collection !== 'completed' && o._collection !== 'cancelled') {
       actions = '<div class="stage-actions">';
-      if (next) actions += '<button type="button" class="tiny-button" data-advance="' + escapeHtml(o.id) + '">Mark as: ' + stageLabel(next, o) + '</button>';
-      actions += '<button type="button" class="tiny-button" data-cancel="' + escapeHtml(o.id) + '">Cancel</button></div>';
+      if (next) actions += '<button type="button" class="tiny-button" data-advance="' + escapeHtml(orderKey(o)) + '">Mark as: ' + stageLabel(next, o) + '</button>';
+      actions += '<button type="button" class="tiny-button" data-cancel="' + escapeHtml(orderKey(o)) + '">Cancel</button></div>';
     }
     return (
       '<tr>' +
-        '<td><strong>' + escapeHtml(o.customerName || 'Guest') + '</strong> <span class="fulfillment-chip fulfillment-chip-' + (o.fulfillment === 'delivery' ? 'delivery' : 'pickup') + '">' + (o.fulfillment === 'delivery' ? 'Delivery' : 'Picked up') + '</span><div class="order-items">#' + escapeHtml(o.orderNumber || o.id) + ' \u2022 ' + escapeHtml(o.customerContact || '') + '</div></td>' +
+        '<td><strong>' + escapeHtml(o.customerName || 'Guest') + '</strong> <span class="fulfillment-chip fulfillment-chip-' + (o.fulfillment === 'delivery' ? 'delivery' : 'pickup') + '">' + (o.fulfillment === 'delivery' ? 'Delivery' : 'Picked up') + '</span><div class="order-items">' + (o.orderCode ? 'Order #' + escapeHtml(o.orderCode) : '#' + escapeHtml(o.orderNumber || o.id)) + ' \u2022 ' + escapeHtml(o.customerContact || '') + '</div></td>' +
         '<td><div class="order-items">' + itemsSummary + '</div></td>' +
         '<td>₱' + Number(o.total || 0).toFixed(2) + '</td>' +
         '<td>' + (o.fulfillment === 'delivery'
@@ -1961,12 +2134,37 @@ var REQUIRE_OTP = false;
     );
   }
 
+  function orderPassesFilters(o) {
+    if (state.ordersStatusFilter !== 'all' && o.status !== state.ordersStatusFilter) return false;
+    if (state.ordersFulfillment !== 'all' && (o.fulfillment === 'delivery' ? 'delivery' : 'pickup') !== state.ordersFulfillment) return false;
+    if (state.ordersDate !== 'all') {
+      var d = orderDateObj(o, false);
+      if (!d) return false;
+      var now = new Date();
+      if (state.ordersDate === 'today' && !isSameDay(d, now)) return false;
+      if (state.ordersDate === 'week' && d < new Date(now.getTime() - 7 * 86400000)) return false;
+      if (state.ordersDate === 'month' && !isSameMonth(d, now)) return false;
+    }
+    var q = (state.ordersSearch || '').trim().toLowerCase();
+    if (q) {
+      var hay = [o.customerName, o.orderCode, o.orderNumber, o.id, o.customerContact, o.customerEmail, o.deliveryAddress, o.pickupDate,
+        stageLabel(o.status, o), (o.items || []).map(function (it) { return it.name; }).join(' ')].join(' ').toLowerCase();
+      if (hay.indexOf(q) === -1) return false;
+    }
+    return true;
+  }
+  function ordersFilterActive() {
+    return state.ordersStatusFilter !== 'all' || state.ordersFulfillment !== 'all' || state.ordersDate !== 'all' || !!(state.ordersSearch || '').trim();
+  }
+
   function renderOrders() {
+    var shown = 0;
     ORDER_GROUPS.forEach(function (group) {
       var rows = state.orders.filter(function (o) {
         if (!orderMatchesFilter(o, group)) return false;
-        return state.ordersStatusFilter === 'all' || o.status === state.ordersStatusFilter;
+        return orderPassesFilters(o);
       });
+      shown += rows.length;
       var body = document.getElementById('orders-body-' + group);
       var empty = document.getElementById('orders-empty-' + group);
       var count = document.getElementById('orders-count-' + group);
@@ -1974,6 +2172,8 @@ var REQUIRE_OTP = false;
       if (empty) empty.classList.toggle('hidden', rows.length > 0);
       if (body) body.innerHTML = rows.map(orderRowHTML).join('');
     });
+    var note = document.getElementById('orders-result-note');
+    if (note) note.textContent = ordersFilterActive() ? ('Showing ' + shown + ' of ' + state.orders.length + ' orders') : '';
   }
 
   // Event delegation on the whole Orders panel, so buttons work no matter
@@ -2031,7 +2231,7 @@ var REQUIRE_OTP = false;
   // and into the real "completed" collection (deleting it from the old
   // one), so it re-sorts into the "Completed" group on screen.
   function advanceOrder(id) {
-    var order = state.orders.filter(function (o) { return o.id === id; })[0];
+    var order = findOrderByKey(id);
     if (!order) return;
     var next = nextStageKey(order);
     if (!next) return;
@@ -2049,7 +2249,7 @@ var REQUIRE_OTP = false;
   }
 
   function cancelOrder(id) {
-    var order = state.orders.filter(function (o) { return o.id === id; })[0];
+    var order = findOrderByKey(id);
     if (!order) return;
     if (!confirm('Cancel this reservation and return the items to stock?')) return;
     // Physically move the doc into the real "cancelled" collection,
@@ -2072,26 +2272,111 @@ var REQUIRE_OTP = false;
     state.ordersStatusFilter = e.target.value;
     renderOrders();
   });
+  document.getElementById('orders-search').addEventListener('input', function (e) { state.ordersSearch = e.target.value; renderOrders(); });
+  document.getElementById('orders-fulfillment-filter').addEventListener('change', function (e) { state.ordersFulfillment = e.target.value; renderOrders(); });
+  document.getElementById('orders-date-filter').addEventListener('change', function (e) { state.ordersDate = e.target.value; renderOrders(); });
 
-  // ---------------- STAFF ----------------
+  // ---------------- STAFF & ADMIN ACCOUNTS ----------------
+  // - Staff request access on the sign-in page (status: "pending").
+  // - Only the ONE admin can approve / reject / remove staff here.
+  // - The admin account itself is approved in the Firebase console
+  //   (staff/{email}: role = "admin", status = "approved"), never in this UI.
+  var knownPendingIds = null;
+  function staffStatusOf(s) { return s.status || 'approved'; }
+  function staffRoleOf(s) { return s.role === 'admin' ? 'admin' : 'staff'; }
+
+  function resolveAdmin() {
+    var admins = (state.staff || []).filter(function (x) { return staffRoleOf(x) === 'admin' && staffStatusOf(x) === 'approved'; })
+      .map(function (x) { return x.id; }).sort();
+    state.adminEmail = admins[0] || null;
+    state.extraAdmins = admins.slice(1);
+    var me = (state.staffEmail || '').toLowerCase();
+    var was = state.isAdmin;
+    state.isAdmin = state.staffRole === 'admin' && (!admins.length || admins[0] === me);
+    if (was && !state.isAdmin) showToast('Only one admin is allowed \u2014 this account is now treated as staff.');
+    applyRoleUI();
+  }
+
+  function applyRoleUI() {
+    var admin = !!state.isAdmin;
+    var tabBtn = document.querySelector('.tab-button[data-tab="staff"]');
+    if (tabBtn) tabBtn.classList.toggle('hidden', !admin);
+    var allLogsBtn = document.getElementById('log-view-all');
+    if (allLogsBtn) allLogsBtn.classList.toggle('hidden', !admin);
+    if (!admin && logView === 'all') { logView = 'mine'; }
+    if (!admin && state.activeTab === 'staff') {
+      var first = document.querySelector('.tab-button[data-tab="overview"]');
+      if (first) first.click();
+    }
+  }
+
   function renderStaff() {
     var body = document.getElementById('staff-body');
-    var list = (state.staff || []).slice().sort(function (a, b) { return a.id < b.id ? -1 : 1; });
-    document.getElementById('staff-empty').classList.toggle('hidden', list.length > 0);
-    body.innerHTML = list.map(function (s) {
-      var added = s.addedAt && s.addedAt.toDate ? s.addedAt.toDate().toLocaleDateString() : '\u2014';
-      return (
-        '<tr>' +
-          '<td>' + escapeHtml(s.id) + (s.id === (state.staffEmail || '').toLowerCase() ? ' <span class="fulfillment-chip fulfillment-chip-pickup">You</span>' : '') + '</td>' +
-          '<td>' + added + '</td>' +
-          '<td><button type="button" class="tiny-button" data-remove-staff="' + escapeHtml(s.id) + '">Remove</button></td>' +
-        '</tr>'
-      );
-    }).join('');
-    body.querySelectorAll('[data-remove-staff]').forEach(function (b) {
-      b.addEventListener('click', function () { removeStaff(b.getAttribute('data-remove-staff')); });
+    if (!body) return;
+    var me = (state.staffEmail || '').toLowerCase();
+    var all = state.staff || [];
+    var pendingCount = all.filter(function (x) { return staffStatusOf(x) === 'pending'; }).length;
+    var badge = document.getElementById('staff-pending-badge');
+    if (badge) { badge.textContent = pendingCount; badge.classList.toggle('hidden', !pendingCount); }
+
+    var notice = document.getElementById('staff-admin-notice');
+    if (state.extraAdmins && state.extraAdmins.length) {
+      notice.textContent = '\u26A0\uFE0F More than one account is marked admin in Firebase (' + [state.adminEmail].concat(state.extraAdmins).join(', ') + '). Only ' + state.adminEmail + ' keeps admin permission \u2014 remove the admin role from the others in the Firebase console.';
+      notice.classList.remove('hidden');
+    } else if (!state.adminEmail && state.isAdmin === false && state.staffRole !== 'admin') {
+      notice.classList.add('hidden');
+    } else {
+      notice.classList.add('hidden');
+    }
+
+    var q = (state.staffSearch || '').trim().toLowerCase();
+    var list = all.filter(function (x) {
+      if (state.staffRoleFilter !== 'all' && staffRoleOf(x) !== state.staffRoleFilter) return false;
+      if (state.staffStatusFilter !== 'all' && staffStatusOf(x) !== state.staffStatusFilter) return false;
+      return !q || x.id.toLowerCase().indexOf(q) !== -1;
+    }).sort(function (a, b) {
+      var ra = staffRoleOf(a) === 'admin' ? 0 : 1, rb = staffRoleOf(b) === 'admin' ? 0 : 1;
+      if (ra !== rb) return ra - rb;
+      var pa = staffStatusOf(a) === 'pending' ? 0 : 1, pb = staffStatusOf(b) === 'pending' ? 0 : 1;
+      if (pa !== pb) return pa - pb;
+      return a.id < b.id ? -1 : 1;
     });
+    document.getElementById('staff-empty').classList.toggle('hidden', list.length > 0);
+    body.innerHTML = list.map(function (x) {
+      var role = staffRoleOf(x), status = staffStatusOf(x);
+      var when = x.requestedAt || x.addedAt;
+      var date = when && when.toDate ? when.toDate().toLocaleDateString() : '\u2014';
+      var statusBadge = '<span class="status-badge status-' + (status === 'pending' ? 'pending' : status === 'approved' ? 'completed' : 'cancelled') + '">' +
+        (status === 'pending' ? 'Pending' : status === 'approved' ? 'Approved' : 'Rejected') + '</span>';
+      var actions = '';
+      if (role === 'admin') {
+        actions = '<span class="prod-sub">Managed in Firebase</span>';
+      } else if (x.id !== me && state.isAdmin) {
+        if (status !== 'approved') actions += '<button type="button" class="tiny-button" data-staff-act="approve" data-email="' + escapeHtml(x.id) + '">Approve</button> ';
+        if (status === 'pending') actions += '<button type="button" class="tiny-button" data-staff-act="reject" data-email="' + escapeHtml(x.id) + '">Reject</button> ';
+        actions += '<button type="button" class="tiny-button" data-staff-act="remove" data-email="' + escapeHtml(x.id) + '">Remove</button>';
+      }
+      return '<tr>' +
+        '<td>' + escapeHtml(x.id) + (x.id === me ? ' <span class="fulfillment-chip fulfillment-chip-pickup">You</span>' : '') + '</td>' +
+        '<td><span class="fulfillment-chip fulfillment-chip-' + (role === 'admin' ? 'delivery' : 'pickup') + '">' + (role === 'admin' ? 'Admin' : 'Staff') + '</span></td>' +
+        '<td>' + statusBadge + '</td>' +
+        '<td>' + date + '</td>' +
+        '<td><div class="stage-actions">' + actions + '</div></td>' +
+      '</tr>';
+    }).join('');
   }
+
+  document.getElementById('staff-body').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-staff-act]');
+    if (!b) return;
+    var email = b.getAttribute('data-email'), act = b.getAttribute('data-staff-act');
+    if (act === 'approve') setStaffStatus(email, 'approved');
+    else if (act === 'reject') setStaffStatus(email, 'rejected');
+    else if (act === 'remove') removeStaff(email);
+  });
+  document.getElementById('staff-search').addEventListener('input', function (e) { state.staffSearch = e.target.value; renderStaff(); });
+  document.getElementById('staff-role-filter').addEventListener('change', function (e) { state.staffRoleFilter = e.target.value; renderStaff(); });
+  document.getElementById('staff-status-filter').addEventListener('change', function (e) { state.staffStatusFilter = e.target.value; renderStaff(); });
 
   function showStaffMessage(text, kind) {
     var el = document.getElementById('staff-add-message');
@@ -2100,14 +2385,39 @@ var REQUIRE_OTP = false;
     if (kind) el.classList.add(kind);
   }
 
+  function setStaffStatus(email, status) {
+    if (!state.isAdmin) { showToast('Only the admin can approve or reject staff.'); return; }
+    var target = (state.staff || []).filter(function (x) { return x.id === email; })[0];
+    if (target && staffRoleOf(target) === 'admin') { showToast('Admin accounts are managed in Firebase.'); return; }
+    var patch = { status: status };
+    if (status === 'approved') { patch.approvedAt = firebase.firestore.FieldValue.serverTimestamp(); patch.approvedBy = state.staffEmail || null; }
+    else { patch.rejectedAt = firebase.firestore.FieldValue.serverTimestamp(); patch.rejectedBy = state.staffEmail || null; }
+    firebaseDb.collection('staff').doc(email).update(patch).then(function () {
+      showToast(status === 'approved' ? 'Approved ' + email + ' \u2014 they can sign in now.' : 'Rejected ' + email + '.');
+    }).catch(function (err) {
+      console.error('MimiCart admin: staff status update failed', err);
+      showToast('Couldn\u2019t update that account. (' + ((err && err.message) || 'unknown error') + ')');
+    });
+  }
+
+  // Pre-approve: the admin can add a staff email straight to "approved".
+  // This can only ever create STAFF - an admin account is never created here.
   document.getElementById('staff-add-form').addEventListener('submit', function (e) {
     e.preventDefault();
+    if (!state.isAdmin) { showStaffMessage('Only the admin can add staff.', 'bad'); return; }
     var input = document.getElementById('staff-add-email');
     var email = input.value.trim().toLowerCase();
     if (!email) return;
-    firebaseDb.collection('staff').doc(email).set({ addedAt: firebase.firestore.FieldValue.serverTimestamp(), addedBy: state.staffEmail || null }).then(function () {
-      showStaffMessage('Added ' + email + '. They can now sign in with that email.', 'good');
-      input.value = '';
+    var ref = firebaseDb.collection('staff').doc(email);
+    ref.get().then(function (snap) {
+      if (snap.exists) { showStaffMessage(email + ' is already on the list.', 'bad'); return; }
+      return ref.set({
+        email: email, role: 'staff', status: 'approved',
+        addedAt: firebase.firestore.FieldValue.serverTimestamp(), addedBy: state.staffEmail || null, approvedBy: state.staffEmail || null
+      }).then(function () {
+        showStaffMessage('Pre-approved ' + email + '. They can create their account on the sign-in page (Request access) and sign in right away.', 'good');
+        input.value = '';
+      });
     }).catch(function (err) {
       console.error('MimiCart admin: add staff failed', err);
       showStaffMessage('Couldn\u2019t add that email. (' + ((err && err.message) || 'Please try again.') + ')', 'bad');
@@ -2115,14 +2425,12 @@ var REQUIRE_OTP = false;
   });
 
   function removeStaff(email) {
-    if (email === (state.staffEmail || '').toLowerCase()) {
-      if (!confirm('This removes your own staff access and signs you out. Continue?')) return;
-    } else if (!confirm('Remove ' + email + ' from the staff list?')) {
-      return;
-    }
+    if (!state.isAdmin) { showToast('Only the admin can remove staff.'); return; }
+    var target = (state.staff || []).filter(function (x) { return x.id === email; })[0];
+    if (target && staffRoleOf(target) === 'admin') { showToast('Admin accounts are managed in Firebase.'); return; }
+    if (!confirm('Remove ' + email + ' from the staff list? They will no longer be able to sign in.')) return;
     firebaseDb.collection('staff').doc(email).delete().then(function () {
       showToast('Removed ' + email + ' from staff.');
-      if (email === (state.staffEmail || '').toLowerCase()) { firebaseAuth.signOut(); }
     }).catch(function (err) {
       console.error('MimiCart admin: remove staff failed', err);
       showToast('Couldn\u2019t remove that staff account.');
