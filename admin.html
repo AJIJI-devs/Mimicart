@@ -430,6 +430,33 @@
   .filter-field .filter-select { min-width: 150px; color: hsl(var(--foreground)); font-weight: 400; }
   .filter-actions { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
   @media (max-width: 640px) { .filter-field { flex: 1 1 140px; } .filter-actions { margin-left: 0; width: 100%; } }
+  .msg-tab-badge { display: inline-block; min-width: 18px; padding: 1px 6px; margin-left: 4px; border-radius: 999px; background: #16a34a; color: #fff; font-size: 11px; font-weight: 700; text-align: center; }
+  .msg-layout { display: grid; grid-template-columns: minmax(250px, 340px) 1fr; gap: 16px; align-items: start; }
+  .msg-row { width: 100%; display: flex; gap: 10px; align-items: flex-start; text-align: left; padding: 11px 12px; margin-top: 8px; border: 1px solid hsl(var(--border)); border-radius: 14px; background: hsl(var(--background)); color: inherit; cursor: pointer; }
+  .msg-row:hover, .msg-row.is-active { border-color: hsl(var(--primary)); }
+  .msg-row-main { flex: 1; min-width: 0; }
+  .msg-row-main strong { display: block; font-size: 14px; }
+  .msg-row-main span { display: block; font-size: 12px; color: hsl(var(--muted-foreground)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .msg-row-time { font-size: 11px; color: hsl(var(--muted-foreground)); white-space: nowrap; }
+  .msg-dot { display: inline-block; min-width: 18px; padding: 1px 6px; border-radius: 999px; background: #16a34a; color: #fff; font-size: 11px; font-weight: 700; text-align: center; }
+  .msg-thread-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .msg-back { display: none; }
+  .msg-thread-body { height: 380px; max-height: 55vh; overflow-y: auto; padding: 12px; border: 1px solid hsl(var(--border)); border-radius: 14px; background: hsl(var(--background)); display: flex; flex-direction: column; gap: 10px; }
+  .msg-b { display: flex; flex-direction: column; max-width: 80%; gap: 2px; }
+  .msg-b.me { align-self: flex-end; align-items: flex-end; }
+  .msg-b.them { align-self: flex-start; align-items: flex-start; }
+  .msg-b-bubble { padding: 9px 13px; border-radius: 16px; font-size: 14px; line-height: 1.4; white-space: pre-wrap; word-break: break-word; }
+  .msg-b.me .msg-b-bubble { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); border-bottom-right-radius: 4px; }
+  .msg-b.them .msg-b-bubble { background: hsl(var(--muted)); border-bottom-left-radius: 4px; }
+  .msg-b-meta { font-size: 11px; color: hsl(var(--muted-foreground)); padding: 0 4px; }
+  .msg-reply { display: flex; gap: 8px; margin-top: 10px; }
+  .msg-reply .search-input { flex: 1; }
+  @media (max-width: 760px) {
+    .msg-layout { grid-template-columns: 1fr; }
+    .msg-layout.show-thread .msg-list-block { display: none; }
+    .msg-layout:not(.show-thread) .msg-thread-block { display: none; }
+    .msg-back { display: inline-flex; }
+  }
   .hidden { display: none !important; }
 
   @media (max-width: 480px) {
@@ -538,6 +565,7 @@
     <button type="button" class="tab-button" data-tab="inventory">Products</button>
     <button type="button" class="tab-button" data-tab="orders">Orders</button>
     <button type="button" class="tab-button hidden" data-tab="staff">Staff <span class="tab-badge hidden" id="staff-pending-badge">0</span></button>
+    <button type="button" class="tab-button" data-tab="messages">Messages <span class="msg-tab-badge hidden" id="messages-badge">0</span></button>
     <button type="button" class="tab-button hidden" data-tab="permissions">Permissions</button>
     <button type="button" class="tab-button" data-tab="settings">Settings</button>
   </nav>
@@ -725,6 +753,28 @@
   </section>
 
   <!-- ---------------- SETTINGS / LOGIN LOGS ---------------- -->
+  <!-- ---------------- MESSAGES (staff + admin) ---------------- -->
+  <section class="tab-panel" id="panel-messages">
+    <div class="msg-layout">
+      <div class="panel-block msg-list-block">
+        <h2 class="font-display">Customer messages</h2>
+        <p class="panel-sub" id="msg-list-note">Customers chat with you from the floating help button on the shop.</p>
+        <div id="msg-list"></div>
+      </div>
+      <div class="panel-block msg-thread-block">
+        <div id="msg-thread-empty" class="empty-state">Pick a conversation on the left to read and reply.</div>
+        <div id="msg-thread" class="hidden">
+          <div class="msg-thread-head"><button type="button" class="ghost-button focus-ring msg-back" id="msg-back">&larr; All chats</button><strong id="msg-thread-title"></strong></div>
+          <div class="msg-thread-body" id="msg-thread-body"></div>
+          <form class="msg-reply" id="msg-reply" autocomplete="off">
+            <input class="search-input focus-ring" id="msg-reply-input" type="text" maxlength="500" placeholder="Type your reply&hellip;" />
+            <button type="submit" class="primary-button focus-ring">Send</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ---------------- PERMISSIONS (admin only) ---------------- -->
   <section class="tab-panel" id="panel-permissions">
     <div class="panel-block">
@@ -986,7 +1036,7 @@ var REQUIRE_OTP = false;
   };
   // True when the signed-in person may use a feature: the admin always can; staff only if the admin switched it on.
   function can(key) { return !!state.isAdmin || !!(state.perms && state.perms[key]); }
-  var unsubscribeProducts = null, unsubscribeOrders = [], unsubscribeStaff = null, unsubscribePerms = null;
+  var unsubscribeProducts = null, unsubscribeOrders = [], unsubscribeStaff = null, unsubscribePerms = null, unsubscribeChats = null, unsubscribeThread = null;
 
   function showToast(message) {
     var el = document.createElement('div');
@@ -1828,6 +1878,9 @@ var REQUIRE_OTP = false;
       if (signingUp) return; // a new staff request is being created - handled below
       if (unsubscribeStaff) { unsubscribeStaff(); unsubscribeStaff = null; }
       if (unsubscribePerms) { unsubscribePerms(); unsubscribePerms = null; }
+      if (unsubscribeChats) { unsubscribeChats(); unsubscribeChats = null; }
+      if (unsubscribeThread) { unsubscribeThread(); unsubscribeThread = null; }
+      chatList = []; activeChatId = null; chatsFirstLoad = true;
       if (unsubscribeProducts) { unsubscribeProducts(); unsubscribeProducts = null; }
       unsubscribeOrders.forEach(function (fn) { if (fn) fn(); });
       unsubscribeOrders = [];
@@ -1912,6 +1965,7 @@ var REQUIRE_OTP = false;
   }
 
   function subscribeData() {
+    subscribeChats();
     // Permission switches set by the admin (app_settings/permissions). Missing = safe defaults.
     if (unsubscribePerms) { unsubscribePerms(); unsubscribePerms = null; }
     unsubscribePerms = firebaseDb.collection('app_settings').doc('permissions').onSnapshot(function (doc) {
@@ -2491,6 +2545,107 @@ var REQUIRE_OTP = false;
       if (first) first.click();
     }
   }
+
+  // ---------------- customer messages (staff + admin) ----------------
+  var chatList = [], activeChatId = null, chatsFirstLoad = true;
+  function myRoleLabel() { return state.isAdmin ? 'Admin' : 'Staff'; }
+  function msgTime(ts) {
+    var d = ts && ts.toDate ? ts.toDate() : null;
+    if (!d) return '';
+    var same = d.toDateString() === new Date().toDateString();
+    return same ? d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+                : d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  }
+  function subscribeChats() {
+    if (unsubscribeChats) { unsubscribeChats(); unsubscribeChats = null; }
+    chatsFirstLoad = true;
+    unsubscribeChats = firebaseDb.collection('support_chats').orderBy('lastAt', 'desc').limit(100).onSnapshot(function (snap) {
+      if (!chatsFirstLoad) {
+        snap.docChanges().forEach(function (ch) {
+          var d = ch.doc.data();
+          if (ch.type !== 'removed' && d.lastFrom === 'customer' && ch.doc.id !== activeChatId) {
+            showToast('New message from ' + (d.customerName || d.customerEmail || 'a customer'));
+          }
+        });
+      }
+      chatsFirstLoad = false;
+      chatList = snap.docs.map(function (d) { var c = d.data(); c.id = d.id; return c; });
+      renderChatList();
+      if (activeChatId) markChatRead(activeChatId);
+    }, function (err) {
+      console.warn('MimiCart admin: messages unavailable', err);
+      var note = document.getElementById('msg-list-note');
+      if (note) note.textContent = 'Messages could not load. Publish the latest Firestore rules, then refresh.';
+    });
+  }
+  function renderChatList() {
+    var unread = chatList.reduce(function (n, c) { return n + (Number(c.staffUnread) || 0); }, 0);
+    var badge = document.getElementById('messages-badge');
+    if (badge) { badge.textContent = unread > 99 ? '99+' : String(unread); badge.classList.toggle('hidden', unread === 0); }
+    var box = document.getElementById('msg-list');
+    if (!box) return;
+    if (!chatList.length) { box.innerHTML = '<div class="empty-state">No messages yet.</div>'; return; }
+    box.innerHTML = chatList.map(function (c) {
+      var n = Number(c.staffUnread) || 0;
+      return '<button type="button" class="msg-row' + (c.id === activeChatId ? ' is-active' : '') + '" data-chat="' + escapeHtml(c.id) + '">' +
+        '<div class="msg-row-main"><strong>' + escapeHtml(c.customerName || c.customerEmail || c.id) + '</strong>' +
+        '<span>' + escapeHtml(c.customerEmail || c.id) + '</span>' +
+        '<span>' + (c.lastFrom === 'staff' ? 'You: ' : '') + escapeHtml(c.lastMessage || '') + '</span></div>' +
+        '<div><div class="msg-row-time">' + escapeHtml(msgTime(c.lastAt)) + '</div>' + (n ? '<span class="msg-dot">' + n + '</span>' : '') + '</div>' +
+      '</button>';
+    }).join('');
+  }
+  function markChatRead(id) {
+    var c = chatList.filter(function (x) { return x.id === id; })[0];
+    if (!c || !(Number(c.staffUnread) > 0)) return;
+    firebaseDb.collection('support_chats').doc(id).set({ staffUnread: 0 }, { merge: true }).catch(function () {});
+  }
+  function openChat(id) {
+    activeChatId = id;
+    var c = chatList.filter(function (x) { return x.id === id; })[0] || {};
+    document.getElementById('msg-thread-empty').classList.add('hidden');
+    document.getElementById('msg-thread').classList.remove('hidden');
+    document.getElementById('msg-thread-title').textContent = (c.customerName || '') + ' ' + (c.customerEmail ? '(' + c.customerEmail + ')' : id);
+    document.querySelector('.msg-layout').classList.add('show-thread');
+    if (unsubscribeThread) { unsubscribeThread(); unsubscribeThread = null; }
+    var body = document.getElementById('msg-thread-body');
+    body.innerHTML = '';
+    unsubscribeThread = firebaseDb.collection('support_chats').doc(id).collection('messages').orderBy('createdAt', 'asc').limit(300).onSnapshot(function (snap) {
+      body.innerHTML = snap.docs.map(function (d) {
+        var m = d.data(), mine = m.from === 'staff';
+        return '<div class="msg-b ' + (mine ? 'me' : 'them') + '"><div class="msg-b-bubble">' + escapeHtml(m.text || '') + '</div>' +
+          '<span class="msg-b-meta">' + (mine ? escapeHtml(m.senderName || 'Staff') + ' \u00b7 ' : '') + escapeHtml(msgTime(m.createdAt)) + '</span></div>';
+      }).join('') || '<div class="empty-state">No messages in this chat yet.</div>';
+      body.scrollTop = body.scrollHeight;
+    }, function (err) { console.warn('MimiCart admin: thread unavailable', err); });
+    markChatRead(id);
+    renderChatList();
+    document.getElementById('msg-reply-input').focus();
+  }
+  document.getElementById('msg-list').addEventListener('click', function (e) {
+    var row = e.target.closest('[data-chat]');
+    if (row) openChat(row.getAttribute('data-chat'));
+  });
+  document.getElementById('msg-back').addEventListener('click', function () {
+    document.querySelector('.msg-layout').classList.remove('show-thread');
+  });
+  document.getElementById('msg-reply').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var input = document.getElementById('msg-reply-input');
+    var text = input.value.trim();
+    if (!text || !activeChatId) return;
+    var ref = firebaseDb.collection('support_chats').doc(activeChatId);
+    var ts = firebase.firestore.FieldValue.serverTimestamp();
+    var batch = firebaseDb.batch();
+    batch.set(ref.collection('messages').doc(), { text: text, from: 'staff', senderName: myRoleLabel(), senderEmail: state.staffEmail || null, createdAt: ts });
+    batch.set(ref, { lastMessage: text.slice(0, 120), lastFrom: 'staff', lastAt: ts, staffUnread: 0, customerUnread: firebase.firestore.FieldValue.increment(1) }, { merge: true });
+    input.value = '';
+    batch.commit().catch(function (err) {
+      console.error('MimiCart admin: reply failed', err);
+      input.value = text;
+      showToast('Reply not sent. Did you publish the latest Firestore rules? (' + ((err && err.message) || 'error') + ')');
+    });
+  });
 
   function renderPermissions() {
     document.querySelectorAll('#panel-permissions [data-perm]').forEach(function (box) {
