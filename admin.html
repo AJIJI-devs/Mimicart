@@ -946,6 +946,7 @@ var REQUIRE_OTP = false;
   }
 
   document.getElementById('orders-export-csv').addEventListener('click', function () {
+    if (!state.isAdmin) { showToast('Only the admin can do that.'); return; }
     var rows = state.orders.filter(function (o) {
       return state.ordersStatusFilter === 'all' || o.status === state.ordersStatusFilter;
     });
@@ -972,6 +973,7 @@ var REQUIRE_OTP = false;
   });
 
   document.getElementById('inventory-export-csv').addEventListener('click', function () {
+    if (!state.isAdmin) { showToast('Only the admin can do that.'); return; }
     if (!state.products.length) { showToast('No products to export.'); return; }
     var header = ['Product', 'Category', 'Price', 'Stock', 'Product ID'];
     var csvRows = state.products.map(function (p) {
@@ -1637,13 +1639,14 @@ var REQUIRE_OTP = false;
   function showDashboard(email) {
     var justArrived = state.staffEmail !== email;
     state.staffEmail = email;
-    document.getElementById('dash-user-email').textContent = email;
+    document.getElementById('dash-user-email').textContent = email + ' \u2022 ' + (state.isAdmin ? 'Admin' : 'Staff');
     swapScreen('dashboard', function () {
       if (justArrived) showToast('m Welcome back, ' + email.split('@')[0] + '!');
     });
     pendingOtp = { code: null, email: null, expiresAt: 0 };
     clearInterval(otpResendCooldownTimer);
     subscribeData();
+    applyRoleUI();
   }
 
   // ---- OTP step: shown after password sign-in, before the dashboard ----
@@ -1837,7 +1840,7 @@ var REQUIRE_OTP = false;
     }
     unsubscribeProducts = firebaseDb.collection('products').onSnapshot(function (snap) {
       state.products = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
-      document.getElementById('seed-banner').classList.toggle('hidden', !snap.empty);
+      document.getElementById('seed-banner').classList.toggle('hidden', !snap.empty || !state.isAdmin);
       renderInventoryFilters();
       renderInventory();
     }, function (err) { console.error('MimiCart admin: products listener failed', err); });
@@ -1855,6 +1858,7 @@ var REQUIRE_OTP = false;
 
   // ---------------- SEEDING ----------------
   document.getElementById('seed-button').addEventListener('click', function () {
+    if (!state.isAdmin) { showToast('Only the admin can do that.'); return; }
     if (!confirm('Seed the starter catalog into Firestore? Only do this once.')) return;
     var batch = firebaseDb.batch();
     RAW_PRODUCTS.forEach(function (row, index) {
@@ -1878,6 +1882,7 @@ var REQUIRE_OTP = false;
   // Repairs image paths on existing Firestore products without changing
   // names, prices, stock, descriptions, or other inventory fields.
   document.getElementById('repair-images-button').addEventListener('click', function () {
+    if (!state.isAdmin) { showToast('Only the admin can do that.'); return; }
     if (!confirm('Repair product image paths in Firestore? This will only update image fields and will not change stock or prices.')) return;
 
     var imageMap = {};
@@ -1908,6 +1913,7 @@ var REQUIRE_OTP = false;
   // products. Updates ONLY the `price` field, so stock, names, and
   // everything else stay exactly as they are.
   document.getElementById('sync-prices-button').addEventListener('click', function () {
+    if (!state.isAdmin) { showToast('Only the admin can do that.'); return; }
     if (!confirm('Update every product price in Firestore to match the catalog list in this file? Stock and all other fields stay unchanged.')) return;
 
     var priceMap = {};
@@ -2301,6 +2307,20 @@ var REQUIRE_OTP = false;
     var admin = !!state.isAdmin;
     var tabBtn = document.querySelector('.tab-button[data-tab="staff"]');
     if (tabBtn) tabBtn.classList.toggle('hidden', !admin);
+    // STAFF can: work orders (search, advance stages, complete, cancel), view products
+    // and restock/adjust stock, and see their own sign-in activity.
+    // ADMIN can do all of that plus: Overview (revenue), Staff tab, CSV exports,
+    // seeding/repairing/price-syncing the catalog, and everyone's sign-in logs.
+    ['inventory-export-csv', 'orders-export-csv', 'sync-prices-button', 'seed-button', 'repair-images-button']
+      .forEach(function (id) { var el = document.getElementById(id); if (el) el.classList.toggle('hidden', !admin); });
+    var overviewBtn = document.querySelector('.tab-button[data-tab="overview"]');
+    if (overviewBtn) overviewBtn.classList.toggle('hidden', !admin);
+    if (!admin && (state.activeTab === 'overview' || !state.activeTab)) {
+      var ordersBtn = document.querySelector('.tab-button[data-tab="orders"]');
+      if (ordersBtn) ordersBtn.click();
+    }
+    var roleEl = document.getElementById('dash-user-email');
+    if (roleEl && state.staffEmail) roleEl.textContent = state.staffEmail + ' \u2022 ' + (admin ? 'Admin' : 'Staff');
     var allLogsBtn = document.getElementById('log-view-all');
     if (allLogsBtn) allLogsBtn.classList.toggle('hidden', !admin);
     if (!admin && logView === 'all') { logView = 'mine'; }
