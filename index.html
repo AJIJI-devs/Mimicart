@@ -922,6 +922,62 @@
     .primary-button, .product-card, .category-tile { transition: none !important; }
   }
 </style>
+<style id="mimi-assistant-style">
+  .mimi-assist { position: fixed; right: 18px; bottom: 18px; z-index: 55; font-family: var(--app-font-sans, system-ui, sans-serif); }
+  .mimi-assist .hidden { display: none !important; }
+  .mimi-assist-fab { position: relative; width: 60px; height: 60px; border-radius: 50%; border: 0; cursor: pointer; display: grid; place-items: center;
+    color: hsl(var(--primary-foreground)); background: radial-gradient(circle at 30% 25%, hsl(var(--primary) / .75), hsl(var(--primary)) 60%);
+    box-shadow: 0 10px 26px hsl(var(--primary) / .38), 0 2px 6px rgba(0,0,0,.18); transition: transform .18s ease; }
+  .mimi-assist-fab:hover { transform: translateY(-2px) scale(1.04); }
+  .mimi-assist-fab:focus-visible { outline: 3px solid hsl(var(--foreground)); outline-offset: 3px; }
+  .mimi-assist-fab::before { content: ''; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid hsl(var(--primary) / .45); animation: mimiAssistPulse 2.6s ease-out infinite; pointer-events: none; }
+  .mimi-assist.is-open .mimi-assist-fab::before { animation: none; opacity: 0; }
+  @keyframes mimiAssistPulse { 0% { transform: scale(.9); opacity: .9; } 100% { transform: scale(1.35); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .mimi-assist-fab::before { animation: none; } .mimi-assist-fab { transition: none; } }
+  .mimi-assist-badge { position: absolute; top: -3px; right: -3px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px; background: #16a34a; color: #fff; font: 700 11px/20px system-ui, sans-serif; text-align: center; border: 2px solid hsl(var(--background)); }
+  .mimi-assist-panel { position: absolute; right: 0; bottom: 76px; width: min(380px, calc(100vw - 28px)); height: min(580px, calc(100dvh - 110px)); display: flex; flex-direction: column;
+    background: hsl(var(--card)); color: hsl(var(--foreground)); border: 1px solid hsl(var(--border)); border-radius: 22px; overflow: hidden; box-shadow: 0 24px 60px rgba(40, 20, 20, .28); }
+  .mimi-assist-panel[hidden] { display: none; }
+  .mimi-assist-head { display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+  .mimi-assist-head div { flex: 1; display: flex; flex-direction: column; line-height: 1.2; }
+  .mimi-assist-head small { opacity: .85; font-size: 12px; }
+  .mimi-assist-avatar { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: hsl(0 0% 100% / .22); font-size: 18px; }
+  .mimi-assist-close { width: 32px; height: 32px; border: 0; border-radius: 50%; background: hsl(0 0% 100% / .2); color: inherit; font-size: 20px; line-height: 1; cursor: pointer; }
+  .mimi-assist-tabs { display: flex; border-bottom: 1px solid hsl(var(--border)); }
+  .mimi-assist-tabs button { flex: 1; padding: 12px 8px; border: 0; background: transparent; color: hsl(var(--foreground) / .65); font-size: 13px; font-weight: 700; cursor: pointer; border-bottom: 3px solid transparent; }
+  .mimi-assist-tabs button.is-active { color: hsl(var(--primary)); border-bottom-color: hsl(var(--primary)); }
+  .mimi-assist-tabdot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #16a34a; margin-left: 4px; vertical-align: middle; }
+  .mimi-assist-body { flex: 1; overflow-y: auto; padding: 14px 16px 18px; }
+  .mimi-assist-lead { margin: 0 0 12px; font-size: 13px; color: hsl(var(--foreground) / .75); }
+  .mimi-assist-topic { width: 100%; display: flex; align-items: center; gap: 10px; padding: 11px 12px; margin-top: 8px; border: 1px solid hsl(var(--border)); border-radius: 14px; background: hsl(var(--background)); color: inherit; font-size: 14px; font-weight: 600; text-align: left; cursor: pointer; }
+  .mimi-assist-topic:hover { border-color: hsl(var(--primary)); }
+  .mimi-assist-topic-title { flex: 1; }
+  .mimi-assist-chev { font-weight: 700; color: hsl(var(--primary)); }
+  .mimi-assist-answer { margin: 6px 4px 2px; padding: 10px 12px; border-radius: 12px; background: hsl(var(--muted)); font-size: 13px; line-height: 1.5; }
+  .mimi-assist-contact { display: flex; flex-direction: column; gap: 6px; margin-top: 16px; padding: 14px; border-radius: 16px; background: hsl(var(--primary) / .09); border: 1px solid hsl(var(--primary) / .25); font-size: 13px; }
+  .mimi-assist-contact-actions { display: flex; gap: 8px; margin-top: 4px; }
+  .mimi-assist-btn { flex: 1; text-align: center; padding: 9px 10px; border-radius: 999px; background: hsl(var(--card)); border: 1px solid hsl(var(--border)); color: hsl(var(--foreground)); font-weight: 700; font-size: 13px; text-decoration: none; }
+  .mimi-assist-btn:hover { border-color: hsl(var(--primary)); color: hsl(var(--primary)); }
+  .mimi-assist-cta { width: 100%; margin-top: 14px; padding: 12px 14px; border: 0; border-radius: 999px; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); font-weight: 700; font-size: 14px; cursor: pointer; }
+  .mimi-assist-chat { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  .mimi-assist-msgs { flex: 1; overflow-y: auto; padding: 14px 14px 8px; display: flex; flex-direction: column; gap: 10px; }
+  .mimi-assist-note { margin: auto 6px; padding: 16px; text-align: center; border-radius: 16px; background: hsl(var(--muted)); font-size: 13px; line-height: 1.5; }
+  .mimi-msg { display: flex; flex-direction: column; max-width: 84%; gap: 2px; }
+  .mimi-msg-me { align-self: flex-end; align-items: flex-end; }
+  .mimi-msg-them { align-self: flex-start; align-items: flex-start; }
+  .mimi-msg-bubble { padding: 9px 13px; border-radius: 16px; font-size: 14px; line-height: 1.4; white-space: pre-wrap; word-break: break-word; }
+  .mimi-msg-me .mimi-msg-bubble { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); border-bottom-right-radius: 4px; }
+  .mimi-msg-them .mimi-msg-bubble { background: hsl(var(--muted)); color: hsl(var(--foreground)); border-bottom-left-radius: 4px; }
+  .mimi-msg-name, .mimi-msg-time { font-size: 11px; color: hsl(var(--foreground) / .55); padding: 0 4px; }
+  .mimi-assist-form { display: flex; gap: 8px; padding: 10px 12px 12px; border-top: 1px solid hsl(var(--border)); }
+  .mimi-assist-form input { flex: 1; height: 42px; padding: 0 14px; border: 1px solid hsl(var(--border)); border-radius: 999px; background: hsl(var(--background)); color: inherit; font-size: 14px; outline: 0; }
+  .mimi-assist-form input:focus { border-color: hsl(var(--primary)); }
+  .mimi-assist-form button { padding: 0 18px; border: 0; border-radius: 999px; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); font-weight: 700; cursor: pointer; }
+  @media (max-width: 520px) {
+    .mimi-assist { right: 12px; bottom: 12px; }
+    .mimi-assist-panel { position: fixed; right: 8px; left: 8px; bottom: 84px; width: auto; height: min(560px, calc(100dvh - 100px)); }
+  }
+</style>
 </head>
 <body>
 
@@ -1318,7 +1374,7 @@ var REQUIRE_CHECKOUT_EMAIL_OTP = true;
 // Fill in whichever you use; empty fields are simply hidden.
 var OWNER_CONTACT = {
   name: 'MimiCart owner',
-  phone: '',        // e.g. '+63 917 123 4567'
+  phone: '09123456789',
   email: '',        // e.g. 'hello@mimicart.shop'
   messenger: '',    // e.g. 'https://m.me/yourpage'
   hours: ''         // e.g. 'Daily 9am \u2013 8pm'
@@ -4818,6 +4874,225 @@ next.push({
   updateAccountButton();
   subscribeToLiveCatalog();
   setTimeout(function () { state.isLoading = false; renderCatalogue(); }, 650);
+
+  // ======================================================================
+  // MimiCart Assistant: floating help bubble + live chat with staff/admin
+  // ======================================================================
+  (function () {
+    var PHONE = (typeof OWNER_CONTACT !== 'undefined' && OWNER_CONTACT && OWNER_CONTACT.phone) || '09123456789';
+    var PHONE_TEL = String(PHONE).replace(/[^0-9+]/g, '');
+
+    function esc(t) {
+      return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+    function timeLabel(ts) {
+      var d = ts && ts.toDate ? ts.toDate() : null;
+      if (!d) return '';
+      var now = new Date();
+      var same = d.toDateString() === now.toDateString();
+      return same ? d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+                  : d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    }
+
+    var HELP = [
+      { icon: '🛍️', title: 'Browse & order', text: 'Look through the catalogue, add items to your bag, then check out. Choose pickup (pick a date and time) or delivery (enter your address).' },
+      { icon: '📦', title: 'Track your orders', text: 'Sign in, then open Track orders. Each order moves through Order placed, Preparing, Ready for pickup or Out for delivery, and Completed. You can search and filter your orders there too.' },
+      { icon: '🧾', title: 'Receipts', text: 'A receipt appears right after checkout, and you can open it again from any order in Track orders.' },
+      { icon: '📉', title: 'Stock & availability', text: 'If an item is out of stock or running low, your bag warns you before you can place the order.' },
+      { icon: '❌', title: 'Cancel or change an order', text: 'Call or text ' + PHONE + ' as soon as you can. Whether an order can still be cancelled depends on how far along it is.' },
+      { icon: '🔐', title: 'Account & sign in', text: 'Sign in with Google or your email. We confirm email accounts with a 6-digit code so we know it is really you.' }
+    ];
+
+    // ---------- build the DOM ----------
+    var root = document.createElement('div');
+    root.className = 'mimi-assist';
+    root.innerHTML =
+      '<button type="button" class="mimi-assist-fab" id="mimi-assist-fab" aria-label="Open help and chat" aria-expanded="false">' +
+        '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+          '<path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9L12 3z"/><path d="M19 15l.8 1.9 1.9.8-1.9.8L19 20.4l-.8-1.9-1.9-.8 1.9-.8L19 15z"/></svg>' +
+        '<span class="mimi-assist-badge hidden" id="mimi-assist-badge">0</span>' +
+      '</button>' +
+      '<section class="mimi-assist-panel" id="mimi-assist-panel" role="dialog" aria-label="MimiCart assistant" hidden>' +
+        '<header class="mimi-assist-head">' +
+          '<span class="mimi-assist-avatar" aria-hidden="true">✦</span>' +
+          '<div><strong>MimiCart Assistant</strong><small>How can we help?</small></div>' +
+          '<button type="button" class="mimi-assist-close" id="mimi-assist-close" aria-label="Close">&times;</button>' +
+        '</header>' +
+        '<nav class="mimi-assist-tabs">' +
+          '<button type="button" class="is-active" data-assist-tab="help">Help</button>' +
+          '<button type="button" data-assist-tab="chat">Chat with staff <span class="mimi-assist-tabdot hidden" id="mimi-assist-tabdot"></span></button>' +
+        '</nav>' +
+        '<div class="mimi-assist-body" id="mimi-assist-help"></div>' +
+        '<div class="mimi-assist-chat hidden" id="mimi-assist-chat">' +
+          '<div class="mimi-assist-msgs" id="mimi-assist-msgs"></div>' +
+          '<form class="mimi-assist-form" id="mimi-assist-form" autocomplete="off">' +
+            '<input type="text" id="mimi-assist-input" maxlength="500" placeholder="Type your message&hellip;" aria-label="Message" />' +
+            '<button type="submit" aria-label="Send">Send</button>' +
+          '</form>' +
+        '</div>' +
+      '</section>';
+    document.body.appendChild(root);
+
+    var fab = document.getElementById('mimi-assist-fab');
+    var panel = document.getElementById('mimi-assist-panel');
+    var helpEl = document.getElementById('mimi-assist-help');
+    var chatEl = document.getElementById('mimi-assist-chat');
+    var msgsEl = document.getElementById('mimi-assist-msgs');
+    var formEl = document.getElementById('mimi-assist-form');
+    var inputEl = document.getElementById('mimi-assist-input');
+    var badgeEl = document.getElementById('mimi-assist-badge');
+    var tabDot = document.getElementById('mimi-assist-tabdot');
+    var isOpen = false, tab = 'help';
+
+    // ---------- Help tab ----------
+    function renderHelp() {
+      helpEl.innerHTML =
+        '<p class="mimi-assist-lead">Hi! Here is what this website can do for you. Tap a topic to learn more.</p>' +
+        '<div class="mimi-assist-list">' +
+        HELP.map(function (h, i) {
+          return '<button type="button" class="mimi-assist-topic" data-topic="' + i + '" aria-expanded="false">' +
+            '<span class="mimi-assist-topic-icon">' + h.icon + '</span><span class="mimi-assist-topic-title">' + esc(h.title) + '</span><span class="mimi-assist-chev">+</span></button>' +
+            '<div class="mimi-assist-answer hidden" id="mimi-answer-' + i + '">' + esc(h.text) + '</div>';
+        }).join('') +
+        '</div>' +
+        '<div class="mimi-assist-contact">' +
+          '<strong>To cancel orders and more</strong>' +
+          '<span>Contact us on <b>' + esc(PHONE) + '</b></span>' +
+          '<div class="mimi-assist-contact-actions">' +
+            '<a class="mimi-assist-btn" href="tel:' + esc(PHONE_TEL) + '">📞 Call</a>' +
+            '<a class="mimi-assist-btn" href="sms:' + esc(PHONE_TEL) + '">✉️ Text</a>' +
+          '</div>' +
+        '</div>' +
+        '<button type="button" class="mimi-assist-cta" id="mimi-assist-gochat">💬 Chat with staff or admin</button>';
+    }
+    helpEl.addEventListener('click', function (e) {
+      var topic = e.target.closest('[data-topic]');
+      if (topic) {
+        var ans = document.getElementById('mimi-answer-' + topic.getAttribute('data-topic'));
+        var open = ans.classList.contains('hidden');
+        ans.classList.toggle('hidden', !open);
+        topic.setAttribute('aria-expanded', open ? 'true' : 'false');
+        topic.querySelector('.mimi-assist-chev').textContent = open ? '\u2212' : '+';
+        return;
+      }
+      if (e.target.closest('#mimi-assist-gochat')) setTab('chat');
+    });
+
+    // ---------- tabs / open / close ----------
+    function setTab(t) {
+      tab = t;
+      panel.querySelectorAll('[data-assist-tab]').forEach(function (b) {
+        b.classList.toggle('is-active', b.getAttribute('data-assist-tab') === t);
+      });
+      helpEl.classList.toggle('hidden', t !== 'help');
+      chatEl.classList.toggle('hidden', t !== 'chat');
+      if (t === 'chat') { renderChat(); markRead(); setTimeout(function () { if (chatEmail) inputEl.focus(); }, 50); }
+      refreshBadge();
+    }
+    function openPanel() { isOpen = true; panel.hidden = false; fab.setAttribute('aria-expanded', 'true'); root.classList.add('is-open'); if (tab === 'chat') { markRead(); renderChat(); } refreshBadge(); }
+    function closePanel() { isOpen = false; panel.hidden = true; fab.setAttribute('aria-expanded', 'false'); root.classList.remove('is-open'); refreshBadge(); }
+    fab.addEventListener('click', function () { isOpen ? closePanel() : openPanel(); });
+    document.getElementById('mimi-assist-close').addEventListener('click', closePanel);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && isOpen) closePanel(); });
+    panel.querySelector('.mimi-assist-tabs').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-assist-tab]');
+      if (b) setTab(b.getAttribute('data-assist-tab'));
+    });
+
+    // ---------- live chat ----------
+    var chatEmail = null, unsubDoc = null, unsubMsgs = null, msgs = [], chatDoc = {};
+    function chatReady() { return typeof firebaseConfigured !== 'undefined' && firebaseConfigured && firebaseDb; }
+    function chatRef() { return firebaseDb.collection('support_chats').doc(chatEmail); }
+    function myName() { return (state.user && state.user.name) || (chatEmail ? chatEmail.split('@')[0] : 'Customer'); }
+
+    function teardown() {
+      if (unsubDoc) { unsubDoc(); unsubDoc = null; }
+      if (unsubMsgs) { unsubMsgs(); unsubMsgs = null; }
+      msgs = []; chatDoc = {};
+    }
+    function syncUser() {
+      var e = state.user && state.user.email ? String(state.user.email).toLowerCase() : null;
+      if (e === chatEmail) return;
+      teardown();
+      chatEmail = e;
+      if (e && chatReady()) {
+        unsubDoc = chatRef().onSnapshot(function (d) {
+          chatDoc = d.exists ? d.data() : {};
+          refreshBadge();
+          if (isOpen && tab === 'chat') markRead();
+        }, function (err) { console.warn('MimiCart chat: chat doc unavailable', err); });
+        unsubMsgs = chatRef().collection('messages').orderBy('createdAt', 'asc').limit(200).onSnapshot(function (snap) {
+          msgs = snap.docs.map(function (d) { var m = d.data(); m.id = d.id; return m; });
+          if (isOpen && tab === 'chat') renderChat();
+        }, function (err) { console.warn('MimiCart chat: messages unavailable', err); });
+      }
+      refreshBadge();
+      if (isOpen && tab === 'chat') renderChat();
+    }
+    setInterval(syncUser, 800);
+    syncUser();
+
+    function unreadCount() { return Number(chatDoc && chatDoc.customerUnread) || 0; }
+    function refreshBadge() {
+      var n = unreadCount();
+      var show = n > 0 && !(isOpen && tab === 'chat');
+      badgeEl.textContent = n > 9 ? '9+' : String(n);
+      badgeEl.classList.toggle('hidden', !show);
+      tabDot.classList.toggle('hidden', !(n > 0 && !(isOpen && tab === 'chat')));
+    }
+    function markRead() {
+      if (!chatEmail || !chatReady() || unreadCount() === 0) return;
+      chatRef().set({ customerUnread: 0 }, { merge: true }).catch(function () {});
+    }
+
+    function renderChat() {
+      formEl.classList.toggle('hidden', !chatEmail || !chatReady());
+      if (!chatReady()) {
+        msgsEl.innerHTML = '<div class="mimi-assist-note">Chat isn\u2019t available right now. Please call or text <b>' + esc(PHONE) + '</b>.</div>';
+        return;
+      }
+      if (!chatEmail) {
+        msgsEl.innerHTML = '<div class="mimi-assist-note"><strong>Sign in to chat</strong><br />So staff know who they are talking to, please sign in first.' +
+          '<br /><button type="button" class="mimi-assist-cta" id="mimi-assist-signin" style="margin-top:12px;">Sign in</button></div>';
+        var b = document.getElementById('mimi-assist-signin');
+        if (b) b.addEventListener('click', function () { closePanel(); if (typeof openLoginDialog === 'function') openLoginDialog(); });
+        return;
+      }
+      var html = '<div class="mimi-msg mimi-msg-them"><div class="mimi-msg-bubble">Hi ' + esc(myName()) + '! Send us a message and our staff or admin will reply here when they are online. For urgent cancellations, call or text <b>' + esc(PHONE) + '</b>.</div></div>';
+      msgs.forEach(function (m) {
+        var mine = m.from === 'customer';
+        html += '<div class="mimi-msg ' + (mine ? 'mimi-msg-me' : 'mimi-msg-them') + '">' +
+          (mine ? '' : '<span class="mimi-msg-name">' + esc(m.senderName || 'Staff') + '</span>') +
+          '<div class="mimi-msg-bubble">' + esc(m.text) + '</div>' +
+          '<span class="mimi-msg-time">' + esc(timeLabel(m.createdAt)) + '</span></div>';
+      });
+      msgsEl.innerHTML = html;
+      msgsEl.scrollTop = msgsEl.scrollHeight;
+    }
+
+    formEl.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var text = inputEl.value.trim();
+      if (!text || !chatEmail || !chatReady()) return;
+      var ts = firebase.firestore.FieldValue.serverTimestamp();
+      var batch = firebaseDb.batch();
+      batch.set(chatRef().collection('messages').doc(), { text: text, from: 'customer', senderName: myName(), createdAt: ts });
+      batch.set(chatRef(), {
+        customerEmail: chatEmail, customerName: myName(), lastMessage: text.slice(0, 120), lastFrom: 'customer',
+        lastAt: ts, staffUnread: firebase.firestore.FieldValue.increment(1), customerUnread: 0
+      }, { merge: true });
+      inputEl.value = '';
+      batch.commit().catch(function (err) {
+        console.error('MimiCart chat: send failed', err);
+        inputEl.value = text;
+        if (typeof showToast === 'function') showToast('Message not sent. Please try again, or call ' + PHONE + '.');
+      });
+    });
+
+    renderHelp();
+  })();
 })();
 </script>
 
