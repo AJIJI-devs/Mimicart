@@ -616,14 +616,17 @@
   <section class="tab-panel" id="panel-orders">
     <div class="panel-block orders-controls">
       <div class="orders-search-wrap">
-        <input class="search-input focus-ring" id="orders-search" type="search" autocomplete="off" placeholder="Search: customer name, order #, item, phone, address&hellip;" />
+        <input class="search-input focus-ring" id="orders-search" type="search" autocomplete="off" placeholder="Search anything: name, order #, item, phone, address, date (e.g. maria nov 5)&hellip;" />
         <button type="button" class="orders-search-clear hidden" id="orders-search-clear" aria-label="Clear search">&times;</button>
       </div>
+
+      <p class="hint-text" style="margin:-4px 0 10px;">Tip: type several words in any order (e.g. <em>maria cheesecake</em>). Dates work too: <em>nov 5</em>, <em>november 2026</em>, <em>11/5/2026</em>. Press <kbd>/</kbd> to jump here.</p>
 
       <div class="chip-row" id="orders-group-chips" role="tablist" aria-label="Show orders">
         <button type="button" class="chip is-active" data-group-chip="all">All <span class="chip-count" id="chip-count-all">0</span></button>
         <button type="button" class="chip" data-group-chip="to_be_delivered">🚚 To deliver <span class="chip-count" id="chip-count-to_be_delivered">0</span></button>
         <button type="button" class="chip" data-group-chip="to_be_picked_up">🏪 To pick up <span class="chip-count" id="chip-count-to_be_picked_up">0</span></button>
+        <button type="button" class="chip" data-group-chip="past">📜 Past orders <span class="chip-count" id="chip-count-past">0</span></button>
         <button type="button" class="chip" data-group-chip="completed">✅ Completed <span class="chip-count" id="chip-count-completed">0</span></button>
         <button type="button" class="chip" data-group-chip="cancelled">🚫 Cancelled <span class="chip-count" id="chip-count-cancelled">0</span></button>
       </div>
@@ -636,13 +639,24 @@
             <option value="delivery">Delivery only</option>
           </select>
         </label>
-        <label class="filter-field"><span>Date placed</span>
+        <label class="filter-field"><span>Date (placed or finished)</span>
           <select class="filter-select focus-ring" id="orders-date-filter">
             <option value="all">Any date</option>
             <option value="today">Today</option>
+            <option value="yesterday">Yesterday</option>
             <option value="week">Last 7 days</option>
+            <option value="30days">Last 30 days</option>
             <option value="month">This month</option>
+            <option value="lastmonth">Last month</option>
+            <option value="year">This year</option>
+            <option value="custom">Pick dates&hellip;</option>
           </select>
+        </label>
+        <label class="filter-field hidden" id="orders-from-wrap"><span>From</span>
+          <input type="date" class="filter-select focus-ring" id="orders-from" />
+        </label>
+        <label class="filter-field hidden" id="orders-to-wrap"><span>To</span>
+          <input type="date" class="filter-select focus-ring" id="orders-to" />
         </label>
         <label class="filter-field"><span>Progress</span>
           <select class="filter-select focus-ring" id="orders-status-filter">
@@ -665,7 +679,7 @@
 
     <div class="panel-block hidden" id="orders-no-match" style="text-align:center;">
       <p style="margin:0 0 10px;"><strong>No orders match.</strong></p>
-      <p class="panel-sub" style="margin:0 0 12px;">Try a shorter search word, or remove a filter.</p>
+      <p class="panel-sub" style="margin:0 0 12px;">Try fewer or shorter words, check the spelling, or remove a filter. Past orders are under the &ldquo;Past orders&rdquo; button.</p>
       <button type="button" class="secondary-button focus-ring" id="orders-no-match-clear">Clear all filters</button>
     </div>
 
@@ -1027,6 +1041,8 @@ var REQUIRE_OTP = false;
     ordersSearch: '',
     ordersFulfillment: 'all',
     ordersDate: 'all',
+    ordersFrom: '',
+    ordersTo: '',
     staff: [],
     staffRole: 'staff',
     isAdmin: false,
@@ -2333,36 +2349,94 @@ var REQUIRE_OTP = false;
     );
   }
 
+  // ---- search helpers ----
+  // Lower-case, strip accents and punctuation so "Maria-Santos", "maria santos" and "María" all match.
+  function normText(v) {
+    var t = String(v == null ? '' : v).toLowerCase();
+    try { t = t.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); } catch (e) {}
+    return t.replace(/[#\-\u2013\u2014_.,()]/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+  var MONTHS_LONG = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+  var DAYS_LONG = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+  // Every spelling of a date someone might type: "nov 5", "november 2026", "11/5/2026", "2026-11-05", "thursday".
+  function dateWords(d) {
+    if (!d || isNaN(d.getTime())) return '';
+    var m = d.getMonth(), day = d.getDate(), y = d.getFullYear();
+    var mm = ('0' + (m + 1)).slice(-2), dd = ('0' + day).slice(-2);
+    return [MONTHS_LONG[m], MONTHS_LONG[m].slice(0, 3), day, dd, y, DAYS_LONG[d.getDay()], DAYS_LONG[d.getDay()].slice(0, 3),
+      (m + 1) + '/' + day + '/' + y, mm + '/' + dd + '/' + y, y + '-' + mm + '-' + dd].join(' ');
+  }
+  function orderDatesFor(o) {
+    var out = [];
+    var a = orderDateObj(o, false); if (a && !isNaN(a.getTime())) out.push(a);
+    var b = finishedDateObj(o); if (b && out.every(function (x) { return x.getTime() !== b.getTime(); })) out.push(b);
+    return out;
+  }
+  function orderSearchText(o) {
+    var contact = String(o.customerContact || '');
+    var itemNames = (o.items || []).map(function (it) { return (it.quantity || '') + 'x ' + (it.name || ''); }).join(' ');
+    var kind = o.fulfillment === 'delivery' ? 'delivery deliver delivered' : 'pickup pick up picked';
+    var where = o._collection === 'completed' ? 'completed past done'
+              : o._collection === 'cancelled' ? 'cancelled canceled past'
+              : 'active open ongoing';
+    var parts = [o.customerName, o.orderCode, o.orderNumber, o.id, contact, contact.replace(/\D/g, ''), o.customerEmail,
+      o.deliveryAddress, o.deliveryStreet, o.deliveryBarangay, o.deliveryCity, o.deliveryProvince, o.deliveryNotes,
+      o.pickupDate, o.pickupTime, stageLabel(o.status, o), o.status, kind, where, itemNames,
+      Number(o.total || 0).toFixed(2), Number(o.total || 0)];
+    orderDatesFor(o).forEach(function (d) { parts.push(dateWords(d)); });
+    return normText(parts.join(' '));
+  }
+  function startOfDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+  function dateRangeBounds() {
+    var now = new Date(), t0 = startOfDay(now), DAY = 86400000, key = state.ordersDate;
+    if (key === 'today') return [t0, new Date(t0.getTime() + DAY)];
+    if (key === 'yesterday') return [new Date(t0.getTime() - DAY), t0];
+    if (key === 'week') return [new Date(t0.getTime() - 6 * DAY), new Date(t0.getTime() + DAY)];
+    if (key === '30days') return [new Date(t0.getTime() - 29 * DAY), new Date(t0.getTime() + DAY)];
+    if (key === 'month') return [new Date(now.getFullYear(), now.getMonth(), 1), new Date(now.getFullYear(), now.getMonth() + 1, 1)];
+    if (key === 'lastmonth') return [new Date(now.getFullYear(), now.getMonth() - 1, 1), new Date(now.getFullYear(), now.getMonth(), 1)];
+    if (key === 'year') return [new Date(now.getFullYear(), 0, 1), new Date(now.getFullYear() + 1, 0, 1)];
+    if (key === 'custom') {
+      var from = state.ordersFrom ? new Date(state.ordersFrom + 'T00:00:00') : null;
+      var to = state.ordersTo ? new Date(new Date(state.ordersTo + 'T00:00:00').getTime() + DAY) : null;
+      return [from, to];
+    }
+    return null;
+  }
   function orderPassesFilters(o) {
     if (state.ordersStatusFilter !== 'all' && o.status !== state.ordersStatusFilter) return false;
     if (state.ordersFulfillment !== 'all' && (o.fulfillment === 'delivery' ? 'delivery' : 'pickup') !== state.ordersFulfillment) return false;
-    if (state.ordersDate !== 'all') {
-      var d = orderDateObj(o, false);
-      if (!d) return false;
-      var now = new Date();
-      if (state.ordersDate === 'today' && !isSameDay(d, now)) return false;
-      if (state.ordersDate === 'week' && d < new Date(now.getTime() - 7 * 86400000)) return false;
-      if (state.ordersDate === 'month' && !isSameMonth(d, now)) return false;
+    var range = state.ordersDate !== 'all' ? dateRangeBounds() : null;
+    if (range && (range[0] || range[1])) {
+      // An order matches if EITHER the day it was placed OR the day it was completed/cancelled is in range.
+      var ok = orderDatesFor(o).some(function (d) {
+        return (!range[0] || d >= range[0]) && (!range[1] || d < range[1]);
+      });
+      if (!ok) return false;
     }
-    var q = (state.ordersSearch || '').trim().toLowerCase();
+    var q = normText(state.ordersSearch);
     if (q) {
-      var hay = [o.customerName, o.orderCode, o.orderNumber, o.id, o.customerContact, o.customerEmail, o.deliveryAddress, o.pickupDate,
-        stageLabel(o.status, o), (o.items || []).map(function (it) { return it.name; }).join(' ')].join(' ').toLowerCase();
-      if (hay.indexOf(q) === -1) return false;
+      // Every word must appear somewhere (any order, any field) - so adding words narrows the list.
+      var hay = orderSearchText(o);
+      var words = q.split(' ');
+      for (var i = 0; i < words.length; i++) { if (hay.indexOf(words[i]) === -1) return false; }
     }
     return true;
   }
   function ordersFilterActive() {
-    return state.ordersGroup !== 'all' || state.ordersStatusFilter !== 'all' || state.ordersFulfillment !== 'all' || state.ordersDate !== 'all' || !!(state.ordersSearch || '').trim();
+    return state.ordersGroup !== 'all' || state.ordersStatusFilter !== 'all' || state.ordersFulfillment !== 'all' || state.ordersDate !== 'all' || !!(state.ordersSearch || '').trim() || !!state.ordersFrom || !!state.ordersTo;
   }
   // Same test the table uses, including the group chip. The CSV export uses it too, so "export" = "what you see".
   function orderPassesAll(o) {
-    if (state.ordersGroup !== 'all' && o._collection !== state.ordersGroup) return false;
+    if (state.ordersGroup === 'past') { if (o._collection !== 'completed' && o._collection !== 'cancelled') return false; }
+    else if (state.ordersGroup !== 'all' && o._collection !== state.ordersGroup) return false;
     return orderPassesFilters(o);
   }
   function clearOrderFilters() {
-    state.ordersGroup = 'all'; state.ordersStatusFilter = 'all'; state.ordersFulfillment = 'all'; state.ordersDate = 'all'; state.ordersSearch = '';
+    state.ordersGroup = 'all'; state.ordersStatusFilter = 'all'; state.ordersFulfillment = 'all'; state.ordersDate = 'all'; state.ordersSearch = ''; state.ordersFrom = ''; state.ordersTo = '';
     document.getElementById('orders-search').value = '';
+    document.getElementById('orders-from').value = ''; document.getElementById('orders-to').value = '';
+    document.getElementById('orders-from-wrap').classList.add('hidden'); document.getElementById('orders-to-wrap').classList.add('hidden');
     document.getElementById('orders-fulfillment-filter').value = 'all';
     document.getElementById('orders-date-filter').value = 'all';
     document.getElementById('orders-status-filter').value = 'all';
@@ -2371,15 +2445,17 @@ var REQUIRE_OTP = false;
 
   function renderOrders() {
     var shown = 0, filtering = ordersFilterActive();
-    var totalForChips = 0;
+    var totalForChips = 0, pastCount = 0;
     ORDER_GROUPS.forEach(function (group) {
       // Rows that pass the search + dropdowns (ignoring the group chip) -> the chip counts.
       var matching = state.orders.filter(function (o) { return o._collection === group && orderPassesFilters(o); });
       totalForChips += matching.length;
+      if (group === 'completed' || group === 'cancelled') pastCount += matching.length;
       var chipCount = document.getElementById('chip-count-' + group);
       if (chipCount) chipCount.textContent = matching.length;
 
-      var showGroup = state.ordersGroup === 'all' || state.ordersGroup === group;
+      var showGroup = state.ordersGroup === 'all' || state.ordersGroup === group ||
+        (state.ordersGroup === 'past' && (group === 'completed' || group === 'cancelled'));
       var rows = showGroup ? matching : [];
       shown += rows.length;
       var body = document.getElementById('orders-body-' + group);
@@ -2392,6 +2468,8 @@ var REQUIRE_OTP = false;
       // Hide a whole section when it is not chosen, or when filtering leaves it empty (less scrolling).
       if (panel) panel.classList.toggle('hidden', !showGroup || (filtering && state.ordersGroup === 'all' && rows.length === 0));
     });
+    var pastChip = document.getElementById('chip-count-past');
+    if (pastChip) pastChip.textContent = pastCount;
     var allChip = document.getElementById('chip-count-all');
     if (allChip) allChip.textContent = totalForChips;
     document.querySelectorAll('[data-group-chip]').forEach(function (c) {
@@ -2541,7 +2619,24 @@ var REQUIRE_OTP = false;
   document.getElementById('orders-clear-filters').addEventListener('click', clearOrderFilters);
   document.getElementById('orders-no-match-clear').addEventListener('click', clearOrderFilters);
   document.getElementById('orders-fulfillment-filter').addEventListener('change', function (e) { state.ordersFulfillment = e.target.value; renderOrders(); });
-  document.getElementById('orders-date-filter').addEventListener('change', function (e) { state.ordersDate = e.target.value; renderOrders(); });
+  document.getElementById('orders-date-filter').addEventListener('change', function (e) {
+    state.ordersDate = e.target.value;
+    var custom = state.ordersDate === 'custom';
+    document.getElementById('orders-from-wrap').classList.toggle('hidden', !custom);
+    document.getElementById('orders-to-wrap').classList.toggle('hidden', !custom);
+    if (!custom) { state.ordersFrom = ''; state.ordersTo = ''; document.getElementById('orders-from').value = ''; document.getElementById('orders-to').value = ''; }
+    renderOrders();
+  });
+  document.getElementById('orders-from').addEventListener('change', function (e) { state.ordersFrom = e.target.value; renderOrders(); });
+  document.getElementById('orders-to').addEventListener('change', function (e) { state.ordersTo = e.target.value; renderOrders(); });
+  // Press "/" anywhere (not while typing) to jump to the orders search box.
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
+    var tag = (e.target && e.target.tagName) || '';
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test(tag) || (e.target && e.target.isContentEditable)) return;
+    var box = document.getElementById('orders-search');
+    if (box && box.offsetParent !== null) { e.preventDefault(); box.focus(); box.select(); }
+  });
 
   // ---------------- STAFF & ADMIN ACCOUNTS ----------------
   // - Staff request access on the sign-in page (status: "pending").
