@@ -457,6 +457,7 @@
     .msg-layout:not(.show-thread) .msg-thread-block { display: none; }
     .msg-back { display: inline-flex; }
   }
+  .date-row td { padding: 8px 12px; background: hsl(var(--muted)); font-size: 12px; font-weight: 700; letter-spacing: .02em; color: hsl(var(--foreground)); }
   .hidden { display: none !important; }
 
   @media (max-width: 480px) {
@@ -697,7 +698,7 @@
       <p class="panel-sub">Delivered and picked-up orders.</p>
       <div style="overflow-x:auto;">
         <table class="data-table">
-          <thead><tr><th>Customer</th><th>Items</th><th>Total</th><th>Fulfillment</th><th>Status</th><th>Placed</th><th></th></tr></thead>
+          <thead><tr><th>Customer</th><th>Items</th><th>Total</th><th>Fulfillment</th><th>Status</th><th>Date completed</th><th></th></tr></thead>
           <tbody id="orders-body-completed"></tbody>
         </table>
         <div class="empty-state hidden" id="orders-empty-completed">No completed orders yet.</div>
@@ -709,7 +710,7 @@
       <p class="panel-sub">Orders that were cancelled and restocked.</p>
       <div style="overflow-x:auto;">
         <table class="data-table">
-          <thead><tr><th>Customer</th><th>Items</th><th>Total</th><th>Fulfillment</th><th>Status</th><th>Placed</th><th></th></tr></thead>
+          <thead><tr><th>Customer</th><th>Items</th><th>Total</th><th>Fulfillment</th><th>Status</th><th>Date cancelled</th><th></th></tr></thead>
           <tbody id="orders-body-cancelled"></tbody>
         </table>
         <div class="empty-state hidden" id="orders-empty-cancelled">No cancelled orders.</div>
@@ -2230,6 +2231,40 @@ var REQUIRE_OTP = false;
     return field.toDate ? field.toDate() : new Date(field);
   }
 
+  // The date an order reached its final state (completed / cancelled); falls back to when it was placed.
+  function finishedDateObj(o) {
+    var f = o._collection === 'cancelled' ? (o.cancelledAt || o.createdAt)
+          : o._collection === 'completed' ? (o.completedAt || o.createdAt)
+          : o.createdAt;
+    if (!f) return null;
+    var d = f.toDate ? f.toDate() : new Date(f);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  function dayHeading(d) {
+    if (!d) return 'No date';
+    var now = new Date(), y = new Date(now.getTime() - 86400000);
+    if (d.toDateString() === now.toDateString()) return 'Today';
+    if (d.toDateString() === y.toDateString()) return 'Yesterday';
+    return d.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  }
+  // Newest first, with a date heading row each time the day changes.
+  function datedRowsHTML(rows) {
+    var sorted = rows.slice().sort(function (a, b) {
+      var da = finishedDateObj(a), db = finishedDateObj(b);
+      return (db ? db.getTime() : 0) - (da ? da.getTime() : 0);
+    });
+    var out = '', lastDay = null;
+    sorted.forEach(function (o) {
+      var d = finishedDateObj(o), key = d ? d.toDateString() : 'none';
+      if (key !== lastDay) {
+        out += '<tr class="date-row"><td colspan="7">' + escapeHtml(dayHeading(d)) + '</td></tr>';
+        lastDay = key;
+      }
+      out += orderRowHTML(o);
+    });
+    return out;
+  }
+
   function stageTrackHTML(order) {
     if (order.status === 'cancelled') return '<span class="status-badge status-cancelled">cancelled</span>';
     var stages = stagesFor(order);
@@ -2290,7 +2325,9 @@ var REQUIRE_OTP = false;
           ? '<strong>Delivery</strong><br /><span class="prod-sub">' + escapeHtml(o.deliveryAddress || '\u2014') + (o.deliveryNotes ? '<br />' + escapeHtml(o.deliveryNotes) : '') + '</span>'
           : '<strong>Pickup</strong><br /><span class="prod-sub">' + escapeHtml(o.pickupDate || '\u2014') + ' ' + escapeHtml(o.pickupTime || '') + '</span>') + '</td>' +
         '<td>' + stageTrackHTML(o) + '</td>' +
-        '<td>' + (placed ? placed.toLocaleDateString() : '\u2014') + '</td>' +
+        '<td>' + ((o._collection === 'completed' || o._collection === 'cancelled')
+          ? (function () { var f = finishedDateObj(o); return (f ? f.toLocaleDateString() + '<br /><span class="prod-sub">' + f.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + '</span>' : '\u2014') + (placed ? '<br /><span class="prod-sub">Placed ' + placed.toLocaleDateString() + '</span>' : ''); })()
+          : (placed ? placed.toLocaleDateString() : '\u2014')) + '</td>' +
         '<td>' + actions + '</td>' +
       '</tr>'
     );
@@ -2351,7 +2388,7 @@ var REQUIRE_OTP = false;
       var panel = document.querySelector('.order-group[data-group="' + group + '"]');
       if (count) count.textContent = rows.length;
       if (empty) empty.classList.toggle('hidden', rows.length > 0);
-      if (body) body.innerHTML = rows.map(orderRowHTML).join('');
+      if (body) body.innerHTML = (group === 'completed' || group === 'cancelled') ? datedRowsHTML(rows) : rows.map(orderRowHTML).join('');
       // Hide a whole section when it is not chosen, or when filtering leaves it empty (less scrolling).
       if (panel) panel.classList.toggle('hidden', !showGroup || (filtering && state.ordersGroup === 'all' && rows.length === 0));
     });
@@ -2397,9 +2434,29 @@ var REQUIRE_OTP = false;
   // cancelled, never overwrite — so the attempt comes back
   // "permission-denied" and we retry with "(2)", "(3)", etc. instead of
   // silently clobbering the earlier order's record.
-  function moveOrderToCollection(order, targetCollection, extraFields, extraOps, attempt) {
+  // Finished orders (completed / cancelled) are saved under just the customer's
+  // name, e.g. "Maria Santos". A repeat customer gets "Maria Santos (2)",
+  // "Maria Santos (3)", and so on, so nothing is ever overwritten.
+  function cleanOrderName(name) {
+    var n = String(name == null ? '' : name).replace(/[\u0000-\u001f\u007f\/\\]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 50).trim();
+    if (!n || n === '.' || n === '..' || /^__.*__$/.test(n)) return '';
+    return n;
+  }
+  function numberedId(base, number) { return number === 1 ? base : base + ' (' + number + ')'; }
+
+  function moveOrderToCollection(order, targetCollection, extraFields, extraOps, attempt, baseName, firstNumber) {
     attempt = attempt || 1;
-    var candidateId = attempt === 1 ? order.id : order.id + ' (' + attempt + ')';
+    var finished = targetCollection === 'completed' || targetCollection === 'cancelled';
+    if (baseName === undefined) {
+      baseName = finished ? (cleanOrderName(order.customerName) || order.id) : order.id;
+      firstNumber = 1;
+      if (finished) {
+        var used = {};
+        state.orders.forEach(function (o) { if (o._collection === targetCollection) used[o.id] = true; });
+        while (used[numberedId(baseName, firstNumber)]) firstNumber += 1;
+      }
+    }
+    var candidateId = numberedId(baseName, firstNumber + attempt - 1);
     var data = Object.assign({}, order, extraFields || {});
     delete data.id;
     delete data._collection;
@@ -2408,8 +2465,8 @@ var REQUIRE_OTP = false;
     batch.delete(orderDocRef(order));
     if (extraOps) extraOps(batch);
     return batch.commit().catch(function (err) {
-      if (err && err.code === 'permission-denied' && attempt < 8) {
-        return moveOrderToCollection(order, targetCollection, extraFields, extraOps, attempt + 1);
+      if (err && err.code === 'permission-denied' && attempt < 12) {
+        return moveOrderToCollection(order, targetCollection, extraFields, extraOps, attempt + 1, baseName, firstNumber);
       }
       throw err;
     });
