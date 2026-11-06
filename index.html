@@ -1024,6 +1024,28 @@
 .otp-hint:empty { display: none; }
 @media (prefers-reduced-motion: reduce) { .otp-wrap *, .otp-wrap { animation: none !important; transition: none !important; } }
 </style>
+<style id="shelf-bar-style">
+/* ---- pinned shelf bar ---- */
+.shelf-bar { position: fixed; top: var(--shelf-top, 78px); left: 0; right: 0; z-index: 39; background: hsl(var(--background) / .94); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid hsl(var(--border)); box-shadow: 0 10px 24px hsl(var(--foreground) / .07);
+  transform: translateY(-100%); opacity: 0; visibility: hidden; pointer-events: none;
+  transition: transform .4s var(--expo, cubic-bezier(.16,1,.3,1)), opacity .25s ease, visibility 0s linear .4s; }
+.shelf-bar.is-on { transform: none; opacity: 1; visibility: visible; pointer-events: auto; transition: transform .4s var(--expo, cubic-bezier(.16,1,.3,1)), opacity .25s ease, visibility 0s; }
+.shelf-bar-inner { width: min(1220px, calc(100% - 48px)); height: 54px; margin: 0 auto; display: flex; align-items: center; gap: 14px; }
+.shelf-bar-label { flex: 0 0 auto; font: 700 10px var(--app-font-mono, monospace); text-transform: uppercase; letter-spacing: .08em; color: hsl(var(--muted-foreground)); }
+.shelf-bar-chips { position: relative; flex: 1; min-width: 0; display: flex; gap: 8px; padding: 6px 12px; overflow-x: auto; scroll-behavior: smooth;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 18px), transparent 100%); mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 18px), transparent 100%); }
+.shelf-chip { flex: 0 0 auto; padding: 8px 15px; border: 1px solid hsl(var(--border)); border-radius: 999px; background: hsl(var(--card)); color: hsl(var(--foreground));
+  font-family: inherit; font-size: 12px; font-weight: 700; line-height: 1; white-space: nowrap; cursor: pointer;
+  transition: transform .3s var(--spring, cubic-bezier(.34,1.56,.64,1)), background .2s, color .2s, border-color .2s; }
+.shelf-chip:hover { transform: translateY(-2px); border-color: hsl(var(--primary)); }
+.shelf-chip.selected { background: hsl(var(--primary)); border-color: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+/* jumping to a section leaves room for the header (+ the shelf bar for the catalogue) */
+#categories { scroll-margin-top: calc(var(--shelf-top, 78px) + 8px); }
+#catalogue { scroll-margin-top: calc(var(--shelf-top, 78px) + 64px); }
+@media (max-width: 640px) { .shelf-bar-inner { width: calc(100% - 12px); height: 50px; } .shelf-bar-label { display: none; } }
+@media (prefers-reduced-motion: reduce) { .shelf-bar, .shelf-bar.is-on, .shelf-chip { transition: none; } }
+</style>
 </head>
 <body>
 
@@ -1159,6 +1181,13 @@
       </div>
     </div>
   </header>
+  <!-- Pinned shelf bar: appears under the header once the big category tiles have scrolled away -->
+  <nav class="shelf-bar" id="shelf-bar" aria-label="Shop categories" aria-hidden="true">
+    <div class="shelf-bar-inner">
+      <span class="shelf-bar-label">Shelves</span>
+      <div class="shelf-bar-chips hide-scrollbar" id="shelf-bar-chips"></div>
+    </div>
+  </nav>
 
   <main>
     <section class="hero-section" id="top">
@@ -1923,6 +1952,7 @@ next.push({
         '</button>'
       );
     }).join('');
+    renderShelfBar();
   }
   categoryRail.addEventListener('click', function (event) {
     var btn = event.target.closest('[data-category]');
@@ -1932,6 +1962,61 @@ next.push({
     renderCatalogue();
     scrollToId('catalogue');
   });
+
+  // ---- pinned shelf bar: stays under the header once the category tiles scroll away ----
+  var shelfBar = document.getElementById('shelf-bar');
+  var shelfChips = document.getElementById('shelf-bar-chips');
+  var siteHeaderEl = document.querySelector('.site-header');
+  var catalogueSectionEl = document.getElementById('catalogue');
+  function renderShelfBar() {
+    if (!shelfChips) return;
+    var keep = shelfChips.scrollLeft;
+    shelfChips.style.scrollBehavior = 'auto';
+    shelfChips.innerHTML = CATEGORIES.map(function (cat) {
+      var on = state.selectedCategory === cat.id;
+      return '<button type="button" class="shelf-chip focus-ring' + (on ? ' selected' : '') + '" data-shelf="' + escAttr(cat.id) + '"' + (on ? ' aria-current="true"' : '') + '>' + escHtml(cat.label) + '</button>';
+    }).join('');
+    shelfChips.scrollLeft = keep;
+    shelfChips.style.scrollBehavior = '';
+    var sel = shelfChips.querySelector('.selected');
+    if (sel) shelfChips.scrollTo({ left: sel.offsetLeft - (shelfChips.clientWidth - sel.offsetWidth) / 2, behavior: 'smooth' });
+  }
+  function shelfHeaderHeight() {
+    var h = siteHeaderEl ? siteHeaderEl.getBoundingClientRect().height : 78;
+    document.documentElement.style.setProperty('--shelf-top', h + 'px');
+    return h;
+  }
+  function updateShelfBar() {
+    if (!shelfBar) return;
+    var h = shelfHeaderHeight();
+    var railGone = categoryRail.getBoundingClientRect().bottom < h + 6;                       // big tiles scrolled out of view
+    var inShop = catalogueSectionEl.getBoundingClientRect().bottom > h + shelfBar.offsetHeight + 120; // still in the catalogue
+    var on = railGone && inShop;
+    if (shelfBar.classList.contains('is-on') !== on) {
+      shelfBar.classList.toggle('is-on', on);
+      shelfBar.setAttribute('aria-hidden', on ? 'false' : 'true');
+    }
+  }
+  var shelfTick = false;
+  function queueShelfUpdate() { if (shelfTick) return; shelfTick = true; requestAnimationFrame(function () { shelfTick = false; updateShelfBar(); }); }
+  window.addEventListener('scroll', queueShelfUpdate, { passive: true });
+  window.addEventListener('resize', queueShelfUpdate);
+  if (window.ResizeObserver && siteHeaderEl) new ResizeObserver(queueShelfUpdate).observe(siteHeaderEl);
+  shelfChips.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-shelf]');
+    if (!btn) return;
+    state.selectedCategory = btn.getAttribute('data-shelf');
+    renderCategoryRail();
+    renderCatalogue();
+    // stay where you are; only pull the page up if the new list now starts above the screen
+    var toolbar = document.querySelector('.catalogue-toolbar');
+    var offset = shelfHeaderHeight() + shelfBar.offsetHeight + 10;
+    if (toolbar && toolbar.getBoundingClientRect().top < offset) {
+      window.scrollTo({ top: window.scrollY + toolbar.getBoundingClientRect().top - offset, behavior: 'smooth' });
+    }
+    queueShelfUpdate();
+  });
+  updateShelfBar();
 
   // ---- catalogue / product grid ----
   var productGrid = document.getElementById('product-grid');
