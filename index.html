@@ -2811,21 +2811,17 @@ next.push({
     return (customerName || 'Guest').trim() + ' - ' + fulfillmentLabel + (code ? ' #' + code : '');
   }
 
-  // Firestore document ID, e.g. "axel-pick-up".
-  // NOTE: this exact ID means a second order with the same name and
-  // fulfillment option would overwrite the first one.
-  function generateOrderDocumentId(customerName, fulfillment, code) {
-    var fulfillmentLabel = fulfillment === 'delivery' ? 'delivery' : 'pick-up';
-    var nameSlug = (customerName || 'guest')
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .slice(0, 50);
-    if (!nameSlug) nameSlug = 'guest';
-    // The unique code at the end means the same person ordering twice gets
-    // two separate orders instead of the second overwriting the first.
-    return nameSlug + '-' + fulfillmentLabel + (code ? '-' + String(code).toLowerCase() : '');
+  // Firestore document ID = the name the customer typed, e.g. "Maria Santos - Pick up".
+  // (When staff complete the order, the admin page re-saves it as just "Maria Santos".)
+  // If the same name already has an open order, the order is retried as "(2)", "(3)", ...
+  function cleanOrderName(name) {
+    var n = String(name == null ? '' : name).replace(/[\u0000-\u001f\u007f\/\\]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 50).trim();
+    if (!n || n === '.' || n === '..' || /^__.*__$/.test(n)) return '';
+    return n;
+  }
+  function numberedOrderId(base, number) { return number === 1 ? base : base + ' (' + number + ')'; }
+  function generateOrderDocumentId(customerName, fulfillment) {
+    return (cleanOrderName(customerName) || 'Guest') + ' - ' + (fulfillment === 'delivery' ? 'Delivery' : 'Pick up');
   }
 
   function submitReservation() {
@@ -2903,12 +2899,14 @@ next.push({
     // always get a brand-new, separate order.
     var targetCollection = order.fulfillment === 'delivery' ? 'to_be_delivered' : 'to_be_picked_up';
     var documentId = generateOrderDocumentId(rawCustomerName, order.fulfillment, orderCode);
-    var orderRef = firebaseDb.collection(targetCollection).doc(documentId);
+    var orderRef = null;
     var productRefs = lineItems.map(function (item) { return firebaseDb.collection('products').doc(item.productId); });
 
     // A transaction re-reads live stock at the moment of ordering, so two
     // people can't both buy the last item.
-    firebaseDb.runTransaction(function (tx) {
+    function placeOrderAttempt(number) {
+      orderRef = firebaseDb.collection(targetCollection).doc(numberedOrderId(documentId, number));
+      return firebaseDb.runTransaction(function (tx) {
       return Promise.all(productRefs.map(function (ref) { return tx.get(ref); })).then(function (snaps) {
         var problems = [];
         snaps.forEach(function (snap, idx) {
@@ -2921,7 +2919,16 @@ next.push({
           tx.update(ref, { stock: firebase.firestore.FieldValue.increment(-lineItems[idx].quantity) });
         });
       });
-    }).then(function () {
+    });
+    }
+    // A name that already has an open order is refused by the rules (no overwrite), so try "(2)", "(3)"...
+    function placeOrder(number) {
+      return placeOrderAttempt(number).catch(function (err) {
+        if (err && err.code === 'permission-denied' && number < 30) return placeOrder(number + 1);
+        throw err;
+      });
+    }
+    placeOrder(1).then(function () {
       state.reservationSubmitting = false;
       state.lastReceipt = receiptFromOrder(Object.assign({}, order, { orderNumber: orderNumber, createdAt: new Date() }));
       state.cartStep = 'done';
@@ -3089,7 +3096,7 @@ next.push({
       });
 
       next.forEach(function (order) {
-        var prev = previousOrderStatuses[order.id];
+        var prev = previousOrderStatuses[order.orderCode || order.orderNumber || order.id];
         if (prev && prev !== order.status) {
           if (order.status === 'ready') {
             notifyOrderUpdate('Pickup ready! \uD83C\uDFEA', 'Your MimiCart order is ready for pickup \u2014 see you soon!', 'ready');
@@ -3101,7 +3108,7 @@ next.push({
             notifyOrderUpdate('Order update \uD83D\uDCE6', 'Mimi\u2019s is preparing your order now.', 'info');
           }
         }
-        previousOrderStatuses[order.id] = order.status;
+        previousOrderStatuses[order.orderCode || order.orderNumber || order.id] = order.status;
       });
 
       state.customerOrders = next;
@@ -3233,15 +3240,22 @@ next.push({
     if (!order || order.status !== 'pending') return;
     if (!confirm('Cancel this order? Your items will be released back into stock.')) return;
 
-    function attempt(candidateId, attemptNumber) {
+    var baseName = cleanOrderName(order.customerName) || order.id;
+    var usedIds = {};
+    state.customerOrders.forEach(function (o) { if (o._collection === 'cancelled') usedIds[o.id] = true; });
+    var firstNumber = 1;
+    while (usedIds[numberedOrderId(baseName, firstNumber)]) firstNumber += 1;
+
+    function attempt(attemptNumber) {
       var data = Object.assign({}, order, {
         status: 'cancelled',
-        cancelledAt: firebase.firestore.FieldValue.serverTimestamp()
+        cancelledAt: firebase.firestore.FieldValue.serverTimestamp(),
+        originalId: order.id   // lets the rules confirm this is the customer's own open order
       });
       delete data.id;
       delete data._collection;
       var batch = firebaseDb.batch();
-      batch.set(firebaseDb.collection('cancelled').doc(candidateId), data);
+      batch.set(firebaseDb.collection('cancelled').doc(numberedOrderId(baseName, firstNumber + attemptNumber - 1)), data);
       batch.delete(firebaseDb.collection(order._collection).doc(order.id));
       (order.items || []).forEach(function (item) {
         batch.update(firebaseDb.collection('products').doc(item.productId), {
@@ -3249,14 +3263,12 @@ next.push({
         });
       });
       return batch.commit().catch(function (err) {
-        if (err && err.code === 'permission-denied' && attemptNumber < 8) {
-          return attempt(order.id + ' (' + (attemptNumber + 1) + ')', attemptNumber + 1);
-        }
+        if (err && err.code === 'permission-denied' && attemptNumber < 30) return attempt(attemptNumber + 1);
         throw err;
       });
     }
 
-    attempt(order.id, 1).then(function () {
+    attempt(1).then(function () {
       showToast('Order cancelled \u2014 your items are back in stock.');
     }).catch(function (err) {
       console.error('MimiCart: could not cancel order', err);
