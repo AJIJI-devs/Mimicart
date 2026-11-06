@@ -4504,7 +4504,63 @@ next.push({
       });
   }
 
+  // ---- an account can only be deactivated or deleted once ALL its orders are completed ----
+  // "Open" = still sitting in to_be_picked_up / to_be_delivered (any stage: placed,
+  // preparing, ready, out for delivery). Completed and cancelled orders are final and never block.
+  // This asks Firestore directly (not the live list) so a slow-loading list can't be skipped past.
+  var accountActionChecking = false;
+  function fetchOpenOrders() {
+    var email = state.user.email;
+    var groups = ['to_be_picked_up', 'to_be_delivered'];
+    return Promise.all(groups.map(function (g) {
+      return firebaseDb.collection(g).where('customerEmail', '==', email).get();
+    })).then(function (snaps) {
+      var open = [];
+      snaps.forEach(function (snap, i) {
+        snap.docs.forEach(function (d) { open.push(Object.assign({ id: d.id, _collection: groups[i] }, d.data())); });
+      });
+      return open;
+    });
+  }
+  // Resolves true when the account action may go ahead, false when it was blocked (the person is told why).
+  function accountActionAllowed(verb) {
+    if (accountActionChecking) return Promise.resolve(false);
+    accountActionChecking = true;
+    showToast('Checking your orders\u2026');
+    return fetchOpenOrders().then(function (open) {
+      accountActionChecking = false;
+      if (!open.length) return true;
+      var lines = open.slice(0, 5).map(function (o) {
+        var stage = o.status === 'pending' ? 'order placed' : o.status === 'processing' ? 'preparing'
+          : o.status === 'ready' ? 'ready for pickup' : o.status === 'out_for_delivery' ? 'out for delivery' : (o.status || 'in progress');
+        return '\u2022 ' + (o.orderNumber || o.customerName || o.id) + ' \u2014 ' + stage;
+      });
+      if (open.length > 5) lines.push('\u2022 \u2026and ' + (open.length - 5) + ' more');
+      var msg = 'You can\u2019t ' + verb + ' your account yet. All of your orders must be completed first, and you still have ' +
+        open.length + ' open order' + (open.length === 1 ? '' : 's') + ':\n\n' + lines.join('\n') +
+        '\n\nOnce they\u2019re picked up or delivered you can try again. (An order that\u2019s still on \u201cOrder placed\u201d can be cancelled from Track orders.)' +
+        '\n\nPress OK to open Track orders.';
+      if (confirm(msg)) { state.loginOpen = false; openOrdersDialog(); }
+      return false;
+    }).catch(function (err) {
+      accountActionChecking = false;
+      console.error('MimiCart: could not check open orders', err);
+      showToast('Couldn\u2019t check your orders just now, so your account was left as it is. Please try again.');
+      return false;
+    });
+  }
+
   function deactivateAccountOneMonth() {
+    if (!state.user || !firebaseConfigured || !firebaseDb) return;
+    accountActionAllowed('deactivate').then(function (ok) { if (ok) doDeactivateAccount(); });
+  }
+  function deleteMyAccount() {
+    if (!state.user || !firebaseConfigured || !firebaseAuth || !firebaseAuth.currentUser) return;
+    if (!firebaseDb) return;
+    accountActionAllowed('delete').then(function (ok) { if (ok) doDeleteMyAccount(); });
+  }
+
+  function doDeactivateAccount() {
     if (!state.user || !firebaseConfigured || !firebaseDb) return;
     if (!confirm('Deactivate your MimiCart account for 1 month? You\u2019ll be signed out now and won\u2019t be able to sign back in until then \u2014 signing in early will reactivate it right away.')) return;
     var until = Date.now() + 30 * 24 * 60 * 60 * 1000;
@@ -4517,7 +4573,7 @@ next.push({
     });
   }
 
-  function deleteMyAccount() {
+  function doDeleteMyAccount() {
     if (!state.user || !firebaseConfigured || !firebaseAuth || !firebaseAuth.currentUser) return;
     if (!confirm('Permanently delete your MimiCart account? This removes your login for good \u2014 past orders stay on file for our records, but you won\u2019t be able to sign back in with this account. This can\u2019t be undone.')) return;
     var email = state.user.email;
