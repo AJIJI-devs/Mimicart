@@ -472,6 +472,52 @@
     .theme-switcher { flex-wrap: nowrap; }
   }
 </style>
+<style id="mimi-otp-style">
+/* ===== MimiCart "stamp card" one-time-code boxes =====
+   One real (invisible) input sits on top of six display boxes, so typing,
+   pasting, backspace and email/SMS autofill all work natively. */
+.otp-wrap { --otp-ease: var(--spring, var(--ease-spring, cubic-bezier(.34,1.56,.64,1))); margin: 8px 0 12px; }
+.otp-stage { position: relative; padding: 8px 2px 6px; }
+.otp-boxes { display: flex; align-items: center; justify-content: center; gap: 7px; pointer-events: none; }
+.otp-sep { flex: 0 0 7px; width: 7px; height: 7px; margin: 0 1px; border-radius: 50%; background: hsl(var(--primary) / .35); }
+.otp-box { position: relative; flex: 1 1 0; min-width: 0; max-width: 52px; aspect-ratio: 5 / 6; display: grid; place-items: center;
+  border: 2px dashed hsl(var(--border)); border-radius: 15px; background: hsl(var(--card)); color: hsl(var(--primary));
+  transition: transform .4s var(--otp-ease), border-color .25s, background .25s, box-shadow .3s; }
+.otp-digit { font: 800 clamp(20px, 6vw, 28px)/1 var(--app-font-serif, Georgia, serif); font-style: normal; }
+.otp-box.is-filled { border-style: solid; border-color: hsl(var(--primary) / .5); background: hsl(var(--primary) / .08); }
+.otp-wrap.is-focus .otp-box.is-active { border-style: solid; border-color: hsl(var(--primary)); background: hsl(var(--card));
+  transform: translateY(-4px) rotate(-2deg); box-shadow: 0 10px 22px hsl(var(--primary) / .22), 0 0 0 4px hsl(var(--primary) / .14); }
+.otp-wrap.is-focus .otp-box.is-active:not(.is-filled)::after { content: ''; width: 2px; height: 44%; border-radius: 2px; background: hsl(var(--primary)); animation: otpCaret 1s steps(1) infinite; }
+@keyframes otpCaret { 50% { opacity: 0; } }
+/* each digit "stamps" onto the card */
+.otp-box.otp-stamp .otp-digit { animation: otpStamp .45s var(--otp-ease) both; }
+.otp-box.otp-stamp::before { content: ''; position: absolute; inset: -2px; border-radius: inherit; border: 2px solid hsl(var(--primary)); pointer-events: none; animation: otpRing .6s ease-out forwards; }
+@keyframes otpStamp { 0% { transform: scale(1.9) rotate(-16deg); opacity: 0; } 60% { transform: scale(.9) rotate(3deg); opacity: 1; } 100% { transform: none; opacity: 1; } }
+@keyframes otpRing { from { opacity: .7; transform: scale(1); } to { opacity: 0; transform: scale(1.35); } }
+/* all six stamped: the card turns green and does a little wave */
+.otp-wrap.is-complete .otp-box { border-style: solid; border-color: hsl(var(--secondary)); background: hsl(var(--secondary) / .12); color: hsl(var(--secondary));
+  animation: otpWave .55s var(--otp-ease) backwards; animation-delay: calc(var(--n, 0) * 50ms); }
+@keyframes otpWave { 0% { transform: translateY(0); } 40% { transform: translateY(-10px) scale(1.06); } 100% { transform: translateY(0); } }
+.otp-wrap.is-error .otp-boxes { animation: otpShake .5s; }
+.otp-wrap.is-error .otp-box { border-color: hsl(var(--primary)); }
+@keyframes otpShake { 20% { transform: translateX(-9px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(3px); } }
+/* the real input: invisible, covers the boxes, takes every tap / keystroke / paste */
+.otp-wrap .otp-real { position: absolute !important; inset: 0; width: 100% !important; height: 100% !important; margin: 0 !important; padding: 0 !important;
+  border: 0 !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; transform: none !important; outline: 0;
+  color: transparent !important; -webkit-text-fill-color: transparent; caret-color: transparent !important; font-size: 16px !important; letter-spacing: 0 !important;
+  text-align: center; z-index: 2; cursor: text; }
+.otp-wrap .otp-real::selection { background: transparent; color: transparent; }
+.otp-wrap .otp-real:-webkit-autofill { transition: background-color 99999s; }
+.otp-meta { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; min-height: 30px; }
+.otp-timer { font: 700 11px var(--app-font-mono, monospace); color: hsl(var(--muted-foreground)); }
+.otp-wrap.is-expired .otp-timer { color: hsl(var(--primary)); }
+.otp-paste { display: inline-flex; align-items: center; gap: 5px; margin-left: auto; padding: 7px 13px; border: 1.5px dashed hsl(var(--primary) / .6); border-radius: 999px;
+  background: hsl(var(--primary) / .07); color: hsl(var(--primary)); font: 700 11px var(--app-font-sans, inherit); cursor: pointer; transition: transform .3s var(--otp-ease), background .2s; }
+.otp-paste:hover { transform: translateY(-2px) rotate(-1.5deg); background: hsl(var(--primary) / .14); }
+.otp-hint { margin: 6px 0 0; text-align: center; font-size: 11px; color: hsl(var(--muted-foreground)); }
+.otp-hint:empty { display: none; }
+@media (prefers-reduced-motion: reduce) { .otp-wrap *, .otp-wrap { animation: none !important; transition: none !important; } }
+</style>
 </head>
 <body>
 
@@ -523,7 +569,18 @@
 
     <form id="otp-form">
       <label class="field-label" for="otp-code">Verification code</label>
-      <input class="otp-input" id="otp-code" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" required />
+      <div class="otp-wrap" data-kind="admin">
+        <div class="otp-stage">
+          <div class="otp-boxes" aria-hidden="true">
+            <span class="otp-box" style="--n:0"><b class="otp-digit"></b></span><span class="otp-box" style="--n:1"><b class="otp-digit"></b></span><span class="otp-box" style="--n:2"><b class="otp-digit"></b></span>
+            <span class="otp-sep"></span>
+            <span class="otp-box" style="--n:3"><b class="otp-digit"></b></span><span class="otp-box" style="--n:4"><b class="otp-digit"></b></span><span class="otp-box" style="--n:5"><b class="otp-digit"></b></span>
+          </div>
+          <input class="otp-input otp-real" id="otp-code" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" aria-label="6-digit verification code" required />
+        </div>
+        <div class="otp-meta"><span class="otp-timer" data-otp-timer></span><button type="button" class="otp-paste" data-otp-paste>&#128203; Paste code</button></div>
+        <p class="otp-hint" data-otp-hint></p>
+      </div>
       <button type="submit" class="primary-button full-width focus-ring" id="otp-submit" style="margin-top:20px;">Verify code</button>
     </form>
     <div id="otp-message" class="notice-box hidden"></div>
@@ -1602,6 +1659,7 @@ var REQUIRE_OTP = true;
   // Holds the code we generated for the current sign-in attempt. Nothing
   // here is persisted to disk — it only lives in memory for this tab.
   var pendingOtp = { code: null, email: null, expiresAt: 0 };
+  window.__otpExpiryFn = function () { return (pendingOtp && pendingOtp.expiresAt) || 0; };
   var otpResendCooldownTimer = null;
 
   // true from the moment somebody presses "Sign in" until the result is known,
@@ -1869,12 +1927,14 @@ var REQUIRE_OTP = true;
 
     if (!pendingOtp.code || Date.now() > pendingOtp.expiresAt) {
       otpMessage.textContent = 'That code expired. Tap "Resend code" for a new one.';
+      if (window.mimiOtpShake) window.mimiOtpShake(document.getElementById('otp-code'));
       return;
     }
     if (entered !== pendingOtp.code) {
       otpMessage.textContent = 'That code isn\u2019t right. Please try again.';
       document.getElementById('otp-code').value = '';
       document.getElementById('otp-code').focus();
+      if (window.mimiOtpShake) window.mimiOtpShake(document.getElementById('otp-code'));
       return;
     }
     showDashboard(pendingOtp.email);
@@ -3026,5 +3086,85 @@ var REQUIRE_OTP = true;
   }
 })();
 </script>
+<script id="mimi-otp-script">
+/* MimiCart stamp-card OTP boxes: paints the six display boxes from the real input's value. */
+(function () {
+  var LEN = 6, shaken = {};
+  function realInput(w) { return w.querySelector('.otp-real'); }
+  function paint(w) {
+    var input = realInput(w); if (!input) return;
+    var first = w._otpV === undefined, prev = w._otpV || '';
+    var v = (input.value || '').replace(/\D/g, '').slice(0, LEN);
+    var focused = document.activeElement === input;
+    w.classList.toggle('is-focus', focused);
+    w.classList.toggle('is-complete', v.length === LEN);
+    var active = Math.min(v.length, LEN - 1);
+    w.querySelectorAll('.otp-box').forEach(function (b, i) {
+      var d = v.charAt(i), digit = b.querySelector('.otp-digit');
+      if (digit.textContent !== d) digit.textContent = d;
+      b.classList.toggle('is-filled', !!d);
+      b.classList.toggle('is-active', focused && i === active);
+      if (!first && d && prev.charAt(i) !== d) {
+        b.classList.remove('otp-stamp'); void b.offsetWidth; b.classList.add('otp-stamp');
+        setTimeout(function () { b.classList.remove('otp-stamp'); }, 700);
+      }
+    });
+    w._otpV = v;
+    var err = w.getAttribute('data-err'), kind = w.getAttribute('data-kind') || 'x';
+    if (err && shaken[kind] !== err) { shaken[kind] = err; shake(w); }
+    if (!err) delete shaken[kind];
+  }
+  function shake(w) {
+    w.classList.remove('is-error'); void w.offsetWidth; w.classList.add('is-error');
+    setTimeout(function () { w.classList.remove('is-error'); }, 700);
+  }
+  window.mimiOtpShake = function (input) { var w = input && input.closest && input.closest('.otp-wrap'); if (w) shake(w); };
+  function paintAll() { document.querySelectorAll('.otp-wrap').forEach(paint); }
+  function caretToEnd(input) { try { var n = input.value.length; input.setSelectionRange(n, n); } catch (e) {} }
+  function wrapOf(t) { return t && t.closest ? t.closest('.otp-wrap') : null; }
+
+  ['input', 'focusin', 'focusout', 'keyup', 'click'].forEach(function (ev) {
+    document.addEventListener(ev, function (e) {
+      var w = wrapOf(e.target); if (!w) return;
+      if ((ev === 'focusin' || ev === 'click') && e.target.classList && e.target.classList.contains('otp-real')) caretToEnd(e.target);
+      paint(w);
+    });
+  });
+  // Paste button (like the "Fill" chip on a phone): read the clipboard, keep the 6 digits.
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest && e.target.closest('[data-otp-paste]'); if (!btn) return;
+    var w = wrapOf(btn), input = w && realInput(w), hint = w && w.querySelector('[data-otp-hint]');
+    if (!input) return;
+    function say(t) { if (hint) { hint.textContent = t; setTimeout(function () { if (hint.textContent === t) hint.textContent = ''; }, 3500); } }
+    function apply(text) {
+      var digits = String(text || '').replace(/\D/g, '').slice(0, LEN);
+      if (!digits) { say('No code found on your clipboard yet.'); input.focus(); return; }
+      input.value = digits;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.focus();
+    }
+    if (navigator.clipboard && navigator.clipboard.readText) {
+      navigator.clipboard.readText().then(apply).catch(function () { say('Tap the boxes, then long-press and choose Paste.'); input.focus(); });
+    } else { say('Tap the boxes, then long-press and choose Paste.'); input.focus(); }
+  });
+  // "Code expires in 4:32" countdown
+  function tick() {
+    document.querySelectorAll('.otp-wrap').forEach(function (w) {
+      var el = w.querySelector('[data-otp-timer]'); if (!el) return;
+      var exp = Number(w.getAttribute('data-expires')) || (window.__otpExpiryFn ? Number(window.__otpExpiryFn(w.getAttribute('data-kind'))) : 0) || 0;
+      function put(t) { if (el.textContent !== t) el.textContent = t; }
+      if (!exp) { put(''); w.classList.remove('is-expired'); return; }
+      var left = Math.round((exp - Date.now()) / 1000);
+      if (left <= 0) { put('Code expired \u2014 request a new one'); w.classList.add('is-expired'); return; }
+      w.classList.remove('is-expired');
+      put('Expires in ' + Math.floor(left / 60) + ':' + ('0' + (left % 60)).slice(-2));
+    });
+  }
+  setInterval(function () { paintAll(); tick(); }, 250);   // also catches programmatic value changes (form.reset, value = '')
+  new MutationObserver(function () { paintAll(); tick(); }).observe(document.documentElement, { childList: true, subtree: true });
+  paintAll(); tick();
+})();
+</script>
+
 </body>
 </html>
