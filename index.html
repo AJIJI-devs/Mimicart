@@ -168,7 +168,7 @@
   .category-heading { display: flex; align-items: end; justify-content: space-between; gap: 25px; margin: 19px 0 34px; }
   .category-heading h2, .catalogue-heading-row h2, .story-copy h2 { margin: 0; font-size: clamp(42px, 5vw, 68px); line-height: .9; letter-spacing: -.045em; }
   .category-heading p { max-width: 210px; margin-bottom: 4px; color: hsl(var(--muted-foreground)); font-size: 13px; line-height: 1.6; }
-  .category-rail { display: grid; grid-template-columns: repeat(6, minmax(145px, 1fr)); border-top: 1px solid hsl(var(--border)); border-bottom: 1px solid hsl(var(--border)); }
+  .category-rail { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); border-top: 1px solid hsl(var(--border)); border-bottom: 1px solid hsl(var(--border)); }
   .category-tile { position: relative; min-height: 164px; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; gap: 8px; padding: 21px 17px 18px; border: 0; border-right: 1px solid hsl(var(--border)); background: transparent; text-align: left; transition: background-color .2s ease, color .2s ease, transform .2s ease; }
   .category-tile:first-child { border-left: 1px solid hsl(var(--border)); }
   .category-tile:hover, .category-tile.selected { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); transform: translateY(-5px); }
@@ -1900,7 +1900,19 @@ next.push({
 
   // ---- category rail ----
   var categoryRail = document.getElementById('category-rail');
+  var BASE_CATEGORY_COUNT = CATEGORIES.length;
+  // Categories the admin adds in the dashboard get their own tile automatically.
+  function syncCategoriesFromProducts() {
+    CATEGORIES.length = BASE_CATEGORY_COUNT;
+    PRODUCTS.forEach(function (p) {
+      if (p.category && !CATEGORIES.some(function (c) { return c.id === p.category; })) {
+        CATEGORIES.push({ id: p.category, label: p.category, sublabel: 'new on the shelf' });
+      }
+    });
+    if (!CATEGORIES.some(function (c) { return c.id === state.selectedCategory; })) state.selectedCategory = 'All';
+  }
   function renderCategoryRail() {
+    syncCategoriesFromProducts();
     categoryRail.innerHTML = CATEGORIES.map(function (cat, index) {
       return (
         '<button type="button" class="category-tile focus-ring' + (state.selectedCategory === cat.id ? ' selected' : '') + '" data-category="' + cat.id + '">' +
