@@ -458,6 +458,19 @@
     .msg-back { display: inline-flex; }
   }
   .date-row td { padding: 8px 12px; background: hsl(var(--muted)); font-size: 12px; font-weight: 700; letter-spacing: .02em; color: hsl(var(--foreground)); }
+
+  /* ---- add product form: tidy, evenly aligned grid ---- */
+  .np-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px 16px; align-items: end; }
+  .np-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .np-field > span { font: 700 10px var(--app-font-mono); text-transform: uppercase; letter-spacing: .04em; color: hsl(var(--muted-foreground)); }
+  .np-field.hidden { display: none !important; }
+  .np-span-2 { grid-column: span 2; }
+  .np-input { width: 100%; height: 42px; padding: 0 14px; border: 1px solid hsl(var(--border)); border-radius: 12px; background: hsl(var(--background)); color: hsl(var(--foreground)); font-size: 13px; outline: 0; box-sizing: border-box; }
+  select.np-input { appearance: auto; padding-right: 8px; }
+  .np-input:focus { border-color: hsl(var(--primary)); box-shadow: 0 0 0 3px hsl(var(--primary) / .1); }
+  .np-actions { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 18px; }
+  @media (max-width: 860px) { .np-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 520px) { .np-grid { grid-template-columns: 1fr; } .np-span-2 { grid-column: auto; } }
   .hidden { display: none !important; }
 
   @media (max-width: 480px) {
@@ -657,8 +670,31 @@
         <option value="low">Low stock (&le; 5)</option>
         <option value="out">Out of stock</option>
       </select>
+      <button type="button" class="primary-button focus-ring hidden" id="add-product-button">+ Add product</button>
       <button type="button" class="secondary-button focus-ring" id="inventory-export-csv">⬇️ Export CSV</button>
-      <button type="button" class="secondary-button focus-ring" id="sync-prices-button">₱ Sync prices from catalog</button>
+    </div>
+    <div class="panel-block hidden" id="add-product-panel">
+      <h2 class="font-display">Add a product</h2>
+      <p class="panel-sub">Pick which category it goes in (or add a new one). New products and categories show up on the customer storefront right away. Fields marked * are required.</p>
+      <form id="add-product-form" autocomplete="off">
+        <div class="np-grid">
+          <label class="np-field np-span-2"><span>Name *</span><input class="np-input focus-ring" id="np-name" type="text" maxlength="60" required /></label>
+          <label class="np-field np-span-2"><span>Subtitle (e.g. Korean name)</span><input class="np-input focus-ring" id="np-korean" type="text" maxlength="60" /></label>
+          <label class="np-field"><span>Category *</span><select class="np-input focus-ring" id="np-category" required></select></label>
+          <label class="np-field hidden" id="np-newcat-wrap"><span>New category name *</span><input class="np-input focus-ring" id="np-newcat" type="text" maxlength="30" placeholder="e.g. Bakery" /></label>
+          <label class="np-field"><span>Price (₱) *</span><input class="np-input focus-ring" id="np-price" type="number" min="0" step="0.01" required /></label>
+          <label class="np-field"><span>Stock *</span><input class="np-input focus-ring" id="np-stock" type="number" min="0" step="1" value="0" required /></label>
+          <label class="np-field np-span-2"><span>Description</span><input class="np-input focus-ring" id="np-desc" type="text" maxlength="200" /></label>
+          <label class="np-field"><span>Flavor tag</span><input class="np-input focus-ring" id="np-flavor" type="text" maxlength="40" placeholder="e.g. sweet + crunchy" /></label>
+          <label class="np-field"><span>Badge (optional)</span><input class="np-input focus-ring" id="np-badge" type="text" maxlength="20" placeholder="e.g. New in" /></label>
+          <label class="np-field np-span-2"><span>Image path (optional)</span><input class="np-input focus-ring" id="np-image" type="text" placeholder="Images/NAME.png" /></label>
+        </div>
+        <div class="np-actions">
+          <button type="button" class="ghost-button focus-ring" id="np-cancel">Cancel</button>
+          <button type="submit" class="primary-button focus-ring" id="np-submit">Save product</button>
+        </div>
+        <p class="hint-text hidden" id="np-message"></p>
+      </form>
     </div>
     <div class="panel-block" style="overflow-x:auto;">
       <table class="data-table">
@@ -769,7 +805,7 @@
       <p class="panel-sub">Delivered and picked-up orders.</p>
       <div style="overflow-x:auto;">
         <table class="data-table">
-          <thead><tr><th>Customer</th><th>Items</th><th>Total</th><th>Fulfillment</th><th>Status</th><th>Date completed</th><th></th></tr></thead>
+          <thead><tr><th>Customer</th><th>Items</th><th>Total</th><th>Fulfillment</th><th>Status</th><th>Date &amp; time completed</th><th></th></tr></thead>
           <tbody id="orders-body-completed"></tbody>
         </table>
         <div class="empty-state hidden" id="orders-empty-completed">No completed orders yet.</div>
@@ -781,7 +817,7 @@
       <p class="panel-sub">Orders that were cancelled and restocked.</p>
       <div style="overflow-x:auto;">
         <table class="data-table">
-          <thead><tr><th>Customer</th><th>Items</th><th>Total</th><th>Fulfillment</th><th>Status</th><th>Date cancelled</th><th></th></tr></thead>
+          <thead><tr><th>Customer</th><th>Items</th><th>Total</th><th>Fulfillment</th><th>Status</th><th>Date &amp; time cancelled</th><th></th></tr></thead>
           <tbody id="orders-body-cancelled"></tbody>
         </table>
         <div class="empty-state hidden" id="orders-empty-cancelled">No cancelled orders.</div>
@@ -872,7 +908,7 @@
     </div>
     <div class="panel-block">
       <h2 class="font-display">Always admin-only</h2>
-      <p class="panel-sub">These can never be given to staff: the Staff and Permissions tabs, approving/removing staff, seeding the catalog, repairing images, syncing prices, adding/deleting products or changing prices, and viewing everyone&rsquo;s sign-in logs. The admin role itself is only changed in the Firebase console.</p>
+      <p class="panel-sub">These can never be given to staff: the Staff and Permissions tabs, approving/removing staff, seeding the catalog, repairing images, adding products or changing prices, and viewing everyone&rsquo;s sign-in logs. The admin role itself is only changed in the Firebase console.</p>
     </div>
   </section>
 
@@ -2073,6 +2109,7 @@ var REQUIRE_OTP = true;
       state.products = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
       document.getElementById('seed-banner').classList.toggle('hidden', !snap.empty || !state.isAdmin);
       renderInventoryFilters();
+      refreshProductCategoryOptions();
       renderInventory();
     }, function (err) { console.error('MimiCart admin: products listener failed', err); });
 
@@ -2139,33 +2176,93 @@ var REQUIRE_OTP = true;
     });
   });
 
-  // ---------------- PRICE SYNC ----------------
-  // Pushes the prices from RAW_PRODUCTS (above) into the live Firestore
-  // products. Updates ONLY the `price` field, so stock, names, and
-  // everything else stay exactly as they are.
-  document.getElementById('sync-prices-button').addEventListener('click', function () {
-    if (!state.isAdmin) { showToast('Only the admin can do that.'); return; }
-    if (!confirm('Update every product price in Firestore to match the catalog list in this file? Stock and all other fields stay unchanged.')) return;
-
-    var priceMap = {};
-    RAW_PRODUCTS.forEach(function (row) { priceMap[row[0]] = row[4]; });
-
-    firebaseDb.collection('products').get().then(function (snap) {
-      var batch = firebaseDb.batch();
-      var changed = 0;
-      snap.forEach(function (doc) {
-        if (priceMap[doc.id] != null && Number(doc.data().price) !== priceMap[doc.id]) {
-          batch.update(doc.ref, { price: priceMap[doc.id] });
-          changed++;
-        }
+  // ---------------- ADD PRODUCT (admin only) ----------------
+  function slugifyProductId(name) {
+    return String(name).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
+  }
+  function npSay(text, kind) {
+    var el = document.getElementById('np-message');
+    el.textContent = text;
+    el.classList.remove('hidden', 'good', 'bad');
+    if (kind) el.classList.add(kind);
+  }
+  var DEFAULT_CATEGORIES = ['Drinks', 'Frozen', 'Korean Noodles', 'Sweets', 'Snacks'];
+  function refreshProductCategoryOptions() {
+    var sel = document.getElementById('np-category');
+    if (!sel) return;
+    var cats = DEFAULT_CATEGORIES.slice();
+    state.products.forEach(function (p) { if (p.category && cats.indexOf(p.category) === -1) cats.push(p.category); });
+    var current = sel.value;
+    sel.innerHTML = cats.map(function (c) { return '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>'; }).join('') +
+      '<option value="__new__">+ Add a new category\u2026</option>';
+    if (current && (cats.indexOf(current) !== -1 || current === '__new__')) sel.value = current;
+  }
+  document.getElementById('np-category').addEventListener('change', function (e) {
+    var isNew = e.target.value === '__new__';
+    document.getElementById('np-newcat-wrap').classList.toggle('hidden', !isNew);
+    if (isNew) document.getElementById('np-newcat').focus();
+  });
+  function npClose() {
+    document.getElementById('add-product-panel').classList.add('hidden');
+    document.getElementById('add-product-form').reset();
+    refreshProductCategoryOptions();
+    document.getElementById('np-newcat-wrap').classList.add('hidden');
+    document.getElementById('np-message').classList.add('hidden');
+  }
+  document.getElementById('add-product-button').addEventListener('click', function () {
+    if (!state.isAdmin) { showToast('Only the admin can add products.'); return; }
+    var panel = document.getElementById('add-product-panel');
+    panel.classList.toggle('hidden');
+    if (!panel.classList.contains('hidden')) document.getElementById('np-name').focus();
+  });
+  document.getElementById('np-cancel').addEventListener('click', npClose);
+  document.getElementById('add-product-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!state.isAdmin) { npSay('Only the admin can add products.', 'bad'); return; }
+    var name = document.getElementById('np-name').value.trim();
+    var price = parseFloat(document.getElementById('np-price').value);
+    var stock = parseInt(document.getElementById('np-stock').value, 10);
+    var id = slugifyProductId(name);
+    if (!name || !id) { npSay('Please enter a product name.', 'bad'); return; }
+    if (isNaN(price) || price < 0) { npSay('Enter a valid price.', 'bad'); return; }
+    if (isNaN(stock) || stock < 0) { npSay('Enter a valid stock number.', 'bad'); return; }
+    if (state.products.some(function (p) { return p.id === id || (p.name || '').toLowerCase() === name.toLowerCase(); })) {
+      npSay('A product with that name already exists. Edit its stock in the table below instead.', 'bad'); return;
+    }
+    var category = document.getElementById('np-category').value;
+    if (category === '__new__') {
+      category = document.getElementById('np-newcat').value.trim().replace(/\s+/g, ' ');
+      if (!category) { npSay('Type a name for the new category.', 'bad'); return; }
+      var match = state.products.map(function (p) { return p.category; }).concat(DEFAULT_CATEGORIES).filter(function (c) { return c && c.toLowerCase() === category.toLowerCase(); })[0];
+      if (match) category = match;   // reuse the existing spelling instead of making a near-duplicate
+    }
+    var colors = PALETTE[Math.floor(Math.random() * PALETTE.length)];
+    var image = document.getElementById('np-image').value.trim();
+    var btn = document.getElementById('np-submit');
+    btn.disabled = true;
+    var ref = firebaseDb.collection('products').doc(id);
+    ref.get().then(function (snap) {
+      if (snap.exists) { npSay('That product already exists.', 'bad'); return; }
+      return ref.set({
+        name: name,
+        korean: document.getElementById('np-korean').value.trim(),
+        category: category,
+        price: price,
+        stock: stock,
+        badge: document.getElementById('np-badge').value.trim() || null,
+        description: document.getElementById('np-desc').value.trim(),
+        flavor: document.getElementById('np-flavor').value.trim(),
+        image: image || null,
+        tone: colors[0], accent: colors[1], pattern: PATTERNS[Math.floor(Math.random() * PATTERNS.length)]
+      }).then(function () {
+        showToast('Added ' + name + ' to the catalog.');
+        npClose();
       });
-      return changed ? batch.commit().then(function () { return changed; }) : 0;
-    }).then(function (changed) {
-      showToast(changed ? ('Updated prices for ' + changed + ' product(s).') : 'All prices already match.');
     }).catch(function (err) {
-      console.error('MimiCart: price sync failed', err);
-      showToast('Could not sync prices. Check the console for details.');
-    });
+      console.error('MimiCart admin: add product failed', err);
+      npSay('Couldn\u2019t add the product. (' + ((err && err.message) || 'unknown error') + ') If it says permission denied, update your Firestore rules to let the admin create products.', 'bad');
+    }).then(function () { btn.disabled = false; });
   });
 
   // ---------------- INVENTORY ----------------
@@ -2316,6 +2413,12 @@ var REQUIRE_OTP = true;
     var d = f.toDate ? f.toDate() : new Date(f);
     return isNaN(d.getTime()) ? null : d;
   }
+  // "Nov 6, 2026 \u2022 2:44 PM" - one consistent date + time label for finished orders
+  function dateTimeLabel(d) {
+    if (!d || isNaN(d.getTime())) return '\u2014';
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) + ' \u2022 ' +
+      d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  }
   function dayHeading(d) {
     if (!d) return 'No date';
     var now = new Date(), y = new Date(now.getTime() - 86400000);
@@ -2402,7 +2505,7 @@ var REQUIRE_OTP = true;
           : '<strong>Pickup</strong><br /><span class="prod-sub">' + escapeHtml(o.pickupDate || '\u2014') + ' ' + escapeHtml(o.pickupTime || '') + '</span>') + '</td>' +
         '<td>' + stageTrackHTML(o) + '</td>' +
         '<td>' + ((o._collection === 'completed' || o._collection === 'cancelled')
-          ? (function () { var f = finishedDateObj(o); return (f ? f.toLocaleDateString() + '<br /><span class="prod-sub">' + f.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + '</span>' : '\u2014') + (placed ? '<br /><span class="prod-sub">Placed ' + placed.toLocaleDateString() + '</span>' : ''); })()
+          ? (function () { var f = finishedDateObj(o); return '<strong>' + dateTimeLabel(f) + '</strong>' + (placed ? '<br /><span class="prod-sub">Placed ' + dateTimeLabel(placed) + '</span>' : ''); })()
           : (placed ? placed.toLocaleDateString() : '\u2014')) + '</td>' +
         '<td>' + actions + '</td>' +
       '</tr>'
@@ -2726,9 +2829,9 @@ var REQUIRE_OTP = true;
     // STAFF can: work orders (search, advance stages, complete, cancel), view products
     // and restock/adjust stock, and see their own sign-in activity.
     // ADMIN can do all of that plus: Overview (revenue), Staff tab, CSV exports,
-    // seeding/repairing/price-syncing the catalog, and everyone's sign-in logs.
+    // seeding/repairing the catalog, adding products, and everyone's sign-in logs.
     // Always admin-only:
-    ['sync-prices-button', 'seed-button', 'repair-images-button']
+    ['add-product-button', 'seed-button', 'repair-images-button']
       .forEach(function (id) { var el = document.getElementById(id); if (el) el.classList.toggle('hidden', !admin); });
     // Admin decides these on the Permissions tab:
     ['inventory-export-csv', 'orders-export-csv']
@@ -3071,16 +3174,16 @@ var REQUIRE_OTP = true;
     }).join('');
 
     // recent completed list
-    var recent = state.orders.filter(function (o) { return o.status === 'completed'; }).slice(0, 6);
+    var recent = state.orders.filter(function (o) { return o.status === 'completed'; }).sort(function (a, b) { var da = orderDateObj(a, true), db = orderDateObj(b, true); return (db ? db.getTime() : 0) - (da ? da.getTime() : 0); }).slice(0, 6);
     var recentEl = document.getElementById('recent-completed');
     if (!recent.length) {
       recentEl.innerHTML = '<div class="empty-state">No completed orders yet.</div>';
     } else {
-      recentEl.innerHTML = '<table class="data-table"><thead><tr><th>Customer</th><th>Items</th><th>Total</th><th>Completed</th></tr></thead><tbody>' +
+      recentEl.innerHTML = '<table class="data-table"><thead><tr><th>Customer</th><th>Items</th><th>Total</th><th>Date &amp; time completed</th></tr></thead><tbody>' +
         recent.map(function (o) {
           var d = orderDateObj(o, true);
           var itemsSummary = (o.items || []).map(function (it) { return escapeHtml(it.quantity) + '\u00d7 ' + escapeHtml(it.name); }).join(', ');
-          return '<tr><td>' + escapeHtml(o.customerName || 'Guest') + '</td><td><div class="order-items">' + itemsSummary + '</div></td><td>₱' + Number(o.total || 0).toFixed(2) + '</td><td>' + (d ? d.toLocaleDateString() : '\u2014') + '</td></tr>';
+          return '<tr><td>' + escapeHtml(o.customerName || 'Guest') + '</td><td><div class="order-items">' + itemsSummary + '</div></td><td>₱' + Number(o.total || 0).toFixed(2) + '</td><td>' + dateTimeLabel(d) + '</td></tr>';
         }).join('') + '</tbody></table>';
     }
   }
